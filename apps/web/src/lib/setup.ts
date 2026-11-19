@@ -1,4 +1,4 @@
-import { currencySymbol } from '@repo/core';
+import { currencySymbol, walletColour } from '@repo/core';
 import { decimalToMinor, type CreateWallet, type MinorAmount } from '@repo/types';
 
 /**
@@ -85,10 +85,10 @@ export type WalletKind = 'bank' | 'ewallet' | 'cash' | 'credit';
 
 /** The four kinds set-up offers, each with the phone's icon and the card style its list bubble takes. */
 export const WALLET_KINDS: Record<WalletKind, { label: string; icon: string; cardStyleId: string; color: string }> = {
-  bank: { label: 'Bank', icon: 'bank', cardStyleId: 'citrus-pop', color: '#F9D51F' },
-  ewallet: { label: 'E-wallet', icon: 'wallet', cardStyleId: 'violet-dusk', color: '#8C5CF3' },
-  cash: { label: 'Cash', icon: 'cash', cardStyleId: 'emerald-grain', color: '#57D374' },
-  credit: { label: 'Card', icon: 'credit-card', cardStyleId: 'rose-quartz', color: '#FA8A48' },
+  bank: { label: 'Bank', icon: 'bank', cardStyleId: 'citrus-pop', color: walletColour('citrus-pop').hex },
+  ewallet: { label: 'E-wallet', icon: 'wallet', cardStyleId: 'violet-dusk', color: walletColour('violet-dusk').hex },
+  cash: { label: 'Cash', icon: 'cash', cardStyleId: 'emerald-grain', color: walletColour('emerald-grain').hex },
+  credit: { label: 'Card', icon: 'credit-card', cardStyleId: 'rose-quartz', color: walletColour('rose-quartz').hex },
 };
 
 export type WalletDraft = { key: string; name: string; kind: WalletKind; currency: string; balance: string };

@@ -1,15 +1,9 @@
+import { WALLET_TYPES } from '@repo/core';
 import type { WalletType } from '@repo/types';
 
 import type { IconSymbolName } from '@/components/ui/icon-symbol';
 
-export const WALLET_TYPE_OPTIONS = [
-  { value: 'bank', label: 'Bank', icon: 'bank' },
-  { value: 'cash', label: 'Cash', icon: 'cash' },
-  { value: 'credit', label: 'Credit', icon: 'credit-card' },
-  { value: 'debit', label: 'Debit', icon: 'credit-card-outline' },
-  { value: 'ewallet', label: 'Digital wallet', icon: 'wallet' },
-  { value: 'investment', label: 'Investment', icon: 'trending-up' },
-] as const satisfies ReadonlyArray<{
+export const WALLET_TYPE_OPTIONS = WALLET_TYPES satisfies ReadonlyArray<{
   value: string;
   label: string;
   icon: IconSymbolName;

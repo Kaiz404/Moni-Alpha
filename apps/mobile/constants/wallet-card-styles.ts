@@ -1,13 +1,16 @@
 /**
- * Curated solid wallet card colors aligned to the Moni pastel palette.
- *
- * This list is the single place designers/devs extend when adding a new
- * card style — appending an entry here immediately makes it selectable in
- * the wallet create/edit forms. `id` is persisted on `wallets.card_style_id`;
- * never rename an existing `id` (wallets already reference it), only append.
+ * The phone's wallet card surfaces. Each colour's id, label, swatch and tint come from `@repo/core`'s
+ * `WALLET_COLOURS`, which the web shares; add a colour there first, then its surface here.
  */
 
+import { walletColour } from '@repo/core';
+
 import type { BubbleTint } from '@/components/ui/nav-row';
+
+function colour(id: string) {
+  const { hex, ...rest } = walletColour(id);
+  return { ...rest, swatchHex: hex };
+}
 
 export type WalletCardStyle = {
   id: string;
@@ -35,85 +38,61 @@ const PASTEL_CONTENT = {
 
 export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
-    id: 'emerald-grain',
-    tint: 'mint',
-    label: 'Mint',
+    ...colour('emerald-grain'),
     backgroundColor: '#8ECF9D',
     colors: ['#C8E6D4', '#8ECF9D'],
     angle: 135,
-    swatchHex: '#57D374',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'citrus-pop',
-    tint: 'lemon',
-    label: 'Lemon',
+    ...colour('citrus-pop'),
     backgroundColor: '#E8CF50',
     colors: ['#F7F7F2', '#E8CF50'],
     angle: 135,
-    swatchHex: '#F9D51F',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'coral-bloom',
-    tint: 'coral',
-    label: 'Coral',
+    ...colour('coral-bloom'),
     backgroundColor: '#E87D72',
     colors: ['#F7F7F2', '#E87D72'],
     angle: 135,
-    swatchHex: '#FA402D',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'ocean-deep',
-    tint: 'aqua',
-    label: 'Aqua',
+    ...colour('ocean-deep'),
     backgroundColor: '#72CEC4',
     colors: ['#F7F7F2', '#72CEC4'],
     angle: 135,
-    swatchHex: '#3EDBCA',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'violet-dusk',
-    tint: 'lilac',
-    label: 'Lilac',
+    ...colour('violet-dusk'),
     backgroundColor: '#B39AE8',
     colors: ['#F7F7F2', '#B39AE8'],
     angle: 135,
-    swatchHex: '#8C5CF3',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'midnight-mint',
-    tint: 'mint',
-    label: 'Mint shade',
+    ...colour('midnight-mint'),
     backgroundColor: '#236B47',
     colors: ['#E5E9DC', '#8ECF9D'],
     angle: 160,
-    swatchHex: '#236B47',
     contentColor: '#F4F5EF',
     contentMutedColor: '#E0EEE3',
     actionOverlayColor: 'rgba(244, 245, 239, 0.16)',
   },
   {
-    id: 'rose-quartz',
-    tint: 'peach',
-    label: 'Peach',
+    ...colour('rose-quartz'),
     backgroundColor: '#F0AD85',
     colors: ['#F7F7F2', '#F0AD85'],
     angle: 135,
-    swatchHex: '#FA8A48',
     ...PASTEL_CONTENT,
   },
   {
-    id: 'slate-steel',
-    tint: 'sand',
-    label: 'Neutral',
+    ...colour('slate-steel'),
     backgroundColor: '#E5E9DC',
     colors: ['#F7F7F2', '#E5E9DC'],
     angle: 150,
-    swatchHex: '#7B8179',
     ...PASTEL_CONTENT,
   },
 ];

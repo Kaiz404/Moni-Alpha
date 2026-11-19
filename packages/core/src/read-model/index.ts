@@ -19,3 +19,4 @@ export * from './spend-history';
 export * from './transaction-row';
 export * from './types';
 export * from './user-rows';
+export * from './wallet-list';

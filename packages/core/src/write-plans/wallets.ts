@@ -1,6 +1,6 @@
 import { minorToDecimal, type CreateWallet } from '@repo/types';
 
-import { planned, type LedgerView, type PlanContext, type Planned } from './types';
+import { planned, refused, type LedgerView, type PlanContext, type Planned } from './types';
 
 /**
  * A new wallet holding its starting balance, confirmed as of now so the check-in waits a while. The
@@ -54,6 +54,30 @@ export function planWalletDelete(
       softDelete: [
         ...transactions.map((row) => ({ table: 'transactions' as const, id: row.id, at: ctx.now })),
         { table: 'wallets', id: walletId, at: ctx.now },
+      ],
+    },
+    null,
+  );
+}
+
+export type WalletEdit = { name: string; type: CreateWallet['type']; color: string; icon: string; cardStyleId: string };
+
+/** Edit wallet's Save changes. A wallet keeps its currency, and its balance moves only by a correction. */
+export function planWalletEdit(
+  walletId: string,
+  edit: WalletEdit,
+  view: Pick<LedgerView, 'walletsById'>,
+  ctx: Pick<PlanContext, 'now'>,
+): Planned<null> {
+  if (!view.walletsById[walletId]) return refused('Wallet not found');
+  return planned(
+    {
+      patch: [
+        {
+          table: 'wallets',
+          id: walletId,
+          patch: { name: edit.name, type: edit.type, color: edit.color, icon: edit.icon, card_style_id: edit.cardStyleId, updated_at: ctx.now },
+        },
       ],
     },
     null,

@@ -26,7 +26,7 @@ import {
   planTransfer,
 } from '../transactions';
 import type { LedgerView, PlanContext } from '../types';
-import { planWalletCreate, planWalletDelete } from '../wallets';
+import { planWalletCreate, planWalletDelete, planWalletEdit } from '../wallets';
 
 const NOW = '2026-10-14T03:00:00.000Z';
 const minor = (value: number) => value as MinorAmount;
@@ -585,6 +585,32 @@ describe('planWalletDelete', () => {
       },
       result: null,
     });
+  });
+});
+
+describe('planWalletEdit', () => {
+  const edit = { name: 'Maybank Savings', type: 'bank' as const, color: '#8C5CF3', icon: 'bank', cardStyleId: 'violet-dusk' };
+
+  it('patches the name, type and colour and leaves the currency and balance alone', () => {
+    expect(planWalletEdit('maybank', edit, view(), context())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [
+          {
+            table: 'wallets',
+            id: 'maybank',
+            patch: { name: 'Maybank Savings', type: 'bank', color: '#8C5CF3', icon: 'bank', card_style_id: 'violet-dusk', updated_at: NOW },
+          },
+        ],
+        softDelete: [],
+      },
+      result: null,
+    });
+  });
+
+  it('refuses a wallet that is gone', () => {
+    expect(planWalletEdit('gone', edit, view(), context())).toEqual({ kind: 'error', message: 'Wallet not found' });
   });
 });
 

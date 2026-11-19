@@ -135,10 +135,10 @@ export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; 
     <section aria-label="Wallets" className="card wallets-card" data-card="wallets">
       <div className="section-head" data-only="sidebar rail rail-one-column">
         <h2 className="card-title">Wallets</h2>
-        <span className="see-all see-all-quiet" title="All wallets arrives with Settings">
+        <Link href="/home/wallets" className="see-all press">
           All wallets
           <Icon name="chevron-right" size={18} />
-        </span>
+        </Link>
       </div>
       {main.length === 0 && (
         <div className="wallets-empty" data-only="sidebar rail rail-one-column">
@@ -197,18 +197,20 @@ export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; 
         {main
           .filter((wallet) => wallet.id !== ask?.wallet.id)
           .map((wallet) => (
-            <li key={wallet.id} className="wallet-row">
-              <Bubble icon={wallet.icon} color={wallet.color} size={32} glyph={17} />
-              <span className="wallet-name">{wallet.name}</span>
-              <span className="num wallet-balance">{formatMoney(balances[wallet.id] ?? 0, currency)}</span>
+            <li key={wallet.id}>
+              <Link href={`/home/wallets/${wallet.id}`} className="wallet-row press">
+                <Bubble icon={wallet.icon} color={wallet.color} size={32} glyph={17} />
+                <span className="wallet-name">{wallet.name}</span>
+                <span className="num wallet-balance">{formatMoney(balances[wallet.id] ?? 0, currency)}</span>
+              </Link>
             </li>
           ))}
       </ul>
       <span className="grow-space" />
       {other[0] && (
-        <p className="meta wallets-foot" data-only="sidebar rail rail-one-column">
+        <Link href="/home/wallets" className="meta wallets-foot" data-only="sidebar rail rail-one-column">
           {other.length === 1 ? `${other[0].name} keeps its own currency` : `${other.length} wallets keep their own currency`}, on All wallets
-        </p>
+        </Link>
       )}
       <span hidden data-net-worth={netWorth} />
     </section>

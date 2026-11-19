@@ -21,35 +21,7 @@ import { financeOverview$ } from '@/lib/finance/selectors';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { tid } from '@/lib/test-ids';
-import { type FinanceWallet, formatMoney } from '@repo/core';
-
-/** Section name and the plural used in the "kept apart" note. */
-const CURRENCY_NAMES: Record<string, [string, string]> = {
-  MYR: ['Ringgit', 'ringgit'],
-  USD: ['US dollar', 'dollars'],
-  SGD: ['Singapore dollar', 'Singapore dollars'],
-  EUR: ['Euro', 'euros'],
-  GBP: ['British pound', 'pounds'],
-  AUD: ['Australian dollar', 'Australian dollars'],
-  JPY: ['Japanese yen', 'yen'],
-  IDR: ['Indonesian rupiah', 'rupiah'],
-  THB: ['Thai baht', 'baht'],
-  CNY: ['Chinese yuan', 'yuan'],
-};
-
-function currencyName(code: string): [string, string] {
-  return CURRENCY_NAMES[code] ?? [code, code];
-}
-
-const TYPE_LABEL: Record<string, string> = {
-  bank: 'Bank',
-  cash: 'Cash',
-  credit: 'Card',
-  debit: 'Card',
-  ewallet: 'E-wallet',
-  investment: 'Investment',
-  other: 'Wallet',
-};
+import { currencyName, type FinanceWallet, formatMoney, keptApartLine, walletGroups, walletListMeta } from '@repo/core';
 
 const tintClass: Record<BubbleTint, string> = {
   sand: 'bg-sand',
@@ -61,13 +33,6 @@ const tintClass: Record<BubbleTint, string> = {
   sky: 'bg-sky',
   aqua: 'bg-aqua',
 };
-
-function walletMeta(wallet: FinanceWallet, main: boolean, alertsOn: boolean): string {
-  if (!main) return `${TYPE_LABEL[wallet.type] ?? 'Wallet'} · ${currencyName(wallet.currency)[1]}`;
-  if (wallet.type === 'cash' && !alertsOn) return 'In your pocket';
-  const type = TYPE_LABEL[wallet.type] ?? 'Wallet';
-  return alertsOn ? `${type} · alerts on` : type;
-}
 
 /** V2H-Wallets: every wallet, the main currency first with its balance line, others kept apart. */
 export default function WalletsScreen() {
@@ -88,25 +53,12 @@ export default function WalletsScreen() {
       ),
   );
 
-  const groups = useMemo(() => {
-    const byCurrency = new Map<string, FinanceWallet[]>();
-    for (const wallet of overview.wallets)
-      byCurrency.set(wallet.currency, [...(byCurrency.get(wallet.currency) ?? []), wallet]);
-    return [...byCurrency.entries()]
-      .map(([code, wallets]) => ({
-        code,
-        wallets,
-        totalMinor: wallets.reduce(
-          (sum, wallet) => sum + Number(overview.balancesByWallet[wallet.id] ?? 0),
-          0,
-        ),
-      }))
-      .sort((a, b) =>
-        a.code === currency ? -1 : b.code === currency ? 1 : a.code.localeCompare(b.code),
-      );
-  }, [overview.wallets, overview.balancesByWallet, currency]);
+  const groups = useMemo(
+    () => walletGroups(overview.wallets, overview.balancesByWallet, currency),
+    [overview.wallets, overview.balancesByWallet, currency],
+  );
 
-  const main = groups.find((group) => group.code === currency);
+  const main = groups.find((group) => group.main);
   const [now] = useState(() => new Date());
 
   return (
@@ -142,11 +94,11 @@ export default function WalletsScreen() {
           className="gap-5"
         >
           {groups.map((group) => {
-            const isMain = group.code === currency;
-            const [name, plural] = currencyName(group.code);
+            const isMain = group.main;
+            const { name } = currencyName(group.currency);
             return (
               <View
-                key={group.code}
+                key={group.currency}
                 className="gap-2"
               >
                 <View className="flex-row items-baseline justify-between gap-2 px-1">
@@ -158,7 +110,7 @@ export default function WalletsScreen() {
                     {isMain ? `${name} · main currency` : name}
                   </Text>
                   <Text className="text-[13px] leading-[18px] font-display-semibold text-ink-2">
-                    {formatMoney(group.totalMinor, group.code)}
+                    {formatMoney(group.totalMinor, group.currency)}
                   </Text>
                 </View>
                 <ListCard>
@@ -170,12 +122,12 @@ export default function WalletsScreen() {
                         overview.balancesByWallet[wallet.id] ?? 0,
                         wallet.currency,
                       )}
-                      meta={walletMeta(wallet, isMain, linked.has(wallet.id))}
+                      meta={walletListMeta(wallet, isMain, linked.has(wallet.id))}
                     />
                   ))}
                 </ListCard>
                 {isMain ? null : (
-                  <KeptApart text={`Kept apart. Moni never converts ${plural} or adds them to your ${currencyName(currency)[1]}.`} />
+                  <KeptApart text={keptApartLine(group.currency, currency)} />
                 )}
               </View>
             );

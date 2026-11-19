@@ -17,6 +17,7 @@ import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPhoneLayout } from './phone-layout.mjs';
 import { verifyPlaces } from './places.mjs';
+import { verifyWallets } from './wallets.mjs';
 import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
 import { verifySite } from './site.mjs';
@@ -57,6 +58,7 @@ const ROUTES = [
   { path: '/budget', title: /^Budget$/ },
   { path: '/debts', title: /^Debts$/ },
   { path: '/home/places', title: /^Where you spend$/, pushed: true },
+  { path: '/home/wallets', title: /^Wallets$/, pushed: true },
   { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
 ];
@@ -889,6 +891,8 @@ try {
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
+  if (runs('wallets')) await verifyWallets({ browser, base, storage, check, shot, settle, open, widths: WIDTHS, background: BACKGROUND, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('site')) await verifySite({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND });
 

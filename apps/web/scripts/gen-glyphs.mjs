@@ -38,6 +38,13 @@ const names = [
     'tag-outline',
     'chevron-up',
     'check',
+    // Wallets: every type's glyph (@repo/core WALLET_TYPES).
+    'bank',
+    'cash',
+    'credit-card',
+    'credit-card-outline',
+    'wallet',
+    'trending-up',
     // Budget and Debts: a repayment, a write-off, copying a reminder, tapping to start.
     'cash-check',
     'text-box-remove-outline',
