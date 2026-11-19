@@ -29,8 +29,10 @@ export function Sidebar() {
       </button>
       </div>
       <button type="button" className="sidebar-add press" onClick={() => run({ kind: 'add' })}>
-        <Icon name="plus" size={24} />
-        <span>Add</span>
+        <span className="add-dot">
+          <Icon name="plus" size={18} />
+        </span>
+        <span>Add a transaction</span>
         <span className="kbd kbd-on-ink">N</span>
       </button>
       <span aria-hidden="true" style={{ height: 14 }} />
@@ -91,8 +93,10 @@ export function Rail() {
         <span className="kbd kbd-inline">[</span>
       </button>
       <button type="button" className="press" onClick={() => run({ kind: 'add' })} title="Add a transaction (N)">
-        <span className="rail-add">
-          <Icon name="plus" size={28} />
+        <span className="ind">
+          <span className="add-dot">
+            <Icon name="plus" size={18} />
+          </span>
         </span>
         Add
       </button>

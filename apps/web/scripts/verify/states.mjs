@@ -68,10 +68,10 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       "Activity with no transactions: the flat chart says what will draw there, and Add a transaction is the one action",
       (await ep.getByText('Your spending draws a line here, day by day, against an even pace.').isVisible()) &&
         (await ep.locator('.chart-label').allTextContents()).join('|') === 'RM–|RM0' &&
-        (await ep.getByRole('button', { name: /^Add a transaction/ }).count()) === 1,
+        (await ep.locator('main').getByRole('button', { name: /^Add a transaction/ }).count()) === 1,
       await ep.locator('.chart-label').allTextContents(),
     );
-    await ep.getByRole('button', { name: /^Add a transaction/ }).click();
+    await ep.locator('main').getByRole('button', { name: /^Add a transaction/ }).click();
     await ep.locator('aside[data-pane="add"]').waitFor({ timeout: 5000 }).catch(() => {});
     check("Activity's Add a transaction opens Add", await ep.locator('aside[data-pane="add"]').isVisible());
     await ep.keyboard.press('Escape');

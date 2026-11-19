@@ -121,24 +121,40 @@ html[data-nav-swap] .shell-main {
 }
 
 .sidebar-add {
-  height: 48px;
+  min-height: 44px;
   border-radius: 9999px;
-  background: var(--color-mint-key);
-  color: var(--color-on-mint-key);
+  background: var(--on-bar-hover);
+  color: var(--color-on-tab-bar);
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 14px 0 14px;
+  padding: 0 10px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 120ms ease;
 }
 
 .sidebar-add:hover {
-  background: var(--color-mint-key-pressed);
+  background: color-mix(in srgb, var(--color-on-tab-bar) 20%, transparent);
 }
 
 .sidebar-add > span:nth-child(2) {
   flex: 1 1 auto;
+  text-align: left;
+}
+
+/* The one mint on the bar: a small + that marks Add without shouting over the nav. */
+.add-dot {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 9999px;
+  background: var(--color-mint-key);
+  color: var(--color-on-mint-key);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navi {
@@ -271,17 +287,6 @@ html[data-nav-swap] .shell-main {
 .rail [aria-current='page'] .ind {
   background: var(--color-on-tab-bar);
   color: var(--color-tab-bar);
-}
-
-.rail-add {
-  width: 52px;
-  height: 52px;
-  border-radius: 9999px;
-  background: var(--color-mint-key);
-  color: var(--color-on-mint-key);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .rail-rule {
