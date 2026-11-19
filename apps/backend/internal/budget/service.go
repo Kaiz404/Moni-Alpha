@@ -18,7 +18,7 @@ const (
 	maxQuestion   = 200
 	maxChoice     = 60
 	maxNote       = 300
-	maxWholeUnits = 9_999_999
+	maxWholeUnits = 99_999 // below PLAN_LIMIT_MINOR, the apps' limit on a budget
 )
 
 type Service struct {

@@ -139,13 +139,21 @@ func TestSuggestionRefusesAnAmountOutOfRange(t *testing.T) {
 		`{"amount":0,"note":"Nothing."}`,
 		`{"amount":0.6,"note":"Under one ringgit."}`,
 		`{"amount":-50,"note":"Negative."}`,
-		`{"amount":10000000,"note":"Too much."}`,
+		`{"amount":100000,"note":"At the plan limit."}`,
 	} {
 		svc, _ := fakeModel(t, http.StatusOK, reply)
 		got := svc.Suggest(context.Background(), Request{Category: food(), Currency: "MYR", Answers: answers})
 		if want := (Result{Status: "unavailable", Reason: "Suggestion returned an amount out of range"}); !reflect.DeepEqual(got, want) {
 			t.Errorf("%s: got %+v", reply, got)
 		}
+	}
+}
+
+func TestSuggestionTakesTheLargestBudgetAllowed(t *testing.T) {
+	svc, _ := fakeModel(t, http.StatusOK, `{"amount":99999.9,"note":"Big month."}`)
+	got := svc.Suggest(context.Background(), Request{Category: food(), Currency: "MYR", Answers: answers})
+	if got.Status != "ok" || got.AmountMinor != 9_999_900 {
+		t.Fatalf("got %+v", got)
 	}
 }
 

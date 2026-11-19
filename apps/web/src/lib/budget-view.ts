@@ -7,7 +7,7 @@ import {
   type MoneyMonth,
   type SpendByMonth,
 } from '@repo/core';
-import type { MinorAmount } from '@repo/types';
+import { PLAN_LIMIT_MINOR, type MinorAmount } from '@repo/types';
 
 /** One line of the Budgets table and the category pane: this month against its budget and its past. */
 export type BudgetLine = {
@@ -93,7 +93,7 @@ export function parseBudgetDraft(text: string): MinorAmount | null | undefined {
   if (cleaned === '') return null;
   if (!/^\d+(\.\d*)?$/.test(cleaned)) return undefined;
   const whole = Math.floor(Number(cleaned));
-  if (whole > 9_999_999) return undefined;
+  if (whole * 100 >= PLAN_LIMIT_MINOR) return undefined;
   return whole === 0 ? null : ((whole * 100) as MinorAmount);
 }
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { moniToneSchema } from './chat';
-import { currencyCodeSchema } from './money';
+import { currencyCodeSchema, PLAN_LIMIT_MINOR } from './money';
 
 /** One month of spending the suggestion starts from, oldest first on the wire. */
 export const budgetSuggestMonthSchema = z.object({
@@ -48,8 +48,12 @@ export const budgetSuggestQuestionsSchema = z.object({
 export const budgetSuggestAmountSchema = z.object({
   status: z.literal('ok'),
   step: z.literal('suggestion'),
-  /** Whole units in minor units, as budgets are kept. */
-  amountMinor: z.number().int().positive(),
+  /** Whole units in minor units, as budgets are kept. An older gateway's larger amount comes down to the largest budget allowed. */
+  amountMinor: z
+    .number()
+    .int()
+    .positive()
+    .transform((value) => Math.min(value, PLAN_LIMIT_MINOR - 100)),
   /** One short sentence on how Moni got there. */
   note: z.string().max(300),
   modelId: z.string(),

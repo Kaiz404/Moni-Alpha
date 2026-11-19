@@ -6,15 +6,13 @@ export {
   formatMinorAmount,
   minorToDecimal,
   minorToNumber,
+  PLAN_LIMIT_MINOR,
   subtractMinor,
   type CurrencyCode,
   type MinorAmount,
 } from '@repo/types';
 
 import { decimalToMinor, type MinorAmount } from '@repo/types';
-
-/** Budgets and bills stay below RM100,000 (`V2P-BillDetail`, `V2P-BudgetEdit`). */
-export const PLAN_LIMIT_MINOR = 10_000_000;
 
 /** Parse a text field exactly once at the UI boundary. */
 export function parseAmountInput(value: string): MinorAmount {

@@ -26,6 +26,12 @@ export const positiveMinorAmountSchema = z
   .positive()
   .transform((value) => value as MinorAmount);
 
+/**
+ * Budgets and bills stay below 100,000 in their currency (`V2P-BillDetail`, `V2P-BudgetEdit`). The Go
+ * gateway's budget suggestion keeps under it too (`maxWholeUnits` in `internal/budget`).
+ */
+export const PLAN_LIMIT_MINOR = 10_000_000;
+
 const MAX_MINOR_AMOUNT = 999_999_999_999;
 
 function assertSafeMinor(value: number): MinorAmount {

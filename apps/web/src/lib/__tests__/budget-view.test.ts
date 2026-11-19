@@ -64,6 +64,10 @@ describe('parseBudgetDraft', () => {
       undefined,
     ]);
   });
+
+  it('refuses a budget at or above 100,000', () => {
+    expect(['99,999', '100000', '9999999'].map(parseBudgetDraft)).toEqual([9999900, undefined, undefined]);
+  });
 });
 
 describe('parseAmountDraft', () => {
