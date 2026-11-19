@@ -12,6 +12,7 @@ import {
 } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -36,6 +37,8 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
   const usual = usualCaptures(waiting, transactions);
   const [picking, setPicking] = useState<string | null>(null);
   const online = useOnline();
+  // With the drawer already open, the card's links change what it shows instead of stacking history.
+  const drawerOpen = useSearchParams().has('review');
   if (setup) return <SetupCard items={setup} />;
   if (waiting.length === 0) return <CaughtUp />;
 
@@ -60,11 +63,11 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
           <h2 className="card-title num">{title}</h2>
           <span className="review-sub num">{waitingTotal(waiting, currency)}</span>
         </div>
-        <Link href={reviewHref()} scroll={false} className="review-link press" data-only="sidebar rail rail-one-column">
+        <Link href={reviewHref()} scroll={false} replace={drawerOpen} className="review-link press" data-only="sidebar rail rail-one-column">
           Review
           <Icon name="chevron-right" size={18} />
         </Link>
-        <Link href={reviewHref()} scroll={false} className="btn btn-ink review-pill press" data-only="phone">
+        <Link href={reviewHref()} scroll={false} replace={drawerOpen} className="btn btn-ink review-pill press" data-only="phone">
           Review
           <Icon name="chevron-right" size={18} />
         </Link>
@@ -87,7 +90,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
           const merchant = capture.merchant ?? capture.description ?? 'Capture';
           return (
             <li key={capture.id} className="review-row">
-              <Link href={reviewHref(capture.id)} scroll={false} className="review-row-link">
+              <Link href={reviewHref(capture.id)} scroll={false} replace={drawerOpen} className="review-row-link">
                 <Bubble icon={category?.icon ?? 'help-circle-outline'} color={null} size={34} glyph={17} dashed />
                 <span className="row-text">
                   <span className="review-row-top">
@@ -157,12 +160,13 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
 }
 
 function CaughtUp() {
+  const drawerOpen = useSearchParams().has('review');
   return (
     <section aria-label="Captures to review" className="card review-card review-empty" data-card="review">
       <h2 className="card-title">Nothing to review</h2>
       <p className="review-sub">New captures from notifications, receipts and chat wait here until you say yes.</p>
       <span className="grow-space" />
-      <Link href={RECENTLY_REVIEWED_HREF} scroll={false} className="review-link press">
+      <Link href={RECENTLY_REVIEWED_HREF} scroll={false} replace={drawerOpen} className="review-link press">
         Recently reviewed
         <Icon name="chevron-right" size={18} />
       </Link>

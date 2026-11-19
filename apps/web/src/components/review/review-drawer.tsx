@@ -15,7 +15,8 @@ import {
   type ReviewEdits,
   type StoredRow,
 } from '@repo/core';
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
 import { SidePane } from '@/components/ledger/side-pane';
 import { useQueryParams } from '@/components/ledger/use-query-param';
@@ -55,7 +56,20 @@ export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
   // Kept here, not in the body, so closing the drawer and opening it again keeps what was picked.
   const [drafts, setDrafts] = useState<Record<string, ReviewEdits>>({});
   const [similar, setSimilar] = useState<Record<string, boolean>>({});
-  const close = () => setParams({ review: null, capture: null });
+  // A link or a key pushed the drawer onto the history, so closing steps back and Back after it leaves Home.
+  const router = useRouter();
+  const shown = view !== null;
+  const was = useRef(shown);
+  const pushed = useRef(false);
+  useEffect(() => {
+    if (shown !== was.current) pushed.current = shown;
+    was.current = shown;
+  }, [shown]);
+  const close = () => {
+    if (!pushed.current) return setParams({ review: null, capture: null });
+    pushed.current = false;
+    router.back();
+  };
   return (
     <SidePane label="Review" name="review" open={view !== null && ledger.loaded} onClose={close}>
       {view && ledger.loaded && (

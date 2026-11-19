@@ -265,6 +265,25 @@ export async function verifyReview(t) {
   check('Esc in Recently reviewed steps back to the captures', p.url().includes('review=deck'), p.url());
   await p.keyboard.press('Escape');
 
+  // Opened from Home, the drawer is a step in the history: Back closes it, and after Close, Back leaves Home.
+  await p.goto(`${base}/activity`);
+  await p.goto(`${base}/home`);
+  await p.locator('.home[data-loaded]').waitFor({ timeout: 30_000 });
+  const cardLink = p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true });
+  await cardLink.click();
+  await ready(p);
+  await p.goBack();
+  const backShut = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 3000 }).then(() => true, () => false);
+  check('browser Back closes the drawer opened from Home', backShut && p.url() === `${base}/home`, p.url());
+  await cardLink.click();
+  await ready(p);
+  await drawer(p).getByRole('button', { name: 'Close' }).click();
+  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  const closedAt = p.url();
+  await p.goBack();
+  await p.waitForTimeout(500);
+  check('after Close, Back leaves Home instead of landing on Home again', closedAt === `${base}/home` && p.url() === `${base}/activity`, { closedAt, back: p.url() });
+
   // Closing with the focus inside: the focus leaves first, and keys pressed while it slides out do nothing.
   await p.goto(`${base}/home?review=deck&capture=${first.id}`);
   await ready(p);
