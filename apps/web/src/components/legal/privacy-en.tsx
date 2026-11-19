@@ -306,8 +306,8 @@ export const PRIVACY_EN: LegalDoc = {
             <li>See your data. Most of it is in the app. For a full copy, email us.</li>
             <li>Correct it. You can edit your records in the app, or ask us.</li>
             <li>
-              Get a copy you can take elsewhere. On your phone, Profile › Export data makes a CSV file of your
-              wallets, categories, budgets, debts and transactions. The web app cannot export yet.
+              Get a copy you can take elsewhere. Profile › Export data on your phone, or Settings › Import and export
+              on the web, makes a CSV file of your wallets, categories, budgets, debts and transactions.
             </li>
             <li>Delete it. Section 10 explains how.</li>
             <li>

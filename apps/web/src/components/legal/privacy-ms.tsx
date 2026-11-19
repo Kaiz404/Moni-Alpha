@@ -341,9 +341,9 @@ export const PRIVACY_MS: LegalDoc = {
             <li>Melihat data anda. Kebanyakannya ada dalam aplikasi. Untuk salinan penuh, hantar e-mel kepada kami.</li>
             <li>Membetulkannya. Anda boleh menyunting rekod anda dalam aplikasi, atau meminta kami.</li>
             <li>
-              Mendapatkan salinan untuk dibawa ke tempat lain. Dalam telefon anda, Profile › Export data membuat fail
-              CSV yang mengandungi dompet, kategori, belanjawan, hutang dan transaksi anda. Aplikasi web belum boleh
-              mengeksport.
+              Mendapatkan salinan untuk dibawa ke tempat lain. Profile › Export data dalam telefon anda, atau Settings ›
+              Import and export di web, membuat fail CSV yang mengandungi dompet, kategori, belanjawan, hutang dan
+              transaksi anda.
             </li>
             <li>Memadamnya. Seksyen 10 menerangkan caranya.</li>
             <li>
