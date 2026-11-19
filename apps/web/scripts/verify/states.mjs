@@ -236,6 +236,9 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     });
     const sl = await slow.newPage();
     await sl.goto(`${base}/home`);
+    // Playwright's fixed clock formats new Date(0), the screens' clock before hydration, as the pinned day, so
+    // the server's HTML never matches and React renders the page again on the client; sample the blocks it keeps.
+    await sl.waitForFunction(() => document.documentElement.dataset.shellReady === 'true', null, { timeout: 10_000 }).catch(() => {});
     await sl.locator('.card-loading').first().waitFor({ timeout: 10_000 }).catch(() => {});
     const block = sl.locator('.card-loading .block').first();
     const early = await block.evaluate((el) => ({ opacity: getComputedStyle(el).opacity, iterations: getComputedStyle(el).animationIterationCount })).catch(() => null);
