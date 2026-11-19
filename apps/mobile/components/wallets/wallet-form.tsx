@@ -327,6 +327,7 @@ export function WalletForm({
             <TextTile
               testID={tid('wallet', 'form', 'starting-balance')}
               label="Starting balance"
+              accessibilityLabel={`Starting balance in ${values.currency}`}
               icon="bank-outline"
               prefix={currencySymbol(values.currency)}
               value={startingBalance}

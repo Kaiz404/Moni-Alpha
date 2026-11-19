@@ -760,3 +760,8 @@ describe('the debt page rows that act in place', () => {
     expect(chevrons(tid('debts', 'remind'))).toBe(0);
   });
 });
+
+it('the new wallet form reads the starting balance with its currency', async () => {
+  await mount('/wallet/new', { profile: 'full', theme: 'light' });
+  expect(screen.getByTestId(tid('wallet', 'form', 'starting-balance')).props.accessibilityLabel).toBe('Starting balance in MYR');
+});

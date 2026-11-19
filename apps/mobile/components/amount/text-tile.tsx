@@ -19,6 +19,7 @@ type TextTileProps = Pick<
   | 'onBlur'
   | 'keyboardType'
   | 'returnKeyType'
+  | 'accessibilityLabel'
 > & {
   testID: TestId;
   label: string;
