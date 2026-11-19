@@ -19,10 +19,17 @@ tags:
 - inputText: How much on Transport this month
 - tapOn:
     id: chat.send
+# The thread follows the answer's end, and the card with its chart is taller than the space above
+# the keyboard, so its title shows once the keyboard is down.
 - extendedWaitUntil:
     visible:
-      id: chat.answer.title
+      id: chat.answer.open-budget
     timeout: 30000
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: chat.answer.title
+    direction: UP
 - assertVisible:
     id: chat.answer.title
     text: 'RM.* on Transport.*'
@@ -30,11 +37,11 @@ tags:
     id: chat.answer.open-budget
 - takeScreenshot: h2-l4-answer
 
-# The composer still works after an answer, and the keyboard keeps the thread visible.
+# The composer still works after an answer, and the keyboard keeps the thread's end above it.
 - tapOn:
     id: chat.input
 - assertVisible:
-    id: chat.answer.title
+    id: chat.answer.open-budget
 - takeScreenshot: h2-l10-keyboard
 - hideKeyboard
 - assertVisible:
