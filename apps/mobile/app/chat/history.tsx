@@ -279,7 +279,7 @@ export default function ChatHistoryScreen() {
                     <View className="flex-row items-center gap-1.5">
                       <Text
                         variant="meta"
-                        className="text-muted"
+                        className="text-foreground"
                       >
                         {`${row.count} ${row.count === 1 ? 'message' : 'messages'}`}
                       </Text>
