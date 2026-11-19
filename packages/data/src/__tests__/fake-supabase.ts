@@ -16,6 +16,11 @@ export function fakeSupabase() {
     requests: 0,
     calls: [] as string[],
     userId: 'user-1' as string | null,
+    /** `table id` of each row an insert added, and of each an insert refused for a key clash. */
+    inserted: [] as string[],
+    clashes: [] as string[],
+    /** `table.column` a migration the server has not had yet would add. */
+    missingColumns: new Set<string>(),
   };
 
   const missing = (table: string): Result => ({
@@ -24,7 +29,7 @@ export function fakeSupabase() {
   });
   const offline: Result = { data: null, error: { message: 'TypeError: Network request failed' } };
 
-  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[]) {
+  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[], columns?: string) {
     const filters: ((row: Row) => boolean)[] = [];
     let orderBy: string | null = null;
     let window: [number, number] | null = null;
@@ -62,10 +67,14 @@ export function fakeSupabase() {
         let result: Result;
         const rows = server.tables.get(table);
         if (server.offline || server.failOnRequest === server.requests) result = offline;
+        else if (columns && server.missingColumns.has(`${table}.${columns}`))
+          result = { data: null, error: { code: '42703', message: `column ${table}.${columns} does not exist` } };
         else if (!rows) result = missing(table);
-        else if (inserting && rows.some((row) => inserting.some((insert) => insert.id !== undefined && row.id === insert.id)))
+        else if (inserting && rows.some((row) => inserting.some((insert) => insert.id !== undefined && row.id === insert.id))) {
+          for (const insert of inserting) server.clashes.push(`${table} ${String(insert.id)}`);
           result = { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
-        else if (inserting) {
+        } else if (inserting) {
+          for (const insert of inserting) server.inserted.push(`${table} ${String(insert.id)}`);
           rows.push(...inserting);
           result = { data: inserting, error: null };
         } else {
@@ -85,7 +94,7 @@ export function fakeSupabase() {
 
   const client = {
     from: (table: string) => ({
-      select: () => query(table, 'list', (rows) => [...rows]),
+      select: (columns?: string) => query(table, 'list', (rows) => [...rows], undefined, columns),
       insert: (row: Row | Row[]) => query(table, 'insert', () => [], Array.isArray(row) ? row : [row]),
       update: (patch: Row) =>
         query(table, 'update', (matched) =>

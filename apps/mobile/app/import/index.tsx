@@ -6,15 +6,14 @@ import { Banner } from '@/components/ui/banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { Page, PageScroll } from '@/components/ui/page';
 import { useAuth } from '@/lib/auth/auth-context';
-import { pickFile, setImportSession } from '@/lib/backup/import-session';
-import { storeHasPulled } from '@/lib/backup/store-tables';
+import { importReady, pickFile, setImportSession } from '@/lib/backup/import-session';
 import { tid } from '@/lib/test-ids';
 import { readImportFile } from '@repo/core';
 
 /** Import data: choose a file; a Moni export goes to its preview, any other CSV to its columns. */
 export default function ImportScreen() {
   const { user } = useAuth();
-  const ready = useValue(storeHasPulled);
+  const ready = useValue(importReady);
   const [problem, setProblem] = useState<string | null>(null);
 
   const choose = async () => {

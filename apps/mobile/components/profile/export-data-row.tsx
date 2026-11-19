@@ -6,11 +6,12 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { shareCsv } from '@/lib/backup/share-file';
-import { readStoreSnapshot } from '@/lib/backup/store-tables';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { store } from '@/lib/store';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { backupTables, buildMoniExport, exportFileName } from '@repo/core';
+import { readStoreSnapshot } from '@repo/data';
 
 /** One CSV of everything Moni keeps, handed to the Android share sheet. Profile and Delete your account share it. */
 export function useExportCsv(userId: string | null) {
@@ -20,7 +21,7 @@ export function useExportCsv(userId: string | null) {
     setBusy(true);
     try {
       const now = new Date();
-      const tables = backupTables(readStoreSnapshot(), userId);
+      const tables = backupTables(readStoreSnapshot(store), userId);
       await shareCsv(exportFileName(now, deviceCalendar), buildMoniExport(tables, userId, now, deviceCalendar));
     } catch {
       showToast({ text: "Couldn't make the CSV. Try again.", tone: 'removed' });
