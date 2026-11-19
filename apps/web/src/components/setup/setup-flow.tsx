@@ -167,7 +167,8 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
       );
       router.replace('/home');
       router.refresh();
-    } catch {
+    } catch (error) {
+      console.error('set-up could not finish', error);
       dispatch({ kind: 'busy', busy: false, error: "Couldn't finish set-up. Your wallets are kept; check your connection and try again." });
     }
   };

@@ -968,6 +968,7 @@ html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::be
 
 /* W2-States, Home's first load: each card keeps its size and title; Sand blocks wait for the numbers. */
 .card-loading {
+  padding: 18px 22px;
   gap: 12px;
 }
 
@@ -1041,4 +1042,8 @@ html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::be
 
 .get-app .btn {
   margin-right: 6px;
+}
+
+.card-error {
+  padding: 18px 22px;
 }

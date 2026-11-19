@@ -81,7 +81,8 @@ function useTables() {
     const copy = (table$: { get(): unknown }) => ({ ...((table$.get() as RawTable | undefined) ?? EMPTY) });
     return {
       loaded: [store.wallets$, store.transactions$, store.categories$, store.categoryBudgets$, store.debts$, store.debtActivities$, store.proposedTransactions$].every(
-        (table$) => syncState(table$).isLoaded.get(),
+        // A table whose pull failed counts as settled, so its card can say so while the rest show.
+        (table$) => syncState(table$).isLoaded.get() || Boolean(syncState(table$).error.get()),
       ),
       wallets: copy(store.wallets$),
       transactions: copy(store.transactions$),
