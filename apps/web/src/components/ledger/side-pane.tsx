@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useShellApi } from '@/components/shell/shell-context';
+import { PANE_COVERS_QUERY } from '@/lib/layout';
 import { PANE_SPANS, type PaneName } from '@/lib/sizes';
 import { ResizeHandle, useRootWidth, useStoredSize } from './resize-handle';
 import './side-pane.css';
@@ -34,6 +36,45 @@ export function SidePane({
   const [width, setWidth] = useStoredSize(`pane-${name}`, span);
   useRootWidth('--side-pane-width', width, present);
 
+  const aside = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+
+  // Moni chat takes the pane's place while it shows and a resize can change the layout, so both re-decide.
+  // This runs before the focus below, so on close the page is live again before the focus goes back to it.
+  const { pane: shellPane } = useShellApi();
+  useLayoutEffect(() => {
+    if (!open) return;
+    const pane = aside.current;
+    const shut: HTMLElement[] = [];
+    const update = () => {
+      for (const each of shut.splice(0)) each.inert = false;
+      if (pane && covers(pane)) shut.push(...pageBehind(pane));
+      for (const each of shut) each.inert = true;
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      for (const each of shut) each.inert = false;
+    };
+  }, [open, shellPane]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const pane = aside.current;
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const heading = pane?.querySelector<HTMLElement>('h1, h2, h3');
+    if (heading && !heading.hasAttribute('tabindex')) heading.tabIndex = -1;
+    if (pane && covers(pane)) (heading ?? pane).focus({ preventScroll: true });
+    return () => {
+      const back = opener.current;
+      if (pane?.contains(document.activeElement) || document.activeElement === document.body) {
+        if (back?.isConnected) back.focus({ preventScroll: true });
+        else (document.activeElement as HTMLElement | null)?.blur?.();
+      }
+    };
+  }, [open]);
+
   useEffect(() => {
     if (open || !present) return;
     // The fallback ends the slide out where no animation runs (Moni chat hides the pane meanwhile).
@@ -47,6 +88,8 @@ export function SidePane({
     <>
       <div className="side-pane-scrim" data-open={open || undefined} onMouseDown={onClose} />
       <aside
+        ref={aside}
+        tabIndex={-1}
         className="side-pane"
         aria-label={label}
         aria-hidden={closing || undefined}
@@ -61,4 +104,21 @@ export function SidePane({
       {open && <ResizeHandle label={`Resize the ${label.toLowerCase()} pane`} span={span} value={width} grows="left" onChange={setWidth} className="side-pane-resize" />}
     </>
   );
+}
+
+/** The pane hides the page: the full-screen pushed page on the phone layout, or over the page with a scrim. */
+function covers(pane: HTMLElement): boolean {
+  return getComputedStyle(pane).display !== 'none' && window.matchMedia(PANE_COVERS_QUERY).matches;
+}
+
+/** Everything a keyboard or a reader could reach behind the pane: the page around it and the navs. */
+function pageBehind(pane: HTMLElement): HTMLElement[] {
+  const behind: HTMLElement[] = [];
+  for (let node: HTMLElement = pane; node.parentElement && !node.parentElement.classList.contains('shell'); node = node.parentElement) {
+    for (const sibling of node.parentElement.children) {
+      if (sibling !== node && sibling instanceof HTMLElement && !sibling.inert && !sibling.matches('.side-pane-scrim, .side-pane-resize')) behind.push(sibling);
+    }
+  }
+  for (const nav of document.querySelectorAll<HTMLElement>('.shell > nav')) if (!nav.inert) behind.push(nav);
+  return behind;
 }

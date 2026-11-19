@@ -25,7 +25,7 @@ import { AskMoniMark, Cat } from '@/components/brand';
 import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
-import { useLayout } from '@/components/shell/use-layout';
+import { usePaneCovers } from '@/components/shell/use-layout';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { useQueryParams } from '@/components/ledger/use-query-param';
 import { useScreenKeys } from '@/lib/screen-keys';
@@ -83,7 +83,7 @@ async function saveMonthlyTotal(totalMinor: MinorAmount | null): Promise<boolean
 }
 
 function BudgetLoaded({ ledger }: { ledger: Ledger }) {
-  const layout = useLayout();
+  const covers = usePaneCovers();
   const [params, setParams] = useQueryParams();
   const [setup, setSetup] = useState(false);
   const data = useBudget(ledger, params.get('month'), setup);
@@ -114,7 +114,8 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const startEdit = (line: BudgetLine, at: BudgetEdit['at']) => {
     if (!editable) return;
     setTotalDraft(null);
-    setEdit({ categoryId: line.categoryId, at, draft: wholeText(line.budgetMinor) });
+    // Where the pane opens over the table, the table under it can't be typed in; the pane edits instead.
+    setEdit({ categoryId: line.categoryId, at: covers ? 'pane' : at, draft: wholeText(line.budgetMinor) });
     if (selectedId !== line.categoryId) setParams({ category: line.categoryId });
   };
 
@@ -216,7 +217,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
           return true;
         }
         const line = selected ?? lines[0];
-        if (line) startEdit(line, layout === 'phone' ? 'pane' : 'table');
+        if (line) startEdit(line, 'table');
         return true;
       }
       case 'Escape':
@@ -273,7 +274,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
     </div>
   );
 
-  const paneEditing = Boolean(edit && selected && edit.categoryId === selected.categoryId && (edit.at === 'pane' || layout === 'phone'));
+  const paneEditing = Boolean(edit && selected && edit.categoryId === selected.categoryId && (edit.at === 'pane' || covers));
   const payments = selected ? data.monthSpend(selected.categoryId) : [];
   const toReview = selected ? data.toReview.filter((proposal) => proposal.categoryId === selected.categoryId) : [];
 

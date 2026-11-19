@@ -387,7 +387,8 @@ export async function verifyBudgetDebts(t) {
   await r.waitForURL((url) => !url.search.includes('category='));
   await row.locator('.bcell').click();
   await r.waitForURL(new RegExp(`category=${rowId}`));
-  const half = r.locator('.budget-cell input');
+  const half = r.locator('aside.side-pane input[aria-label$="budget in ringgit, editing"]');
+  check('at 820 the pane covers the table, so a budget cell opens its editor in the pane', (await r.locator('.budget-cell input').count()) === 0 && (await half.isVisible()));
   await half.fill('12');
   await half.evaluate((el) => {
     el.dataset.marker = 'kept';
@@ -396,16 +397,15 @@ export async function verifyBudgetDebts(t) {
   await r.setViewportSize({ width: 390, height: 844 });
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'phone');
   await settle(r);
-  const paneInput = r.locator('aside.side-pane input[aria-label$="budget in ringgit, editing"]');
   check(
-    'crossing 700 with a half-typed budget keeps the route and shows the draft on the category page',
-    r.url() === at && r.url().includes(`category=${rowId}`) && (await paneInput.inputValue().catch(() => '')) === '12',
+    'crossing 700 with a half-typed budget keeps the route and the draft, in the same field on the category page',
+    r.url() === at && r.url().includes(`category=${rowId}`) && (await half.inputValue().catch(() => '')) === '12' && (await half.getAttribute('data-marker')) === 'kept',
     { at, now: r.url() },
   );
   await shot(r, 'budget-390-after-resize');
   await r.setViewportSize({ width: 820, height: 1180 });
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail-one-column');
-  check('and back across 700 the same cell still holds the draft', (await half.inputValue()) === '12' && (await half.getAttribute('data-marker')) === 'kept');
+  check('and back across 700 the same field still holds the draft', (await half.inputValue()) === '12' && (await half.getAttribute('data-marker')) === 'kept');
   await half.press('Escape');
   await r.keyboard.press('Escape');
   await r.waitForURL((url) => !url.search.includes('category='));

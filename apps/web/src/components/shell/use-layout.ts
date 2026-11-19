@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { FOLDS_TO, LAYOUT_KINDS, LAYOUT_QUERIES, NAV_FOLDED_ATTR, NAV_FOLDED_KEY, type LayoutKind } from '@/lib/layout';
+import { FOLDS_TO, LAYOUT_KINDS, LAYOUT_QUERIES, NAV_FOLDED_ATTR, NAV_FOLDED_KEY, PANE_COVERS_QUERY, type LayoutKind } from '@/lib/layout';
 
 const LAYOUT_EVENT = 'moni-layout';
 
@@ -52,4 +52,15 @@ export function setNavFolded(next: boolean) {
   root.dataset.navSwap = '';
   const transition = document.startViewTransition(apply);
   void transition.finished.finally(() => delete root.dataset.navSwap);
+}
+
+function subscribeCovers(onChange: () => void) {
+  const list = window.matchMedia(PANE_COVERS_QUERY);
+  list.addEventListener('change', onChange);
+  return () => list.removeEventListener('change', onChange);
+}
+
+/** Whether a docked pane covers the page at this viewport, so what it shows is edited in the pane. */
+export function usePaneCovers(): boolean {
+  return useSyncExternalStore(subscribeCovers, () => window.matchMedia(PANE_COVERS_QUERY).matches, () => false);
 }

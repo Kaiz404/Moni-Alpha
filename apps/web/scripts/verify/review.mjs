@@ -89,9 +89,26 @@ export async function verifyReview(t) {
         check(`${where}: All ${pending.length} lists the waiting captures, oldest first`, names.join('|') === pending.map((row) => row.merchant).join('|'), names);
       }
       await shot(p, `review-${size.width}-${theme}`);
+      const covered = size.layout !== 'sidebar';
+      const behind = await p.evaluate(() => ({
+        focus: document.activeElement?.closest('aside.side-pane') ? document.activeElement.tagName : (document.activeElement?.textContent ?? '').trim().slice(0, 20),
+        home: Boolean(document.querySelector('.home')?.closest('[inert]')),
+        nav: [...document.querySelectorAll('.shell > nav')].every((nav) => nav.inert),
+      }));
+      if (covered) {
+        check(`${where}: the drawer covers Home, so Home and the nav are inert and focus is in the drawer`, behind.home && behind.nav, behind);
+      } else {
+        check(`${where}: docked beside Home, Home stays live`, !behind.home && !behind.nav, behind);
+      }
+      if (size.layout === 'phone') check(`${where}: focus moves to the drawer's heading`, behind.focus === 'H2', behind);
       await p.keyboard.press('Escape');
       const gone = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
       check(`${where}: Esc slides the drawer out and Home stays`, gone && !p.url().includes('review='), p.url());
+      const after = await p.evaluate(() => ({
+        inert: document.querySelectorAll('[inert]').length,
+        focus: document.activeElement?.closest('.review-card a') !== null,
+      }));
+      check(`${where}: after the drawer closes nothing is inert and focus is back on Review in the card`, after.inert === 0 && after.focus, after);
       await ctx.close();
     }
   }
