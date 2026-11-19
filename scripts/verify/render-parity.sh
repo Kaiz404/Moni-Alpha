@@ -30,10 +30,10 @@ mkdir -p "$worktrees" "$dumps"
 harness=$(cat "$here"/render-dump/*.cjs | sha256sum | cut -c1-8)
 
 # Two commits whose app, packages and lockfile match render the same, whatever else changed, so
-# they share one dump. Device scripts and Maestro flows don't change what a route renders.
+# they share one dump. Device scripts, Maestro flows and docs don't change what a route renders.
 inputs_key() {
   git -C "$root" ls-tree -r "$1" -- apps/mobile packages pnpm-lock.yaml pnpm-workspace.yaml package.json |
-    grep -v -e $'\tapps/mobile/scripts/' -e $'\tapps/mobile/.maestro/' | sha256sum | cut -c1-16
+    grep -v -e $'\tapps/mobile/scripts/' -e $'\tapps/mobile/.maestro/' -e '\.md$' | sha256sum | cut -c1-16
 }
 
 # dump_side <base|head> <sha>: prints the commit's dump folder, made once per app inputs. The
