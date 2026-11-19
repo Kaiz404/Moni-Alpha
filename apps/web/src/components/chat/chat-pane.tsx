@@ -94,7 +94,7 @@ function Message({ message, from }: { message: ChatMessage; from: AskFrom }) {
               className="btn btn-sand press chat-add"
               onClick={() => {
                 setShell({ addDraft: message.text });
-                run({ kind: 'add' });
+                run({ kind: 'add', mode: 'ask' });
               }}
             >
               Open Add with this
@@ -235,7 +235,7 @@ export function ChatPane() {
         </div>
         {first && <span className="meta chat-note">Moni chat uses AI and can get things wrong. Nothing is saved until you approve it.</span>}
       </form>
-      {chatAsk && <ConsentDialog onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
+      {chatAsk && <ConsentDialog use="chat" onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
     </aside>
   );
 }

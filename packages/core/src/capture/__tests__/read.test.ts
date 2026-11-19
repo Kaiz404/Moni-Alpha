@@ -1,13 +1,8 @@
-import type { CurrencyCode, MinorAmount } from '@repo/types';
+import type { CurrencyCode, ExtractedTransaction, MinorAmount } from '@repo/types';
+import { describe, expect, it } from 'vitest';
 
-import type { ExtractedTransaction } from '@repo/types';
-import {
-  draftFromExtraction,
-  type ReadContext,
-} from '@/lib/capture/read-capture';
-import type { FinanceTransaction, FinanceWallet } from '@repo/core';
-
-jest.mock('@/lib/ai/client', () => ({ getAiClient: jest.fn() }));
+import type { FinanceTransaction, FinanceWallet } from '../../read-model/types';
+import { draftFromExtraction, type ReadContext } from '../read';
 
 const capturedAt = new Date(2026, 9, 14, 14, 5);
 
@@ -24,6 +19,10 @@ const wallet = (id: string, name: string): FinanceWallet => ({
   isActive: true,
   displayOrder: 0,
   balanceConfirmedAt: null,
+  notificationPackage: null,
+  notificationAppLabel: null,
+  notificationAccountHint: null,
+  updatedAt: '2026-10-01T00:00:00.000Z',
 });
 
 const visit = (walletId: string, day: number): FinanceTransaction => ({
@@ -45,8 +44,14 @@ const visit = (walletId: string, day: number): FinanceTransaction => ({
   locationLatitude: null,
   locationLongitude: null,
   locationName: null,
+  placeId: null,
+  placeCoordsAt: null,
   autoAdded: false,
+  balanceCorrection: false,
+  receiptImageUrl: null,
+  metadata: {},
   createdAt: new Date(2026, 9, day, 9).toISOString(),
+  updatedAt: new Date(2026, 9, day, 9).toISOString(),
 });
 
 const context: ReadContext = {
@@ -140,7 +145,6 @@ describe('draft from extraction', () => {
         evidence:
           "You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
         itemCount: null,
-        place: { kind: 'auto' },
       },
     });
   });

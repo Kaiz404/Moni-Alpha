@@ -50,7 +50,7 @@ Board titles on the canvas say which variant is the chosen one. Ignore any board
 
 ## Target navigation
 
-- Tabs: Home · Activity · ( + ) · Budget · Debts. The + opens the chooser sheet: Type it, Scan a receipt, Say it, Ask Moni. Choosing one slides its page in from the right; the sheet covers the tab bar.
+- Tabs: Home · Activity · ( + ) · Budget · Debts. The + opens the chooser sheet: Type it, Scan a receipt, Say it, Ask Moni. The web's Add offers two of them, Type it and Ask Moni, under the same names (`docs/WEB.md`). Choosing one slides its page in from the right; the sheet covers the tab bar.
 - Moni chat is a pushed page reached from the Home ask box and the + sheet. It reopens on today's thread. Home and Activity have no Moni header button (owner's direction, 16 Nov 2026); their top right stays empty.
 - Profile is pushed from the Home avatar. Review is pushed from Home's review block, notifications and chat. The map is pushed from Home's Where you spend card.
 - Budget and Debts are separate tabs; debts never appear on the Budget tab.

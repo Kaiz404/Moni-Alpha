@@ -568,7 +568,8 @@ html[data-layout='phone'] .page-card {
   }
 }
 
-html[data-layout='phone'] .pane-add .add-modes button {
+html[data-layout='phone'] .pane-add .add-modes button,
+html[data-layout='phone'] .pane-add .add-kinds button {
   min-height: 44px;
 }
 
@@ -711,7 +712,8 @@ html[data-layout='phone'] .pane {
   color: var(--color-muted);
 }
 
-.add-modes {
+.add-modes,
+.add-kinds {
   display: inline-flex;
   align-self: flex-start;
   padding: 4px;
@@ -719,17 +721,266 @@ html[data-layout='phone'] .pane {
   background: var(--color-sand);
 }
 
-.add-modes button {
+.add-modes button,
+.add-kinds button {
   height: 36px;
   padding: 0 16px;
   border-radius: 9999px;
   font-size: 14px;
   font-weight: 700;
+  color: var(--color-ink-2);
+  transition: background-color var(--duration-control) var(--ease-control);
 }
 
-.add-modes button[aria-pressed='true'] {
+.add-modes button[aria-checked='true'],
+.add-kinds button[aria-checked='true'] {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
+}
+
+/* The chooser: the phone's "Add a transaction" rows, Type it and Ask Moni, each with its key. */
+.add-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.add-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 68px;
+  padding: 10px 16px 10px 10px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.add-choice:hover {
+  background: var(--color-sand-light);
+}
+
+.add-choice-bubble {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 9999px;
+  background: var(--color-mint);
+  color: var(--color-on-category);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-choice-moni {
+  background: var(--color-tab-bar);
+}
+
+.add-choice-label {
+  flex: 1 1 auto;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.add-form {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.add-grow {
+  flex: 1 1 auto;
+}
+
+.add-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-field);
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+}
+
+.add-amount:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.add-currency {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.add-amount input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-foreground);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 700;
+}
+
+.add-evidence {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 18px;
+  background: var(--color-pending-fill);
+  color: var(--color-on-lilac);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.add-fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  border-top: 1.5px solid var(--color-sand-light);
+}
+
+.add-field dt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.add-field dd {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-anchor {
+  position: relative;
+}
+
+.add-pick {
+  position: relative;
+  max-width: 240px;
+  height: 40px;
+  padding: 0 10px 0 6px;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 120ms ease;
+}
+
+.add-pick > span:not(.bubble):not(.add-mini) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-pick:hover {
+  background: var(--color-hairline);
+}
+
+.add-pick-date {
+  padding-right: 14px;
+  cursor: pointer;
+}
+
+.add-pick-date input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.add-mini {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 22px;
+  background: var(--color-card);
+  box-shadow:
+    var(--shadow-float),
+    0 0 0 1.5px var(--color-hairline);
+  transform-origin: top right;
+}
+
+.add-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-menu-row:hover,
+.add-menu-row:focus-visible,
+.add-menu-row[aria-selected='true'] {
+  background: var(--color-sand-light);
+  outline: none;
+}
+
+.add-text {
+  width: 220px;
+  height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9999px;
+  outline: 0;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+  font-size: 15px;
+  text-align: right;
+}
+
+.add-text:focus {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+  text-align: left;
+}
+
+.add-save {
+  justify-content: center;
+  gap: 10px;
 }
 
 /* ---------- overlays ---------- */

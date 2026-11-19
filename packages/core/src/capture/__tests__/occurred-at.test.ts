@@ -1,4 +1,6 @@
-import { extractDateContext, resolveOccurredAt, toLocalIsoWithOffset } from '@/lib/ai/occurred-at';
+import { describe, expect, it } from 'vitest';
+
+import { extractDateContext, resolveOccurredAt, toLocalIsoWithOffset } from '../occurred-at';
 
 const now = new Date(2026, 9, 12, 9, 30);
 

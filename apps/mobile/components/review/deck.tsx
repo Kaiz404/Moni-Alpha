@@ -51,13 +51,12 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
-import { timesFiled } from '@/lib/ai/routine';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@repo/design';
-import { retypeEdits, reviewStatus, type RejectedProposal } from '@repo/core';
+import { retypeEdits, reviewStatus, timesFiled, type RejectedProposal } from '@repo/core';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {

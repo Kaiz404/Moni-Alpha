@@ -7,7 +7,9 @@
  * Correcting a category breaks the streak, so the next one goes back to review.
  */
 import type { AutoAddRule } from '@repo/types';
-import { distanceM, isFiled, merchantKey } from '@repo/core';
+import { isFiled } from '../ledger';
+import { distanceM } from '../read-model/places';
+import { merchantKey } from '../read-model/merchants';
 
 /** Recent matches that must agree on one category before a transaction is added automatically. */
 export const STREAK = 3;
@@ -73,17 +75,6 @@ function isSimilar(
       longitude: tx.locationLongitude,
     }) <= NEARBY_M
   );
-}
-
-/** How many of the user's filed transactions share this capture's merchant, type and currency. */
-export function timesFiled(
-  capture: Pick<RoutineCandidate, 'type' | 'currency' | 'merchant'>,
-  history: readonly RoutineHistoryTransaction[],
-): number {
-  const key = merchantKey(capture.merchant);
-  if (!key || (capture.type !== 'income' && capture.type !== 'expense')) return 0;
-  const candidate = { ...capture, amountMinor: null, location: null, sourceApp: null };
-  return history.filter((tx) => isFiled(tx) && isSimilar(tx, candidate, key)).length;
 }
 
 /**

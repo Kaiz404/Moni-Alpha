@@ -8,6 +8,7 @@
     "./ai-consent": "./src/ai-consent.ts",
     "./backup": "./src/backup/index.ts",
     "./calendar": "./src/calendar.ts",
+    "./capture": "./src/capture/index.ts",
     "./chart-range": "./src/chart-range.ts",
     "./charts": "./src/charts/month-charts.ts",
     "./chat": "./src/chat/index.ts",

@@ -1,4 +1,4 @@
-import type { MinorAmount } from '@repo/types';
+import type { ReadDraft, ReadFailure } from '@repo/core';
 
 import type { EntryPlace } from '@/lib/capture/entry-place';
 
@@ -6,18 +6,7 @@ import type { EntryPlace } from '@/lib/capture/entry-place';
 export type CaptureSource = 'voice' | 'camera';
 
 /** What the check page edits before Approve. Nothing is in the ledger yet. */
-export type CaptureDraft = {
-  kind: 'expense' | 'income';
-  merchant: string;
-  amountMinor: MinorAmount;
-  categoryId: string | null;
-  walletId: string | null;
-  /** ISO time the purchase happened. */
-  transactionDate: string;
-  /** The one line that says why Moni filled the fields as it did. */
-  evidence: string;
-  /** How many items the receipt lists; null when the reader has no count. Never edited. */
-  itemCount: number | null;
+export type CaptureDraft = ReadDraft & {
   /** Where it happened: the phone's position by default, or a place the user picked. */
   place: EntryPlace;
 };
@@ -26,9 +15,6 @@ export type CaptureDraft = {
 export type CaptureQuote =
   | { source: 'voice'; text: string }
   | { source: 'camera'; imageUri: string };
-
-/** `unreadable`: Moni found no amount. `unavailable`: the reader could not be reached. */
-export type ReadFailure = 'unreadable' | 'unavailable';
 
 export type ReadResult =
   | { status: 'ok'; draft: CaptureDraft }

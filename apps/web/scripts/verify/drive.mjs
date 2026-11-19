@@ -724,6 +724,8 @@ try {
   const r = await resize.newPage();
   await open(r, '/activity');
   await r.keyboard.press('n');
+  await r.locator('.add-choice').first().waitFor();
+  await r.keyboard.press('a');
   const field = r.locator('#add-draft');
   await field.fill('12.50 lunch at Mamak');
   await field.evaluate((el) => {
@@ -746,6 +748,65 @@ try {
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail');
   check('and back across 700 the draft is still there', (await field.inputValue()) === '12.50 lunch at Mamak');
   await resize.close();
+  }
+  // ---------- Add: the chooser, Type it, and Ask Moni filling Type it ----------
+  if (runs('add')) {
+  const addCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
+  const d = await addCtx.newPage();
+  await open(d, '/activity');
+  await d.locator('.activity[data-loaded]').waitFor({ timeout: 30_000 }).catch(() => {});
+  await d.keyboard.press('n');
+  const addPane = d.locator('aside[data-pane="add"]');
+  await addPane.locator('.add-choice').first().waitFor({ timeout: 5000 }).catch(() => {});
+  const choices = await addPane.locator('.add-choice').allInnerTexts();
+  check('N opens the chooser: Type it and Ask Moni, each with its key', choices.map((text) => text.replace(/\s+/g, ' ').trim()).join('|') === 'Type it T|Ask Moni A', choices);
+  await d.waitForTimeout(500);
+  await shot(d, 'add-choose-1440');
+  await d.keyboard.press('t');
+  const amount = addPane.getByRole('textbox', { name: 'Amount', exact: true });
+  check('T opens Type it with the amount in focus', await amount.evaluate((el) => el === document.activeElement).catch(() => false));
+  await amount.fill('12.50');
+  await addPane.getByRole('button', { name: /Pick a category/ }).click();
+  await addPane.getByRole('option').first().click();
+  await addPane.getByLabel('Shop or note').fill('Verify Kopitiam');
+  await shot(d, 'add-type-1440');
+  await addPane.getByLabel('Shop or note').press('Enter');
+  const added = d.getByRole('status').filter({ hasText: 'Expense added' });
+  await added.waitFor({ timeout: 5000 }).catch(() => {});
+  check('Enter adds the expense, closes Add and offers Undo', (await added.getByRole('button', { name: 'Undo' }).isVisible().catch(() => false)) && !(await addPane.isVisible()));
+  const rowShown = d.getByText('Verify Kopitiam').first();
+  await rowShown.waitFor({ timeout: 5000 }).catch(() => {});
+  check('the new expense shows on Activity', await rowShown.isVisible().catch(() => false));
+  await d.keyboard.press('Control+z');
+  await rowShown.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+  check('Ctrl Z takes it back', !(await d.getByText('Verify Kopitiam').first().isVisible().catch(() => false)));
+
+  await d.route('**/v1/extract/text', (route) =>
+    route.fulfill({
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' },
+      json: {
+        status: 'ok',
+        extraction: { amount: 8.4, type: 'expense', currency: 'MYR', merchant: 'Mamak Ali', description: null, walletHint: null, categoryHint: null, walletId: null, transferToWalletHint: null, transferToWalletId: null, confidence: 0.9, reasoning: 'Heard an amount and a shop.', occurredAt: null },
+      },
+    }),
+  );
+  await d.keyboard.press('n');
+  await addPane.locator('.add-choice').first().waitFor();
+  await d.keyboard.press('a');
+  await d.locator('#add-draft').fill('8.40 roti at Mamak Ali');
+  await d.locator('#add-draft').press('Enter');
+  const consent = d.getByRole('dialog', { name: 'Ask Moni uses AI' });
+  await Promise.race([consent.waitFor({ timeout: 5000 }), amount.waitFor({ timeout: 5000 })]).catch(() => {});
+  if (await consent.isVisible()) await consent.getByRole('button', { name: 'Turn on AI' }).click();
+  await amount.waitFor({ timeout: 10_000 }).catch(() => {});
+  check(
+    'Ask Moni reads the sentence into Type it for the user to check',
+    (await amount.inputValue().catch(() => '')) === '8.40' && (await addPane.getByLabel('Shop or note').inputValue().catch(() => '')) === 'Mamak Ali',
+  );
+  await d.waitForTimeout(400);
+  await shot(d, 'add-ask-filled-1440');
+  await d.keyboard.press('Escape');
+  await addCtx.close();
   }
   if (runs('chat'))
     await verifyChat({ browser, base, storage, check, shot, settle, pair, seed, supabaseUrl, publishable, token: await userToken(), secret: env.SUPABASE_SECRET_KEY, widths: WIDTHS, background: BACKGROUND, realGateway });

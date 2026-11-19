@@ -13,10 +13,8 @@ import { Page } from '@/components/ui/page';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type {
-  CaptureQuote,
-  ReadFailure,
-} from '@/lib/capture/capture-stage';
+import type { ReadFailure } from '@repo/core';
+import type { CaptureQuote } from '@/lib/capture/capture-stage';
 import { tid } from '@/lib/test-ids';
 
 import { HeardQuote, ScanningReceipt } from './reading-motion';

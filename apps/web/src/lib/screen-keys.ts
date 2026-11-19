@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useShellApi } from '@/components/shell/shell-context';
+import { useShellApi, type Pane } from '@/components/shell/shell-context';
 import { useShell } from '@/components/shell/shell-store';
 import { INITIAL_KEY_STATE, keyStep, type KeyState } from '@/lib/keys';
 
@@ -12,17 +12,17 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * A screen's own keys (P and D on Home; J, K, X and Esc on Activity; J, K, E, R, M, D on Budget and
- * Debts). They rest while an overlay or a shell pane is open, and a letter rests while the focus is in
+ * Debts), or a pane's with `inPane` (T and A in Add). They rest while an overlay or another pane is open, and a letter rests while the focus is in
  * a field, under Ctrl, Alt or Meta, and when the shell takes it, the letter after G included: the same
  * `keyStep` decides, so the two never disagree. Esc reaches the screen from a field too. A handler
  * returns true when it used the key.
  */
-export function useScreenKeys(handler: (key: string, event: KeyboardEvent) => boolean | void) {
+export function useScreenKeys(handler: (key: string, event: KeyboardEvent) => boolean | void, inPane: Pane = null) {
   const { overlay } = useShell();
   const { pane } = useShellApi();
   const state = useRef<KeyState>(INITIAL_KEY_STATE);
   const latest = useRef({ handler, blocked: false });
-  latest.current = { handler, blocked: overlay !== 'none' || pane !== null };
+  latest.current = { handler, blocked: overlay !== 'none' || pane !== inPane };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

@@ -16,7 +16,7 @@ import { LAYOUT_QUERIES, NAV_FOLDED_ATTR } from '@/lib/layout';
 import { ShellContext, type Pane, type ShellAction, type ShellApi, type ShellUser } from './shell-context';
 import { SessionDialog } from '@/components/states/session-dialog';
 import { moniStore } from '@/lib/moni-store';
-import { isSigningOut, setShell, showToast, signOut, undoToast, useShell } from './shell-store';
+import { getShell, isSigningOut, setShell, showToast, signOut, undoToast, useShell } from './shell-store';
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -88,9 +88,11 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
         case 'ask':
           setShell({ overlay: 'none' });
           return setPane(pane === 'chat' && overlay !== 'palette' ? null : 'chat');
-        case 'add':
-          setShell({ overlay: 'none' });
+        case 'add': {
+          const mode = 'mode' in action && action.mode ? action.mode : pane === 'add' ? getShell().addMode : 'choose';
+          setShell({ overlay: 'none', addMode: mode });
           return setPane('add');
+        }
         case 'go': {
           setShell({ overlay: 'none' });
           const href = navItem(action.to).href;

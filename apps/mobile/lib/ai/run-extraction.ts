@@ -20,12 +20,11 @@ import {
 } from '@/lib/proposals/pairing';
 import { categoryFromHints } from '@/lib/ai/category-hints';
 import { classifyMovement, isTrackedMovement } from '@/lib/ai/money-movement';
-import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { getUserId } from '@/lib/supabase/client';
 import { getAiClient } from '@/lib/ai/client';
 import { aiUseOf, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
-import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
+import { extractDateContext, matchRoutine, resolveOccurredAt } from '@repo/core';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import {

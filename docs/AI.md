@@ -14,7 +14,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
   → AiClient                              @repo/ai (createAiClient; the phone's adapters in apps/mobile/lib/ai/client/)
   → Go backend                            apps/backend (Gin, stateless)
   → OpenRouter
-  → routine detection                     apps/mobile/lib/ai/routine.ts
+  → routine detection                     packages/core/src/capture/routine.ts
       second alert for one payment → counted once with the first (`lib/proposals/pairing.ts`; see [Duplicate detection](#duplicate-detection))
       reload or card bill naming both wallets → a transfer in transactions (metadata.ai_suggested)
       routine notification → transactions (metadata.ai_suggested, shown as "Auto"; metadata.alert keeps the alert)
@@ -51,6 +51,8 @@ A capture is never lost because the backend is down. `unavailable`, a non-2xx re
 The queue lives in MMKV, so it survives a kill. An item killed mid-request returns to pending on the next start. A retry is idempotent because a queue item's id is the id of the row it writes: `runExtraction` returns the existing proposal or transaction without calling the backend. A paired alert is found the same way, inside the row that holds it. Signing out clears the queue, so a waiting capture can't land in the next account.
 
 The Capture log shows **Trying again** while Moni keeps trying and **Couldn't reach Moni** once it gives up, each with Retry, and never Ignored. Capture sources counts what gave up, per app and in total, from the queue, because the log holds only 50 entries.
+
+The web's Add → Ask Moni sends a typed sentence to `/v1/extract/text` under the `add` consent, and `draftFromExtraction` (`@repo/core`, shared with the phone's Say it and Scan) fills Type it from the read for the user to check.
 
 Say it and Scan read live, not through the queue, so they hold the capture when a read is `unavailable`: the transcript, or the scan moved out of the cache. The failed page offers Try again on the same capture, Keep it for Review, and Type it instead. Leaving the page or a kill also keeps it, and it arrives as a proposal in Review. A chat receipt reports that it stays queued after the first failed try; a chat sentence stays in the thread for the user to send again.
 
@@ -258,7 +260,7 @@ Every extract and chat request is one [Langfuse](https://langfuse.com) trace, se
   4. Fallback: merge `wallet_hint` + notification body → `accountHint` match → whole-word name match → substring → token overlap
   5. `walletId = null` → mobile applies the user's **default wallet** from `profiles.preferences.default_wallet_id` when set (`lib/wallets/default-wallet.ts`); otherwise user picks in the review UI
 - **Currency** — text and receipt extraction do **not** ask the model for currency. Amount only; currency is taken from the resolved wallet (`lib/wallets/proposal-wallet.ts`). Receipts always land on the default wallet (user can switch wallet — and thus currency — in the review UI). Notifications extract currency from the bank message; if that currency does not match the default wallet, `walletId` stays null until the user picks a wallet in review.
-- **Dates** — text and receipt prompts get `TODAY: YYYY-MM-DD (weekday), timezone …` from the client clock and return `occurred_at` for "yesterday", "last Friday", "on the 3rd" or a printed receipt date. The backend only checks the format; `lib/ai/occurred-at.ts` turns it into the transaction date: today, missing, invalid, future or older than 90 days → the capture time; other past days → local noon. Notifications keep their arrival time.
+- **Dates** — text and receipt prompts get `TODAY: YYYY-MM-DD (weekday), timezone …` from the client clock and return `occurred_at` for "yesterday", "last Friday", "on the 3rd" or a printed receipt date. The backend only checks the format; `@repo/core`'s `capture/occurred-at.ts` turns it into the transaction date: today, missing, invalid, future or older than 90 days → the capture time; other past days → local noon. Notifications keep their arrival time.
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link any one launchable Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).

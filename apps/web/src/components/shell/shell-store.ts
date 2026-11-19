@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { EMPTY_ADD_FORM, type AddForm, type AddMode } from '@/lib/add-entry';
 import type { ChatMessage } from '@/lib/chat-thread';
 import { moniStore } from '@/lib/moni-store';
 
@@ -13,7 +14,14 @@ export type Overlay = 'none' | 'palette' | 'shortcuts' | 'account' | 'session';
 
 export type ShellState = {
   overlay: Overlay;
+  /** Add's step: the chooser, Type it or Ask Moni. */
+  addMode: AddMode;
+  /** Ask Moni's sentence. */
   addDraft: string;
+  /** Type it's fields, typed or filled by Ask Moni. */
+  addForm: AddForm;
+  /** True while "Ask Moni uses AI" waits on the user before Ask Moni reads `addDraft`. */
+  addAsk: boolean;
   chatDraft: string;
   chat: readonly ChatMessage[];
   /** The id of the question waiting on "Moni chat uses AI", or null. */
@@ -38,7 +46,17 @@ export type Toast = {
   retry?: () => void;
 };
 
-const INITIAL: ShellState = { overlay: 'none', addDraft: '', chatDraft: '', chat: [], chatAsk: null, ticked: [] };
+const INITIAL: ShellState = {
+  overlay: 'none',
+  addMode: 'choose',
+  addDraft: '',
+  addForm: EMPTY_ADD_FORM,
+  addAsk: false,
+  chatDraft: '',
+  chat: [],
+  chatAsk: null,
+  ticked: [],
+};
 let state: ShellState = INITIAL;
 let toast: Toast | null = null;
 /** The latest change Ctrl Z can take back, kept after its toast has gone. */

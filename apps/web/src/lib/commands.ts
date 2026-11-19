@@ -1,10 +1,11 @@
+import type { AddMode } from './add-entry';
 import type { IconName } from './icons';
 import { NAV, type Destination } from './nav';
 
 /** What a palette row does when it runs. The shell owns the effects; this module only lists them. */
 export type CommandAction =
   | { kind: 'go'; to: Destination }
-  | { kind: 'add' }
+  | { kind: 'add'; mode?: Exclude<AddMode, 'choose'> }
   | { kind: 'ask' }
   | { kind: 'theme'; theme: 'light' | 'dark' }
   | { kind: 'shortcuts' }

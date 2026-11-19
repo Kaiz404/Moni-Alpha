@@ -385,6 +385,8 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     await a.goto(`${base}/activity`);
     await a.locator('.activity[data-loaded]').waitFor({ timeout: 30_000 });
     await a.keyboard.press('n');
+    await a.locator('.add-choice').first().waitFor();
+    await a.keyboard.press('a');
     await a.locator('#add-draft').fill('12.50 lunch at Mamak');
     const other = await two.newPage();
     await other.goto(`${base}/home`);
