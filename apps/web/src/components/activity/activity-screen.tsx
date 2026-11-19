@@ -220,7 +220,7 @@ export function ActivityScreen() {
     go({ saved: view.id, page: 1 });
   };
 
-  useScreenKeys((key) => {
+  useScreenKeys((key, event) => {
     const current = all[openIndex] ?? page.rows[0];
     switch (key) {
       case 'Escape':
@@ -244,7 +244,7 @@ export function ActivityScreen() {
         toggle(current.id);
         return true;
       case 'Enter':
-        if (!current || openId) return false;
+        if (!current || openId || (event.target as HTMLElement).closest('button, a')) return false;
         openRow(current.id);
         return true;
       case 'c':
@@ -700,7 +700,7 @@ export function ActivityScreen() {
                 </button>
                 <button type="button" role="menuitem" className="popover-row" onClick={() => (setMenu(null), setFilters({ q: menuItem.title }))}>
                   <Glyph name="magnify" size={18} />
-                  Show all from {menuItem.title}
+                  <span className="popover-row-text">Show all from {menuItem.title}</span>
                 </button>
                 <button type="button" role="menuitem" className="popover-row" onClick={() => openRow(menuItem.id)}>
                   <Glyph name="dock-right" size={18} />
