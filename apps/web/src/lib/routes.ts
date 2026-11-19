@@ -11,8 +11,8 @@ const PUBLIC_PATHS = [
   '/help',
 ];
 const PUBLIC_PREFIXES = ['/auth/'];
-/** Pages a signed-in visitor skips: they go straight to the app. */
-const SIGNED_OUT_ONLY = ['/', '/login', '/login/forgot'];
+/** Pages a signed-in visitor skips: they go straight to the app. The landing page stays, with a link in. */
+const SIGNED_OUT_ONLY = ['/login', '/login/forgot'];
 
 export const SIGNED_IN_HOME = '/home';
 

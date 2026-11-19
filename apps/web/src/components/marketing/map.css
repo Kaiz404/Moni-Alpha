@@ -1,0 +1,364 @@
+/* The landing map (W2-LandingFinal's "See where the money went."): L3's map card, 796 by 480 beside Top places. */
+
+.lp-sec.mp-sec {
+  align-items: center;
+}
+
+.mp-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.mp-head .lp-body {
+  max-width: 680px;
+}
+
+.mp-moment {
+  container-type: inline-size;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.mp-stage {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 32px;
+  background: var(--color-sand);
+  box-shadow: 0 0 0 1.5px var(--color-hairline);
+}
+
+/* ---------- the map ---------- */
+
+.mp-map {
+  --land: color-mix(in srgb, var(--color-sand-light) 70%, var(--color-canvas));
+  --park: color-mix(in srgb, var(--color-block-mint) 30%, var(--land));
+  --water: color-mix(in srgb, var(--color-sky) 26%, var(--land));
+  --road: color-mix(in srgb, var(--color-bloom) 80%, var(--land));
+  --street: var(--color-card);
+  --pin-s: 1;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 796 / 480;
+  flex: none;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--land);
+}
+
+/*
+ * The Places page's art is drawn at 2.6 times into 884 by 784; this map shows it at 2.3 times, so the layer
+ * is that box scaled by 2.3 / 2.6 and moved to where the board crops it, in percentages of the 796 by 480 map.
+ */
+.mp-art {
+  position: absolute;
+  left: -2.029%;
+  top: -22.677%;
+  width: 98.242%;
+  height: 144.488%;
+}
+
+.mp-art .map-art-layer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mp-art .park {
+  fill: var(--park);
+}
+
+.mp-art .water {
+  fill: var(--water);
+}
+
+.mp-art .river,
+.mp-art .road,
+.mp-art .street {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-art .river {
+  stroke: var(--water);
+}
+
+.mp-art .road {
+  stroke: var(--road);
+}
+
+.mp-art .street {
+  stroke: var(--street);
+}
+
+.mp-labels {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mp-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  fill: var(--color-muted);
+  stroke: var(--land);
+  stroke-width: 3.5px;
+  paint-order: stroke;
+}
+
+.mp-label-city {
+  font-size: 15px;
+  fill: var(--color-ink-2);
+}
+
+.mp-label-park {
+  font-weight: 600;
+  letter-spacing: 0;
+  fill: color-mix(in srgb, var(--color-deep-mint) 70%, var(--color-muted));
+}
+
+.mp-spot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 9999px;
+  background: var(--color-ink-2);
+  box-shadow: 0 0 0 3px var(--color-card);
+  scale: var(--pin-s);
+  transition: opacity 180ms ease;
+}
+
+.mp-map[data-lit='true'] .mp-spot {
+  opacity: 0.3;
+}
+
+.mp-pin {
+  position: absolute;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  padding: 0 12px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  box-shadow: 0 0 0 1.5px var(--color-hairline);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: default;
+  transform-origin: 17px 17px;
+  scale: var(--pin-s);
+  transition: transform 272ms var(--lp-spring), opacity 180ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.mp-pin[data-lit='true'] {
+  z-index: 2;
+  transform: scale(1.18);
+  background: var(--color-foreground);
+  color: var(--color-card);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-foreground) 24%, transparent);
+}
+
+.mp-pin[data-dim='true'] {
+  opacity: 0.45;
+}
+
+.mp-bubble {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-category);
+}
+
+.mp-bubble-row {
+  width: 40px;
+  height: 40px;
+}
+
+.mp-mint {
+  background: var(--color-mint);
+}
+
+.mp-peach {
+  background: var(--color-peach);
+}
+
+.mp-coral {
+  background: var(--color-coral);
+}
+
+.mp-sky {
+  background: var(--color-sky);
+}
+
+/* ---------- Top places ---------- */
+
+.mp-list {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: var(--color-card);
+}
+
+.mp-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 20px 10px;
+}
+
+.mp-list-head h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mp-list-head span {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.mp-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-row {
+  width: 100%;
+  height: 68px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.mp-row[aria-pressed='true'],
+.mp-row:hover {
+  background: var(--color-sand-light);
+}
+
+.mp-row:focus-visible {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: -2px;
+}
+
+.mp-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-row-name {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-row-meta {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-row-amount {
+  flex: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mp-note {
+  margin: auto 0 0;
+  padding: 12px 20px 8px;
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+/* Side by side once the map keeps its board size and Top places still gets 288. */
+@container (min-width: 1132px) {
+  .mp-stage {
+    flex-direction: row;
+  }
+
+  .mp-map {
+    width: 796px;
+  }
+
+  .mp-list {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@container (max-width: 640px) {
+  .mp-stage {
+    padding: 10px;
+    gap: 10px;
+    border-radius: 28px;
+  }
+
+  .mp-map {
+    --pin-s: 0.72;
+    border-radius: 18px;
+  }
+
+  .mp-labels {
+    display: none;
+  }
+
+  .mp-row {
+    padding: 0 14px;
+  }
+
+  .mp-list-head {
+    padding: 6px 14px 10px;
+  }
+
+  .mp-note {
+    padding: 12px 14px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-pin {
+    transition: opacity 180ms ease;
+  }
+
+  .mp-pin[data-lit='true'] {
+    transform: none;
+  }
+}
