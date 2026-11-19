@@ -84,4 +84,13 @@ export const SHORTCUT_GROUPS: readonly { title: string; rows: readonly ShortcutR
       { label: 'Delete', keys: ['Del'] },
     ],
   },
+  {
+    title: 'Moni chat',
+    rows: [
+      { label: 'Send', keys: ['Enter'] },
+      { label: 'New line', keys: ['Shift', 'Enter'] },
+      { label: 'Approve the draft in focus', keys: ['Enter'] },
+      { label: 'Close', keys: ['Esc'] },
+    ],
+  },
 ];

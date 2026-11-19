@@ -1,11 +1,13 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import type { ChatMessage } from '@/lib/chat-thread';
 import { moniStore } from '@/lib/moni-store';
 
 /**
- * Shell state that must outlive any one view: the open overlay and the half-typed drafts. Docked panes
- * (Moni chat, Add) live in the URL instead (`?pane=`), so a reload or a resize keeps them too.
+ * Shell state that must outlive any one view: the open overlay, the half-typed drafts, Moni chat's
+ * thread and Activity's ticked rows (which Moni chat reads). Docked panes (Moni chat, Add) live in the
+ * URL instead (`?pane=`), so a reload or a resize keeps them too.
  */
 export type Overlay = 'none' | 'palette' | 'shortcuts' | 'account';
 
@@ -13,6 +15,10 @@ export type ShellState = {
   overlay: Overlay;
   addDraft: string;
   chatDraft: string;
+  chat: readonly ChatMessage[];
+  /** The id of the question waiting on "Moni chat uses AI", or null. */
+  chatAsk: string | null;
+  ticked: readonly string[];
 };
 
 export type ToastTone = 'done' | 'error';
@@ -24,7 +30,8 @@ export type Toast = {
   undo?: () => void;
 };
 
-let state: ShellState = { overlay: 'none', addDraft: '', chatDraft: '' };
+const INITIAL: ShellState = { overlay: 'none', addDraft: '', chatDraft: '', chat: [], chatAsk: null, ticked: [] };
+let state: ShellState = INITIAL;
 let toast: Toast | null = null;
 let nextToastId = 1;
 const listeners = new Set<() => void>();
@@ -38,9 +45,13 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export function setShell(patch: Partial<ShellState>) {
-  state = { ...state, ...patch };
+export function setShell(patch: Partial<ShellState> | ((current: ShellState) => Partial<ShellState>)) {
+  state = { ...state, ...(typeof patch === 'function' ? patch(state) : patch) };
   emit();
+}
+
+export function getShell(): ShellState {
+  return state;
 }
 
 /**
@@ -50,7 +61,7 @@ export function setShell(patch: Partial<ShellState>) {
 export async function signOut(): Promise<void> {
   await moniStore().signOutEverywhere({
     beforeClear: () => {
-      state = { overlay: 'none', addDraft: '', chatDraft: '' };
+      state = INITIAL;
       toast = null;
       emit();
     },
@@ -62,9 +73,10 @@ export function useShell(): ShellState {
 }
 
 /** One toast at a time: a new one replaces the old (W2-Parts, Toasts and the tab). */
-export function showToast(next: Omit<Toast, 'id'>) {
+export function showToast(next: Omit<Toast, 'id'>): number {
   toast = { ...next, id: nextToastId++ };
   emit();
+  return toast.id;
 }
 
 export function dismissToast(id: number) {

@@ -8,7 +8,8 @@ import { navItem } from '@/lib/nav';
 import { CommandPalette } from './command-palette';
 import { Rail, Sidebar, TabBar } from './nav-bars';
 import { AccountMenu, ShortcutsDialog, Toaster } from './overlays';
-import { AddPane, ChatPane } from './panes';
+import { ChatPane } from '@/components/chat/chat-pane';
+import { AddPane } from './panes';
 import { ShellContext, type Pane, type ShellAction, type ShellApi, type ShellUser } from './shell-context';
 import { setShell, showToast, signOut, undoToast, useShell } from './shell-store';
 

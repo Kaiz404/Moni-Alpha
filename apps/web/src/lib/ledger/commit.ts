@@ -15,7 +15,7 @@ import {
   type StoredRow,
   type SyncedTable,
 } from '@repo/core';
-import { showToast } from '@/components/shell/shell-store';
+import { dismissToast, showToast } from '@/components/shell/shell-store';
 import { moniStore } from '@/lib/moni-store';
 
 /** Who writes and when, for a plan made now. */
@@ -59,13 +59,15 @@ function snapshot(writes: RowWrites) {
  * Carries a plan out on the store and says so in a toast whose Undo (or Ctrl Z) writes the rows back,
  * or runs `undo` when putting them back is itself a plan. A plan that needs input or is refused writes
  * nothing; its message shows as an error toast, and the answer is null. A plan's own result may be null
- * too, so a saved plan's result comes wrapped.
+ * too, so a saved plan's result comes wrapped, with the same Undo for a second control (Moni chat's
+ * card); `onUndone` runs after either one puts the rows back.
  */
 export function commit<Result>(
   plan: Planned<Result>,
   done: string | ((result: Result) => string),
   undo?: (result: Result) => void,
-): { result: Result } | null {
+  onUndone?: () => void,
+): { result: Result; undo: () => void } | null {
   if (plan.kind === 'needsInput') {
     showToast({ text: plan.field === 'wallet' ? 'Pick a wallet first.' : 'Pick the wallet it went to.', tone: 'error' });
     return null;
@@ -81,14 +83,22 @@ export function commit<Result>(
     showToast({ text: "Couldn't save. Try again.", tone: 'error' });
     return null;
   }
-  showToast({
-    text: typeof done === 'string' ? done : done(plan.result),
-    tone: 'done',
-    undo: undo
-      ? () => undo(plan.result)
-      : () => applyWrites(moniStore(), undoWrites(plan.writes, before, new Date().toISOString())),
-  });
-  return { result: plan.result };
+  let undone = false;
+  const putBack = () => {
+    if (undone) return;
+    undone = true;
+    if (undo) undo(plan.result);
+    else applyWrites(moniStore(), undoWrites(plan.writes, before, new Date().toISOString()));
+    onUndone?.();
+  };
+  const toastId = showToast({ text: typeof done === 'string' ? done : done(plan.result), tone: 'done', undo: putBack });
+  return {
+    result: plan.result,
+    undo: () => {
+      dismissToast(toastId);
+      putBack();
+    },
+  };
 }
 
 /** Writes an Undo that is itself a plan, with no toast of its own; throws why it could not. */

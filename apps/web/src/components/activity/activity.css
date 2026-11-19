@@ -401,6 +401,52 @@ html[data-layout='rail'] .shell-main:has(.detail-pane) {
   background: var(--color-card);
 }
 
+/* W2-Chat: the rows an open Moni chat draft would change light up behind it, Lilac with a bar. */
+.tr[data-draft],
+.lrow[data-draft] {
+  position: relative;
+  background: var(--color-pending-fill);
+}
+
+.tr[data-draft]::before,
+.lrow[data-draft]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-lilac);
+}
+
+.draft-to {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 10px 0 3px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  border: 1.5px dashed var(--color-lilac);
+  color: var(--color-foreground);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: fade-in 200ms ease both;
+}
+
+.draft-to svg {
+  color: var(--color-on-lilac);
+}
+
+.draft-to .cell-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .th-row {
   height: 42px;
   border-bottom: 1.5px solid var(--color-sand-light);
@@ -599,19 +645,25 @@ html[data-layout='rail'] .shell-main:has(.detail-pane) {
 
 html[data-layout='sidebar'] .activity[data-show='list'] .activity-days,
 html[data-layout='rail'] .activity[data-show='list'] .activity-days,
-html[data-layout='rail'] .activity[data-pane-open] .activity-days {
+html[data-layout='rail'] .activity[data-pane-open] .activity-days,
+html[data-layout='rail'] .shell[data-pane='chat'] .activity-days {
   display: block !important;
 }
 
-html[data-layout='rail'] .activity[data-pane-open] .activity-table {
+/* A docked pane, the row's or Moni chat's, leaves the rail too narrow for the table and the sidebar
+   without room for Source. */
+html[data-layout='rail'] .activity[data-pane-open] .activity-table,
+html[data-layout='rail'] .shell[data-pane='chat'] .activity-table {
   display: none !important;
 }
 
-html[data-layout='sidebar'] .activity[data-pane-open] .activity-table {
+html[data-layout='sidebar'] .activity[data-pane-open] .activity-table,
+html[data-layout='sidebar'] .shell[data-pane='chat'] .activity-table {
   --cols: 40px 84px minmax(0, 1fr) 140px 108px 96px 34px;
 }
 
-html[data-layout='sidebar'] .activity[data-pane-open] .tr > :nth-child(6) {
+html[data-layout='sidebar'] .activity[data-pane-open] .tr > :nth-child(6),
+html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
   display: none;
 }
 
