@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Drives the real web app the way a user does and prints PASS or FAIL per check; the last line is the verdict.
-//   node apps/web/scripts/verify/drive.mjs [--no-build] [--dev] [--out <dir>] [--skip-qr] [--doctor]
+//   node apps/web/scripts/verify/drive.mjs [--no-build] [--dev] [--out <dir>] [--skip-qr] [--doctor] [--port <n>]
 // Builds and starts the app on a free port with the dev project's keys from apps/mobile/.env.e2e (this
 // checkout's, then the main checkout's), reseeds the web's own e2e user (E2E_WEB_EMAIL) for the boards'
 // day, signs in only as that user, and saves screenshots beside the board renders, with board-and-app
@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { verifyBudgetDebts } from './budget-debts.mjs';
+import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPlaces } from './places.mjs';
 import { verifyReview } from './review.mjs';
@@ -126,7 +127,11 @@ const appEnv = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishable,
   NEXT_PUBLIC_MONI_APP_SCHEME: 'moni-e2e',
   NEXT_TELEMETRY_DISABLED: '1',
+  // A local gateway when the caller names one (its CORS_ALLOWED_ORIGINS must hold this app's --port);
+  // otherwise Moni chat's answers come from a stub the chat part routes.
+  NEXT_PUBLIC_AI_API_URL: process.env.NEXT_PUBLIC_AI_API_URL ?? STUB_AI_URL,
 };
+const realGateway = Boolean(process.env.NEXT_PUBLIC_AI_API_URL);
 const next = join(web, 'node_modules', '.bin', 'next');
 
 if (flag('--doctor')) {
@@ -155,7 +160,7 @@ if (!dev && !flag('--no-build')) {
 console.log(`reseeding ${env.email} with the full profile for ${SEED_DAY}`);
 webSeed('--reset', '--profile', 'full', '--today', SEED_DAY);
 const seeded = JSON.parse(webSeed('--query', 'fingerprint'));
-const port = await freePort();
+const port = option('--port') ? Number(option('--port')) : await freePort();
 const base = `http://127.0.0.1:${port}`;
 const server = spawn(next, [dev ? 'dev' : 'start', '--port', String(port), '--hostname', '127.0.0.1'], {
   cwd: web,
@@ -286,7 +291,7 @@ async function stubQr(context) {
   );
 }
 
-async function phoneToken() {
+async function userToken() {
   const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: publishable, 'Content-Type': 'application/json' },
@@ -367,7 +372,7 @@ try {
     const link = failed === null ? await box.getAttribute('data-qr-value') : null;
     const code = /^moni-e2e:\/\/sign-in\?code=(.+)$/.exec(link ?? '')?.[1];
     if (check('the QR holds a moni-e2e sign-in link', Boolean(code), link)) {
-    const token = await phoneToken();
+    const token = await userToken();
     const asked = await approve(token, decodeURIComponent(code ?? ''), 'check');
     check('the phone check names this browser', typeof asked.json?.browser === 'string', asked);
     const approved = await approve(token, decodeURIComponent(code ?? ''), 'approve');
@@ -383,7 +388,7 @@ try {
   await stubQr(auth);
   const signedIn = await signInWithPassword(auth);
   check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
-  const seed = await readSeed({ supabaseUrl, publishable, token: await phoneToken() });
+  const seed = await readSeed({ supabaseUrl, publishable, token: await userToken() });
   check(`the web's e2e seed was written for ${SEED_DAY}; the ledger screens are checked at 3 pm that day`, seed.seedDay === SEED_DAY, seed.seedDay);
   const storage = await auth.storageState();
   await auth.close();
@@ -659,6 +664,8 @@ try {
   check('and back across 700 the draft is still there', (await field.inputValue()) === '12.50 lunch at Mamak');
   await resize.close();
   }
+  if (runs('chat'))
+    await verifyChat({ browser, base, storage, check, shot, settle, pair, seed, supabaseUrl, publishable, token: await userToken(), secret: env.SUPABASE_SECRET_KEY, widths: WIDTHS, background: BACKGROUND, realGateway });
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
