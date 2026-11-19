@@ -13,6 +13,15 @@ export const STATUS_BAR_FRACTION = 0.05;
 export const CHANNEL_TOLERANCE = 24;
 // Antialiasing and the blinking caret change a few pixels; more than this is a real change.
 export const CHANGED_FRACTION = 0.002;
+// A frame that is one flat colour was taken with the screen off or covered; it proves nothing.
+export const BLANK_SPREAD = 2;
+// A floating window over more than this share of the screen leaves too little of Moni to compare.
+export const MAX_IGNORED_FRACTION = 0.25;
+
+export async function isBlank(path) {
+  const { channels } = await sharp(path).removeAlpha().stats();
+  return channels.every((c) => c.stdev < BLANK_SPREAD);
+}
 
 export async function compareImages(basePath, headPath, ignore = []) {
   const [base, head] = await Promise.all(
@@ -22,12 +31,19 @@ export async function compareImages(basePath, headPath, ignore = []) {
   if (width !== head.info.width || height !== head.info.height) {
     return { changed: true, fraction: 1, reason: `size ${width}x${height} vs ${head.info.width}x${head.info.height}` };
   }
+  for (const [side, path] of [['base', basePath], ['head', headPath]]) {
+    if (await isBlank(path)) return { changed: true, fraction: 1, reason: `blank frame on ${side}` };
+  }
   const top = Math.round(height * STATUS_BAR_FRACTION);
   let differing = 0;
+  let skipped = 0;
   const ignored = (x, y) => ignore.some(([x1, y1, x2, y2]) => x >= x1 && x < x2 && y >= y1 && y < y2);
   for (let y = top; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (ignored(x, y)) continue;
+      if (ignored(x, y)) {
+        skipped++;
+        continue;
+      }
       const i = (y * width + x) * 4;
       if (
         Math.abs(base.data[i] - head.data[i]) > CHANNEL_TOLERANCE ||
@@ -37,7 +53,11 @@ export async function compareImages(basePath, headPath, ignore = []) {
         differing++;
     }
   }
-  const fraction = differing / (width * (height - top));
+  const area = width * (height - top);
+  if (skipped / area > MAX_IGNORED_FRACTION) {
+    return { changed: true, fraction: 1, reason: `a floating window covers ${Math.round((skipped / area) * 100)}%` };
+  }
+  const fraction = differing / area;
   return { changed: fraction > CHANGED_FRACTION, fraction };
 }
 
@@ -58,7 +78,7 @@ export async function diffFolders(baseDir, headDir, outDir) {
   const head = pngs(headDir);
   // Another app's floating window, blacked out where it sat on either side, is no change of Moni's.
   const ignore = [...readRects(join(baseDir, 'overlays.txt')), ...readRects(join(headDir, 'overlays.txt'))];
-  const result = { same: [], changed: [], onlyBase: [], onlyHead: [] };
+  const result = { same: [], changed: [], onlyBase: [], onlyHead: [], blankNew: [] };
   for (const name of [...base].sort()) {
     if (!head.has(name)) {
       result.onlyBase.push(name);
@@ -76,6 +96,7 @@ export async function diffFolders(baseDir, headDir, outDir) {
     }
   }
   result.onlyHead = [...head].filter((n) => !base.has(n)).sort();
+  for (const name of result.onlyHead) if (await isBlank(join(headDir, name))) result.blankNew.push(name);
   return result;
 }
 
@@ -87,9 +108,10 @@ async function main([baseDir, headDir, outDir]) {
   const r = await diffFolders(baseDir, headDir, outDir);
   for (const c of r.changed) console.log(`changed ${c.name} ${(c.fraction * 100).toFixed(2)}%${c.reason ? ` ${c.reason}` : ''}`);
   for (const n of r.onlyBase) console.log(`missing on head ${n}`);
-  for (const n of r.onlyHead) console.log(`new on head ${n}`);
+  for (const n of r.onlyHead) console.log(`new on head ${n}${r.blankNew.includes(n) ? ' BLANK' : ''}`);
   console.log(`${r.same.length} same, ${r.changed.length} changed, ${r.onlyBase.length} missing, ${r.onlyHead.length} new${outDir && r.changed.length ? `, diffs in ${outDir}` : ''}`);
-  process.exit(r.changed.length || r.onlyBase.length ? 1 : 0);
+  if (r.blankNew.length) console.log(`UNRELIABLE: ${r.blankNew.length} new head screenshots are blank frames`);
+  process.exit(r.changed.length || r.onlyBase.length || r.blankNew.length ? 1 : 0);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));

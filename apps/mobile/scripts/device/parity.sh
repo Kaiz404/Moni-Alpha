@@ -110,7 +110,8 @@ run_side() {
       # A run the doctor stopped before any flow leaves no folder; that is no result to cache.
       # Cache a base area only if a flow got far enough to take a named screenshot: a run that never
       # reached the app (locked or sleeping phone) is no base to compare against.
-      if [[ $side == base && -n $(find "$runs/$area" -name '*.png' ! -name 'step-*' -print -quit 2>/dev/null) ]]; then
+      # A run with another app's window over it (overlays.txt) is masked and proves too little to keep.
+      if [[ $side == base && -n $(find "$runs/$area" -name '*.png' ! -name 'step-*' -print -quit 2>/dev/null) && -z $(find "$runs/$area" -name overlays.txt -size +0 -print -quit) ]]; then
         touch "$runs/$area/.done"
       fi
     done
@@ -126,7 +127,7 @@ run_side() {
     # A head area that ran becomes a base for the next parity whose base is this commit.
     for area in "${areas[@]}"; do
       local keep=$cache/runs/$ikey/$area
-      [[ -d $runs/$area && ! -f $keep/.done ]] || continue
+      [[ -d $runs/$area && ! -f $keep/.done && -z $(find "$runs/$area" -name overlays.txt -size +0 -print -quit) ]] || continue
       rm -rf "$keep" && mkdir -p "$(dirname "$keep")" && cp -r "$runs/$area" "$keep" && touch "$keep/.done"
     done
     rm -rf "$cache/runs/head-$$"
