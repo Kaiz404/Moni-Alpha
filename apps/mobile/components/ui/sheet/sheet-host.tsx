@@ -8,13 +8,13 @@ import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
 import { BalanceSheet } from '@/components/sheets/balance-sheet';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
+import { GridPickerSheet } from '@/components/sheets/grid-picker-sheet';
 import { NotificationAccessSheet } from '@/components/sheets/notification-access-sheet';
 import {
   ActivityKindSheet,
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
-  OptionPickerSheet,
   PersonSheet,
   TransactionTypeSheet,
   WalletSheet,
@@ -175,14 +175,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           onConfirm={() => sheet.settle(true)}
         />
       );
-    case 'choice':
+    case 'gridPicker':
       return (
-        <OptionPickerSheet
+        <GridPickerSheet
           {...frame}
           title={sheet.request.title}
-          options={sheet.request.options}
+          layout={sheet.request.layout}
           selectedId={sheet.request.selected}
-          size={sheet.request.options.length > 12 ? 'large' : 'fit'}
+          startPage={sheet.request.startPage}
           onPick={sheet.settle}
         />
       );

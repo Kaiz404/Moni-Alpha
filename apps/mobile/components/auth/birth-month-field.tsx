@@ -7,28 +7,16 @@ import {
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { monthGrid, pageOf, shortMonth, yearGrid } from '@/lib/dates/grid-pages';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
 export type BirthPick = { month: number | null; year: number | null };
 
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
 /** W2-Auth lists this year back to 100 years ago. */
 const YEARS_SHOWN = 101;
+/** The year picker opens on the decade of the youngest age Moni takes. */
+const ADULT_AGE = 18;
 
 function Box({
   part,
@@ -91,27 +79,27 @@ export function BirthMonthField({
   disabled?: boolean;
 }) {
   const pickMonth = async () => {
+    const layout = monthGrid();
+    const selected = value.month === null ? null : String(value.month);
     const picked = await openSheet({
-      kind: 'choice',
+      kind: 'gridPicker',
       title: 'Birth month',
-      options: MONTHS.map((name, index) => ({
-        id: String(index + 1),
-        name,
-      })),
-      selected: value.month === null ? null : String(value.month),
+      layout,
+      selected,
+      startPage: pageOf(layout, selected),
     });
     if (picked) onChange({ ...value, month: Number(picked) });
   };
 
   const pickYear = async () => {
+    const layout = yearGrid(thisYear, YEARS_SHOWN);
+    const selected = value.year === null ? null : String(value.year);
     const picked = await openSheet({
-      kind: 'choice',
+      kind: 'gridPicker',
       title: 'Birth year',
-      options: Array.from({ length: YEARS_SHOWN }, (_, index) => {
-        const year = String(thisYear - index);
-        return { id: year, name: year };
-      }),
-      selected: value.year === null ? null : String(value.year),
+      layout,
+      selected,
+      startPage: pageOf(layout, selected, String(thisYear - ADULT_AGE)),
     });
     if (picked) onChange({ ...value, year: Number(picked) });
   };
@@ -126,7 +114,7 @@ export function BirthMonthField({
           part="month"
           label="Month"
           icon="calendar-blank-outline"
-          value={value.month === null ? null : (MONTHS[value.month - 1] ?? null)}
+          value={value.month === null ? null : shortMonth(value.month)}
           disabled={disabled}
           onPress={() => void pickMonth()}
         />

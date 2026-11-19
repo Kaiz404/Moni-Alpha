@@ -3,6 +3,7 @@ import { Keyboard } from 'react-native';
 import type { MinorAmount, TransactionType } from '@repo/types';
 
 import type { WalletKind } from '@/constants/wallet-form';
+import type { GridLayout } from '@/lib/dates/grid-pages';
 import type { PlacePick } from '@/lib/capture/entry-place';
 import type { PastPlaceInput } from '@/lib/capture/place-search';
 import type { ActivityKind, ActivityRange } from '@repo/core';
@@ -122,13 +123,9 @@ type Sheets = {
   };
   /** "Let Moni read alerts?": the disclosure before Android's notification access page. */
   notificationAccess: { request: object; result: true };
-  /** A plain list of named choices, such as a birth month; resolves to the picked id. */
-  choice: {
-    request: {
-      title: string;
-      options: { id: string; name: string }[];
-      selected: string | null;
-    };
+  /** A compact grid of months, years or days, a page at a time; resolves to the picked cell's id. */
+  gridPicker: {
+    request: { title: string; layout: GridLayout; selected: string | null; startPage: number };
     result: string;
   };
   confirm: {

@@ -25,10 +25,11 @@ tags:
 - tapOn:
     id: auth.birth.year
 - assertVisible: Birth year
-- scrollUntilVisible:
-    element:
-      id: sheet.option.2010
-    direction: DOWN
+- assertVisible: 2000s
+- takeScreenshot: sign-up-age-year-grid
+- tapOn:
+    id: sheet.page.next
+- assertVisible: 2010s
 - tapOn:
     id: sheet.option.2010
 - assertVisible: Apr

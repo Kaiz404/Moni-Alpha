@@ -1,0 +1,57 @@
+import { dayGrid, monthGrid, pageOf, yearGrid } from '@/lib/dates/grid-pages';
+
+const ids = (cells: readonly ({ id: string } | null)[]) => cells.map((cell) => cell?.id ?? null);
+
+describe('monthGrid', () => {
+  it('puts Jan to Dec on one page, four to a row', () => {
+    const grid = monthGrid();
+    expect(grid.columns).toBe(4);
+    expect(grid.pages).toHaveLength(1);
+    expect(grid.pages[0].cells.map((cell) => cell?.label)).toEqual([
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ]);
+    expect(grid.pages[0].cells[3]).toEqual({ id: '4', label: 'Apr', accessibilityLabel: 'April', disabled: false });
+  });
+});
+
+describe('yearGrid', () => {
+  it('pages 101 years by decade, oldest first, leaving the years outside the range empty', () => {
+    const grid = yearGrid(2026, 101);
+    expect(grid.columns).toBe(5);
+    expect(grid.pages.map((page) => page.label)).toEqual([
+      '1920s', '1930s', '1940s', '1950s', '1960s', '1970s', '1980s', '1990s', '2000s', '2010s', '2020s',
+    ]);
+    expect(ids(grid.pages[0].cells)).toEqual([null, null, null, null, null, null, '1926', '1927', '1928', '1929']);
+    expect(ids(grid.pages[10].cells)).toEqual(['2020', '2021', '2022', '2023', '2024', '2025', '2026', null, null, null]);
+  });
+});
+
+describe('dayGrid', () => {
+  it('lays a month out Sunday first and greys the days outside the range', () => {
+    const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14');
+    expect(grid.columns).toBe(7);
+    expect(grid.heads).toEqual(['S', 'M', 'T', 'W', 'T', 'F', 'S']);
+    expect(grid.pages.map((page) => page.label)).toEqual(['October 2026', 'November 2026']);
+
+    const october = grid.pages[0].cells;
+    expect(ids(october.slice(0, 5))).toEqual([null, null, null, null, '2026-10-01']);
+    expect(october[4 + 12]).toEqual({ id: '2026-10-13', label: '13', accessibilityLabel: 'Yesterday', disabled: true });
+    expect(october[4 + 13]).toEqual({ id: '2026-10-14', label: '14', accessibilityLabel: 'Today', disabled: false });
+
+    const november = grid.pages[1].cells;
+    expect(ids(november.slice(0, 1))).toEqual(['2026-11-01']);
+    expect(november.find((cell) => cell?.id === '2026-11-13')?.disabled).toBe(false);
+    expect(november.find((cell) => cell?.id === '2026-11-14')?.disabled).toBe(true);
+  });
+});
+
+describe('pageOf', () => {
+  const grid = yearGrid(2026, 101);
+
+  it('opens on the picked year, else the fallback, else the first page', () => {
+    expect(pageOf(grid, '1987', '2008')).toBe(6);
+    expect(pageOf(grid, null, '2008')).toBe(8);
+    expect(pageOf(grid, null)).toBe(0);
+    expect(pageOf(grid, '1800')).toBe(0);
+  });
+});
