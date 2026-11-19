@@ -7,6 +7,7 @@ import {
   type UpdateTransaction,
 } from '@repo/types';
 
+import { placeLocation, type Place } from '../read-model/places';
 import {
   combine,
   planned,
@@ -157,6 +158,23 @@ export function planTransactionsEdit(
   ctx: PlanContext,
 ): Planned<{ id: string }[]> {
   return combine(ids.map((id) => planTransactionEdit(id, data, view, ctx)));
+}
+
+/** Add a place: pins expenses that have none to one of the user's places, where its payments sit. */
+export function planAddPlace(
+  ids: readonly string[],
+  place: Place,
+  view: Pick<LedgerView, 'walletsById' | 'transactionsById'>,
+  ctx: PlanContext,
+): Planned<{ id: string }[]> {
+  if (!ids.length) return refused('Pick an expense first.');
+  const { latitude, longitude, locationName, placeId } = placeLocation(place);
+  return planTransactionsEdit(
+    ids,
+    { locationLatitude: latitude, locationLongitude: longitude, locationName, ...(placeId ? { placeId } : {}) },
+    view,
+    ctx,
+  );
 }
 
 export function planTransactionsDelete(ids: readonly string[], ctx: Pick<PlanContext, 'now'>): Planned<null> {

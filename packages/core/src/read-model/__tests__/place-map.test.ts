@@ -1,9 +1,12 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
-import { groupPlaces, type FinanceTransaction } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
-import { clusterPins, zoomMoved } from '../map-view';
+import { createCalendar } from '../../calendar';
+import { clusterPins, fitProjector, zoomMoved } from '../place-map';
+import { groupPlaces } from '../places';
+import type { FinanceTransaction } from '../types';
 
+const KL = createCalendar('Asia/Kuala_Lumpur');
 const MAMAK = { latitude: 3.13035, longitude: 101.67112 };
 const KLCC = { latitude: 3.15785, longitude: 101.71162 };
 const METRE_LAT = 1 / 111_320;
@@ -17,6 +20,9 @@ function row(
   return {
     id,
     userId: 'u1',
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: '2026-10-01T00:00:00.000Z',
     walletId: 'cash',
     amountMinor: amountMinor as MinorAmount,
     currency: 'MYR',
@@ -59,13 +65,55 @@ const rows = [
 
 describe('clusterPins', () => {
   it('merges capsules that overlap on screen under the larger place', () => {
-    const places = groupPlaces(rows, { currency: 'MYR' }, deviceCalendar);
+    const places = groupPlaces(rows, { currency: 'MYR' }, KL);
     const near = clusterPins(places, () => ({ x: 100, y: 100 }), () => 90);
     expect(near.map((cluster) => [cluster.lead.name, cluster.members.length, cluster.totalMinor])).toEqual([
       ['Mamak Ali', 2, 5560],
     ]);
     const far = clusterPins(places, (point) => ({ x: point === places[0] ? 0 : 300, y: 0 }), () => 90);
     expect(far.map((cluster) => cluster.members.length)).toEqual([1, 1]);
+  });
+
+  it('merges capsules stacked closer than a row, whose height the caller can set', () => {
+    const places = groupPlaces(rows, { currency: 'MYR' }, KL);
+    const stacked = (point: { latitude: number }) => ({ x: 0, y: point === places[0] ? 0 : 40 });
+    expect(clusterPins(places, stacked, () => 90).map((cluster) => cluster.members.length)).toEqual([1, 1]);
+    expect(clusterPins(places, stacked, () => 90, 44).map((cluster) => cluster.members.length)).toEqual([2]);
+  });
+
+  it('leads with the largest place whatever order the list is in', () => {
+    const places = groupPlaces(rows, { currency: 'MYR' }, KL);
+    const clusters = clusterPins([...places].reverse(), () => ({ x: 0, y: 0 }), () => 90);
+    expect(clusters.map((cluster) => cluster.lead.name)).toEqual(['Mamak Ali']);
+  });
+});
+
+describe('fitProjector', () => {
+  const box = { width: 220, height: 120 };
+  const insets = { top: 10, right: 10, bottom: 10, left: 10 };
+
+  it('frames the points at one scale, north up, centred in the free area', () => {
+    const at = fitProjector(
+      [
+        { latitude: 0, longitude: 0 },
+        { latitude: 0.01, longitude: 0.01 },
+      ],
+      box,
+      insets,
+    );
+    const south = at({ latitude: 0, longitude: 0 });
+    const north = at({ latitude: 0.01, longitude: 0.01 });
+    expect([Math.round(south.x), Math.round(south.y)]).toEqual([60, 110]);
+    expect([Math.round(north.x), Math.round(north.y)]).toEqual([160, 10]);
+  });
+
+  it('puts one place in the middle', () => {
+    const at = fitProjector([MAMAK], box, insets);
+    expect(at(MAMAK)).toEqual({ x: 110, y: 60 });
+  });
+
+  it('puts the middle of the free area under nothing at all', () => {
+    expect(fitProjector([], box, { top: 40, right: 10, bottom: 0, left: 10 })(KLCC)).toEqual({ x: 110, y: 80 });
   });
 });
 

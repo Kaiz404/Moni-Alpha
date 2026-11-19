@@ -205,6 +205,11 @@ export const QUERIES = {
     select(request, `/rest/v1/debts?user_id=eq.${userId}&deleted=eq.false&select=counterparty_name,direction,status,due_date&order=due_date`),
   budgets: (request, userId) =>
     select(request, `/rest/v1/category_budgets?user_id=eq.${userId}&deleted=eq.false&select=amount,currency,categories(name)&order=category_id`),
+  expenses: (request, userId) =>
+    select(
+      request,
+      `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&type=eq.expense&select=id,amount,currency,merchant,category_id,wallet_id,analysis_excluded,debt_activity_id,transaction_date,location_latitude,location_longitude,location_name&order=transaction_date.desc`,
+    ),
   'debt-activities': (request, userId) =>
     select(request, `/rest/v1/debt_activities?user_id=eq.${userId}&deleted=eq.false&select=debt_id,kind,amount,activity_date&order=activity_date`),
   bills: (request, userId) =>

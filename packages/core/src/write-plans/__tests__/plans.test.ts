@@ -14,8 +14,11 @@ import {
 } from '../debts';
 import { planImportRows } from '../import';
 import { applyToTables } from '../memory';
+import { createCalendar } from '../../calendar';
+import { groupPlaces } from '../../read-model/places';
 import {
   checkTransfer,
+  planAddPlace,
   planTransaction,
   planTransactionEdit,
   planTransactionsDelete,
@@ -274,6 +277,46 @@ describe('planTransactionEdit', () => {
       },
       result: null,
     });
+  });
+});
+
+describe('planAddPlace', () => {
+  const placed = transaction('at-bangsar', 'maybank', {
+    locationLatitude: 3.13,
+    locationLongitude: 101.671,
+    locationName: 'Bangsar',
+    placeId: 'gp-bangsar',
+    transactionDate: '2026-10-11T03:00:00.000Z',
+  });
+  const ledger = view({
+    transactionsById: { 'at-bangsar': placed, shopee: transaction('shopee', 'maybank'), tnb: transaction('tnb', 'maybank') },
+  });
+  const [bangsar] = groupPlaces([placed], { currency: 'MYR' }, createCalendar('Asia/Kuala_Lumpur'));
+
+  it('pins each picked expense where the place’s payments sit', () => {
+    const at = { location_latitude: 3.13, location_longitude: 101.671, location_name: 'Bangsar', place_id: 'gp-bangsar' };
+    expect(planAddPlace(['shopee', 'tnb'], bangsar!, ledger, context())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [
+          { table: 'transactions', id: 'shopee', patch: { updated_at: NOW, ...at } },
+          { table: 'transactions', id: 'tnb', patch: { updated_at: NOW, ...at } },
+        ],
+        softDelete: [],
+      },
+      result: [{ id: 'shopee' }, { id: 'tnb' }],
+    });
+  });
+
+  it('leaves the place ID out before its migration, and refuses nothing picked', () => {
+    const plan = planAddPlace(['shopee'], bangsar!, ledger, context(false));
+    expect(plan.kind === 'writes' && plan.writes.patch[0]).toEqual({
+      table: 'transactions',
+      id: 'shopee',
+      patch: { updated_at: NOW, location_latitude: 3.13, location_longitude: 101.671, location_name: 'Bangsar' },
+    });
+    expect(planAddPlace([], bangsar!, ledger, context())).toEqual({ kind: 'error', message: 'Pick an expense first.' });
   });
 });
 

@@ -241,6 +241,25 @@ html[data-layout='rail'] .shell[data-pane='chat'] .shell-main {
   letter-spacing: -0.02em;
 }
 
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--color-deep-mint);
+}
+
+.crumb svg {
+  color: var(--color-muted);
+}
+
+.crumb a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .cmd-field {
   width: 340px;
   flex: none;

@@ -7,6 +7,7 @@ export * from './debt-summary';
 export * from './flow-series';
 export * from './list-scope';
 export * from './merchants';
+export * from './place-map';
 export * from './places';
 export * from './projection';
 export * from './report';
