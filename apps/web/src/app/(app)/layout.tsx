@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <Suspense>
-      <Shell user={{ id: userId, name, initial: name.charAt(0).toUpperCase(), currency, zone }}>
+      <Shell user={{ id: userId, name, email, initial: name.charAt(0).toUpperCase(), currency, zone }}>
         <StoreSync />
         {children}
       </Shell>

@@ -9,6 +9,7 @@ export type ShellAction = CommandAction | ShortcutAction | { kind: 'account' } |
 export type ShellUser = {
   id: string;
   name: string;
+  email: string;
   initial: string;
   currency: string;
   /** The profile's finance timezone; null reads days in the browser's zone. */

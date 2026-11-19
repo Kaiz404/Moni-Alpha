@@ -337,32 +337,6 @@ html[data-layout='rail-one-column'] .cmd-field {
   color: var(--color-ink-2);
 }
 
-.settings-card {
-  flex: 0 0 auto;
-  min-height: 0;
-  max-width: 560px;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 6px 0;
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 60px;
-  padding: 0 20px;
-  width: 100%;
-}
-
-.settings-row + .settings-row {
-  border-top: 1.5px solid var(--color-sand-light);
-}
-
-.settings-row-over {
-  color: var(--color-over);
-}
-
 /* ---------- phone layout ---------- */
 
 .phone-head {
