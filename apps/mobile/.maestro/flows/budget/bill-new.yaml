@@ -38,8 +38,10 @@ tags:
 - tapOn:
     id: budget.bill-new.due
 - assertVisible: Due date
+- takeScreenshot: b2-l6-due-date
 - tapOn:
     id: sheet\.option\..*
+    enabled: true
     index: 6
 - assertVisible: Add bill RM129.00
 - takeScreenshot: b2-l6-amount-page

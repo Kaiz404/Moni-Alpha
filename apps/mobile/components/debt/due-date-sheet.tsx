@@ -1,24 +1,11 @@
-import { useEffect, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
-
-import {
-  OptionPickerSheet,
-  type PickerOption,
-} from '@/components/sheets/option-picker-sheet';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import {
-  addDays,
-  addMonths,
-  dateLabel,
-  dayOfMonth,
-  lastDayOf,
-  monthOf,
-  parseDayKey,
-} from '@repo/core';
+import { PageGridPicker } from '@/components/sheets/grid-picker-sheet';
+import { Button } from '@/components/ui/button';
+import { addMonths, dateLabel, dayOfMonth, parseDayKey } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { dayGrid, pageOf } from '@/lib/dates/grid-pages';
+import { tid } from '@/lib/test-ids';
 
-const NONE = 'none';
+const MONTHS_AHEAD = 12;
 
 /** A local `YYYY-MM-DD` for the debt pages' due-date label: "Fri 30 Oct". */
 export function dueLabel(
@@ -29,48 +16,7 @@ export function dueLabel(
   return due ? dateLabel(due, deviceCalendar.dayKey(now)) : 'No date';
 }
 
-function dueChoices(
-  now: Date,
-  current: string | null,
-): { id: string; name: string; meta: string }[] {
-  const today = deviceCalendar.dayKey(now);
-  const candidates = [
-    {
-      id: addDays(today, 7),
-      name: 'In a week',
-    },
-    {
-      id: lastDayOf(monthOf(today)),
-      name: 'End of month',
-    },
-    {
-      id: addMonths(today, 1, dayOfMonth(today)),
-      name: 'In a month',
-    },
-  ];
-  const dated: { id: string; name: string }[] = [];
-  for (const choice of candidates)
-    if (
-      choice.id !== today &&
-      !dated.some((seen) => seen.id === choice.id)
-    )
-      dated.push(choice);
-  if (current && !dated.some((choice) => choice.id === current))
-    dated.push({ id: current, name: 'As agreed' });
-  dated.sort((a, b) => a.id.localeCompare(b.id));
-  return [
-    { id: NONE, name: 'No date', meta: 'Nothing coming up' },
-    ...dated.map((choice) => ({
-      ...choice,
-      meta: dueLabel(choice.id, now),
-    })),
-  ];
-}
-
-/**
- * Due date picker for the debt pages, mounted by the page itself: the sheet
- * host's `date` kind only lists past days. Picking closes it.
- */
+/** The debt's due date: a month of days at a time, today to a year ahead, with No date under them. */
 export function DueDateSheet({
   open,
   selected,
@@ -82,56 +28,26 @@ export function DueDateSheet({
   onPick: (dueDate: string | null) => void;
   onDismiss: () => void;
 }) {
-  const tokens = useThemeTokens();
-  const [mounted, setMounted] = useState(open);
-  if (open && !mounted) setMounted(true);
-
-  useEffect(() => {
-    if (!open) return;
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        onDismiss();
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [open, onDismiss]);
-
-  if (!mounted) return null;
-  const options: PickerOption[] = dueChoices(
-    new Date(),
-    selected,
-  ).map((choice) => ({
-    ...choice,
-    leading: (
-      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-        <IconSymbol
-          name={
-            choice.id === NONE
-              ? 'calendar-remove-outline'
-              : 'calendar-clock'
-          }
-          size={20}
-          color={tokens.foreground}
-        />
-      </View>
-    ),
-  }));
+  const today = deviceCalendar.dayKey(new Date());
+  const layout = dayGrid(today, addMonths(today, MONTHS_AHEAD, dayOfMonth(today)), today);
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents={open ? 'auto' : 'none'}
-    >
-      <OptionPickerSheet
-        open={open}
-        onDismiss={onDismiss}
-        onExited={() => setMounted(false)}
-        title="Due date"
-        options={options}
-        selectedId={selected ?? NONE}
-        onPick={(id) => onPick(id === NONE ? null : id)}
-      />
-    </View>
+    <PageGridPicker
+      open={open}
+      onDismiss={onDismiss}
+      title="Due date"
+      layout={layout}
+      selectedId={selected}
+      startPage={pageOf(layout, selected)}
+      onPick={onPick}
+      footer={
+        <Button
+          testID={tid('debts', 'due', 'none')}
+          variant="secondary"
+          icon="calendar-remove-outline"
+          label="No date"
+          onPress={() => onPick(null)}
+        />
+      }
+    />
   );
 }
