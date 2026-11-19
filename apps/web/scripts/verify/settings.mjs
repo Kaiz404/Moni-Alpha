@@ -201,6 +201,7 @@ export async function verifySettings(t) {
   const master = a.getByRole('switch', { name: 'Let Moni use AI' });
   const receipts = a.getByRole('switch', { name: 'Receipt photos you scan' });
   await master.waitFor();
+  await a.locator('section[aria-labelledby="ai-title"]:not([aria-busy])').waitFor({ timeout: 20_000 }).catch(() => {});
   const masterOn = (await master.getAttribute('aria-checked')) === 'true';
   check('Moni\'s AI: the four uses are disabled while the master is off', masterOn || (await a.getByRole('switch').evaluateAll((els) => els.slice(1).every((el) => el.disabled))));
   await shot(a, 'settings-ai-1440-before');

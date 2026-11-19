@@ -31,6 +31,14 @@ export function useAiConsent(): AiConsent | undefined {
   return useValue(moniStore().aiConsent$);
 }
 
+/** True once the consent rows have pulled (or failed to), so a switch never starts from a guess. */
+export function useAiConsentSettled(): boolean {
+  return useValue(() => {
+    const state = syncState(moniStore().aiConsent$);
+    return state.isLoaded.get() || Boolean(state.error.get());
+  });
+}
+
 /**
  * Moves the switches at once, records the change, then refreshes the session so the next AI call
  * carries the new `ai_consent` claim. A refused change moves the switches back and throws.

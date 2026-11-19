@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AskMoniMark } from '@/components/brand';
 import { showToast } from '@/components/shell/shell-store';
-import { changeAiConsent, useAiConsent } from '@/lib/ai';
+import { changeAiConsent, useAiConsent, useAiConsentSettled } from '@/lib/ai';
 import { clockTime } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { Mdi, SETTINGS_ICONS } from './mdi';
@@ -39,10 +39,13 @@ function Switch({ label, on, disabled, onChange }: { label: string; on: boolean;
  */
 export function AiSection() {
   const consent: AiConsent = useAiConsent() ?? UNASKED;
+  // Until the rows pull the switches read off whatever the user chose, so they wait rather than write from that.
+  const settled = useAiConsentSettled();
   const { calendar, now, mounted } = useLedger();
   const on = consent.kind === 'answered' && consent.on;
-  const master =
-    consent.kind === 'unasked'
+  const master = !settled
+    ? ''
+    : consent.kind === 'unasked'
       ? 'Off. Nothing goes to AI.'
       : mounted
         ? `Turned ${consent.on ? 'on' : 'off'} by you on ${dateLabel(calendar.dayKey(consent.at), calendar.dayKey(now))}, ${clockTime(consent.at, calendar.zone)}`
@@ -53,7 +56,7 @@ export function AiSection() {
   };
 
   return (
-    <section className="set-card" aria-labelledby="ai-title">
+    <section className="set-card" aria-labelledby="ai-title" aria-busy={!settled || undefined}>
       <div className="set-head">
         <h2 id="ai-title" className="set-title">
           Moni&apos;s AI
@@ -73,6 +76,7 @@ export function AiSection() {
           <Switch
             label="Let Moni use AI"
             on={on}
+            disabled={!settled}
             onChange={(next) => change(next && consent.kind === 'unasked' ? turnOnFor(consent, 'chat') : { all: next })}
           />
         </div>
@@ -92,7 +96,7 @@ export function AiSection() {
               <Switch
                 label={row.title}
                 on={consent.kind === 'answered' && consent.uses[row.use]}
-                disabled={!on}
+                disabled={!settled || !on}
                 onChange={(next) => change({ [row.use]: next })}
               />
             </div>
