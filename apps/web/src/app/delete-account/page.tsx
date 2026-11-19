@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { DeleteAccountForm, FOR_GOOD, WhatIsDeleted } from '@/components/account/delete-account-form';
 import { RequestLinkForm } from '@/components/account/request-link-form';
 import { SiteFrame } from '@/components/account/site-frame';
+import { StoreSync } from '@/components/store/store-sync';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
 
 /**
  * The public deletion page the Play listing links to. Signed out, it lists what goes and emails a sign-in
- * link that comes back here; signed in, it is the same flow as Settings › Delete your account.
+ * link that comes back here; signed in, it is the same flow as Settings › Delete your account, and pulls
+ * the ledger so Export data has every row.
  */
 export default async function DeleteAccountPage() {
   const { data } = await (await createClient()).auth.getClaims();
@@ -27,7 +29,8 @@ export default async function DeleteAccountPage() {
           <p className="site-lede">
             Signed in as <strong>{email ?? 'you'}</strong>. Type DELETE below and Moni deletes the account at once.
           </p>
-          <DeleteAccountForm cancelHref="/" />
+          <StoreSync />
+          <DeleteAccountForm cancelHref="/" userId={data.claims.sub} zone={null} />
         </>
       ) : (
         <>
@@ -45,6 +48,9 @@ export default async function DeleteAccountPage() {
           </p>
           <div className="site-rule" />
           <WhatIsDeleted />
+          <p className="delete-line">
+            To keep a copy first, sign in and use Export data on this page, or Profile › Export data on your phone.
+          </p>
           <p className="delete-line">{FOR_GOOD}</p>
         </>
       )}
