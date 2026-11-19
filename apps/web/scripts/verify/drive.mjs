@@ -614,6 +614,24 @@ try {
     await ctx.close();
   }
 
+  for (const [from, to] of [['light', 'dark'], ['dark', 'light']]) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
+    await ctx.addInitScript((theme) => localStorage.setItem('moni-theme', theme), from);
+    const p = await ctx.newPage();
+    await open(p, '/home');
+    await p.locator('.home-slot').first().waitFor();
+    await p.getByRole('button', { name: /Settings$/ }).first().click();
+    await p.getByRole('radio', { name: to === 'dark' ? 'Dark' : 'Light' }).click();
+    await p.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement), null, { timeout: 3000 }).catch(() => {});
+    const groups = await p.evaluate(() => [...new Set(document.getAnimations().map((a) => a.effect?.pseudoElement).filter(Boolean))].sort());
+    check(
+      `${from} to ${to}: the circle reveal is the only group, so Home's cards change under it`,
+      groups.length > 0 && groups.every((group) => group.endsWith('(root)')),
+      groups,
+    );
+    await ctx.close();
+  }
+
   }
   // ---------- keyboard ----------
   if (runs('keys')) {

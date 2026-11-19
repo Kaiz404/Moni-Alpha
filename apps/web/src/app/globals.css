@@ -359,6 +359,11 @@ textarea::placeholder {
   mix-blend-mode: normal;
 }
 
+/* A named element (a Home card, for Customise) would get its own group outside root's clip and swap at once. */
+[data-theme-switch] * {
+  view-transition-name: none !important;
+}
+
 [data-theme-switch='circle']::view-transition-new(root) {
   animation: reveal 650ms cubic-bezier(0.5, 0, 0.75, 0);
 }
