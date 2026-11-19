@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -23,6 +24,8 @@ type Config struct {
 	PlacesDailyCap int
 	// PlacesUserDailyCap limits each user's calls per Pacific day, per endpoint, within PlacesDailyCap.
 	PlacesUserDailyCap int
+	// CORSAllowedOrigins are the browser origins (the web app) that may call the gateway.
+	CORSAllowedOrigins []string
 }
 
 func (c Config) JWKSURL() string {
@@ -44,6 +47,9 @@ func Load() (Config, error) {
 	if cfg.PlacesUserDailyCap, err = nonNegativeInt("PLACES_USER_DAILY_CAP", 100); err != nil {
 		return cfg, err
 	}
+	if cfg.CORSAllowedOrigins, err = origins("CORS_ALLOWED_ORIGINS"); err != nil {
+		return cfg, err
+	}
 	if cfg.SupabaseURL == "" {
 		return cfg, fmt.Errorf("SUPABASE_URL is required")
 	}
@@ -59,6 +65,24 @@ func nonNegativeInt(key string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%s must be a non-negative integer", key)
 	}
 	return n, nil
+}
+
+// origins reads a comma-separated list of exact origins, such as https://app.example.com or
+// http://localhost:3000. A path, a wildcard or a missing scheme is a configuration error.
+func origins(key string) ([]string, error) {
+	var out []string
+	for _, raw := range strings.Split(os.Getenv(key), ",") {
+		origin := strings.TrimSpace(raw)
+		if origin == "" {
+			continue
+		}
+		u, err := url.Parse(origin)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "" || u.RawQuery != "" || strings.Contains(origin, "*") {
+			return nil, fmt.Errorf("%s: %q is not an origin like https://app.example.com", key, origin)
+		}
+		out = append(out, origin)
+	}
+	return out, nil
 }
 
 func getenv(key, fallback string) string {

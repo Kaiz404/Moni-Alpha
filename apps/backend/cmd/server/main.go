@@ -53,7 +53,7 @@ func main() {
 	}
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           newRouter(verifier, limiter, ipLimiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL), placesHandler),
+		Handler:           newRouter(verifier, limiter, ipLimiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL), placesHandler, cfg.CORSAllowedOrigins),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,

@@ -28,6 +28,10 @@ Extraction responses are a discriminated union: `{ status: "ok", extraction }`, 
 - `PLACES_USER_DAILY_CAP` (default 100) limits each user's calls per endpoint on the same Pacific day, so one account cannot spend the global cap for everyone. A call refused by the allowance does not count against `PLACES_DAILY_CAP`.
 - Places routes have their own per-user rate limit (60 a minute, burst 20) and a 16 KB body limit, so search as you type does not spend the AI limit (20 a minute).
 
+## CORS
+
+The web app calls `/v1` from the browser. `CORS_ALLOWED_ORIGINS` (comma-separated exact origins, such as `https://app.example.com,http://localhost:3000`) lists the origins allowed to; anything else, a path or a wildcard, stops startup with an error. `internal/cors` runs before auth, because a preflight carries no token: an allowed origin's preflight gets 204 with `Authorization, Content-Type` allowed and a 10-minute cache, every answer to it carries `Access-Control-Allow-Origin` and exposes `Retry-After`, and another origin's preflight gets 403. A request without `Origin` (the phone) is untouched. Unset, no browser origin is allowed.
+
 ## Auth
 
 Supabase signs user access tokens with an asymmetric ES256 key. The backend verifies them statelessly against the project JWKS (`$SUPABASE_URL/auth/v1/.well-known/jwks.json`) with a 15-minute key cache — no shared JWT secret, no Supabase round-trip per request. A per-user in-memory token bucket (20 req/min, burst 8) protects the shared OpenRouter credit.
@@ -84,7 +88,7 @@ gcloud run deploy moni-ai-backend \
   --source apps/backend \
   --region asia-southeast3 \
   --allow-unauthenticated \
-  --set-env-vars SUPABASE_URL=https://<project-ref>.supabase.co \
+  --set-env-vars SUPABASE_URL=https://<project-ref>.supabase.co,CORS_ALLOWED_ORIGINS=https://<web-domain> \
   --set-secrets OPENROUTER_API_KEY=openrouter-api-key:latest \
   --memory 256Mi --cpu 1 --max-instances 1
 ```
@@ -104,7 +108,12 @@ gcloud run services update moni-ai-backend --region asia-southeast3 \
   --update-secrets GOOGLE_PLACES_API_KEY=google-places-api-key:latest
 ```
 
-Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL.
+Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL. The trigger keeps env vars too, so allowing the web origin on the live service is one manual update:
+
+```bash
+gcloud run services update moni-ai-backend --region asia-southeast3 \
+  --update-env-vars CORS_ALLOWED_ORIGINS=https://<web-domain>
+```
 
 ## Model allocation rationale
 
