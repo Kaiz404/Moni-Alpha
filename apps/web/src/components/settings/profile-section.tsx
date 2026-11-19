@@ -42,7 +42,7 @@ async function saveTone(tone: MoniTone): Promise<boolean> {
   }
 }
 
-/** Settings › Profile: who you are, the theme, Moni's tone, Sign out and Delete your account. */
+/** Settings › Profile: who you are, the theme, Moni's tone, the privacy policy and terms, Sign out and Delete your account. */
 export function ProfileSection() {
   const { user, run } = useShellApi();
   const { pref, setTheme } = useTheme();
@@ -123,6 +123,22 @@ export function ProfileSection() {
             ))}
           </span>
         </div>
+      </div>
+      <div className="set-group">
+        <Link href="/privacy" className="set-row">
+          <Icon name="file-document-outline" size={20} />
+          <span className="set-row-title" style={{ flex: '1 1 auto' }}>
+            Privacy policy
+          </span>
+          <Icon name="chevron-right" size={20} />
+        </Link>
+        <Link href="/terms" className="set-row">
+          <Icon name="file-document-outline" size={20} />
+          <span className="set-row-title" style={{ flex: '1 1 auto' }}>
+            Terms
+          </span>
+          <Icon name="chevron-right" size={20} />
+        </Link>
       </div>
       <div className="set-group">
         <button type="button" className="set-row" onClick={() => run({ kind: 'signOut' })}>

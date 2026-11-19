@@ -18,6 +18,7 @@ import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPlaces } from './places.mjs';
 import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
+import { verifySite } from './site.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -683,6 +684,7 @@ try {
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  if (runs('site')) await verifySite({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND });
 
   // ---------- every write above was undone ----------
   let left = JSON.parse(webSeed('--query', 'fingerprint'));

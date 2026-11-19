@@ -7,7 +7,9 @@ const PUBLIC_PATHS = [
   '/delete-account',
   '/delete-account/done',
   '/privacy',
+  '/privacy/ms',
   '/terms',
+  '/terms/ms',
   '/help',
 ];
 const PUBLIC_PREFIXES = ['/auth/'];

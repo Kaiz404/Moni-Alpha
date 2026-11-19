@@ -73,6 +73,6 @@ Ignore everything on the Archive page, including the rejected web directions A, 
 
 ## Open owner decisions
 
-- The [CONFIRM] facts on the landing page: data region, price, launch countries, tested banking apps, support email, domain, legal entity.
+- The [CONFIRM] facts on the landing page and in the privacy policy and terms, all in `apps/web/src/lib/site-facts.ts`: data region, price, launch countries, tested banking apps, support email, domain, legal entity, the Google Play link, postal address, the AI providers' retention, the effective date and governing law. Then a lawyer's review of the drafts (`LEGAL_REVIEWED`).
 - The landing page's tagline "Money, sorted kindly." was flagged as a soft phrase.
 - Whether deleting one transaction asks to confirm or only offers Undo; AI consent as one master switch plus per-use switches (drawn) or per-use only; loading skeletons still or pulsing; sync conflicts prompt or last write wins.

@@ -17,3 +17,4 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Where you spend: map, pins, places list, place pane, Day by day, Without a place | [places.md](places.md) |
 | Moni chat: the docked pane, consent, answer cards, drafts for many rows | [chat.md](chat.md) |
 | Settings: Profile, Moni's AI, Merchant names, Import and export | [settings.md](settings.md) |
+| The public site: landing page, privacy policy, terms (English and Malay) | [site.md](site.md) |
