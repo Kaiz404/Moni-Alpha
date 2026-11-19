@@ -12,6 +12,8 @@ export default [
         document: "readonly",
         getComputedStyle: "readonly",
         innerWidth: "readonly",
+        innerHeight: "readonly",
+        requestAnimationFrame: "readonly",
         localStorage: "readonly",
       },
     },
