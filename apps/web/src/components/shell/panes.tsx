@@ -177,7 +177,7 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
       role="form"
       aria-label={copy.tab}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' && event.target instanceof HTMLInputElement && event.target.type !== 'date') {
+        if (event.key === 'Enter' && !event.nativeEvent.isComposing && event.target instanceof HTMLInputElement && event.target.type !== 'date') {
           event.preventDefault();
           save();
         }
@@ -377,7 +377,7 @@ function AskMoni({ ledger }: { ledger: Ledger }) {
         value={addDraft}
         onChange={(event) => setShell({ addDraft: event.target.value })}
         onKeyDown={(event) => {
-          if (event.key !== 'Enter' || event.shiftKey) return;
+          if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
           event.preventDefault();
           void ask();
         }}

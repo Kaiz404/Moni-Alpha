@@ -770,6 +770,10 @@ try {
   await addPane.getByRole('option').first().click();
   await addPane.getByLabel('Shop or note').fill('Verify Kopitiam');
   await shot(d, 'add-type-1440');
+  const composingEnter = (el) => el.dispatchEvent(new el.ownerDocument.defaultView.KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', isComposing: true, bubbles: true, cancelable: true }));
+  await addPane.getByLabel('Shop or note').evaluate(composingEnter);
+  await d.waitForTimeout(400);
+  check('Enter that ends an IME composition in Type it adds nothing', (await addPane.isVisible()) && !(await d.getByRole('status').filter({ hasText: 'Expense added' }).isVisible()));
   await addPane.getByLabel('Shop or note').press('Enter');
   const added = d.getByRole('status').filter({ hasText: 'Expense added' });
   await added.waitFor({ timeout: 5000 }).catch(() => {});
@@ -794,6 +798,9 @@ try {
   await addPane.locator('.add-choice').first().waitFor();
   await d.keyboard.press('a');
   await d.locator('#add-draft').fill('8.40 roti at Mamak Ali');
+  await d.locator('#add-draft').evaluate(composingEnter);
+  await d.waitForTimeout(400);
+  check('Enter that ends an IME composition in Ask Moni sends nothing', (await d.locator('#add-draft').isVisible()) && !(await d.getByRole('dialog', { name: 'Ask Moni uses AI' }).isVisible()) && (await d.locator('#add-draft').inputValue()) === '8.40 roti at Mamak Ali');
   await d.locator('#add-draft').press('Enter');
   const consent = d.getByRole('dialog', { name: 'Ask Moni uses AI' });
   await Promise.race([consent.waitFor({ timeout: 5000 }), amount.waitFor({ timeout: 5000 })]).catch(() => {});
