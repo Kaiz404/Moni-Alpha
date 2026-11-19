@@ -6,7 +6,7 @@ Ink sidebar (1360 wide and up), labelled rail (1024 to 1359), rail with one colu
 
 ## How to get to it (user POV)
 
-Sign in, then resize the window. Routes: `/home`, `/activity`, `/budget`, `/debts`, `/review`, `/settings`.
+Sign in, then resize the window. Routes: `/home`, `/activity`, `/budget`, `/debts`, `/settings`. Review is a drawer on Home (`/home?review=deck`), not a route; `/review` redirects there.
 
 ## Driving it with Playwright
 
