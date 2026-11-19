@@ -512,7 +512,7 @@ func TestChatAnalyzeRepliesWithHistory(t *testing.T) {
 		"snapshot": map[string]any{"currency": "MYR", "food": 420},
 		"history":  []map[string]string{{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}},
 	})
-	if res["status"] != "ok" || res["reply"] != "You spent RM 420 on food this month." || res["modelId"] != llm.Model {
+	if res["status"] != "ok" || res["reply"] != "You spent RM420 on food this month." || res["modelId"] != llm.Model {
 		t.Fatalf("got %v", res)
 	}
 	if msgs, _ := s.llm.requests[0]["messages"].([]any); len(msgs) != 4 {

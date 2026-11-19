@@ -5,8 +5,9 @@ import { recurringKindSchema } from './recurring-override';
 /**
  * The finance snapshot Moni chat sends with a question (`POST /v1/chat/analyze`): deterministic
  * metrics computed on the phone, one block per ISO currency, so the model narrates and never
- * computes. Amounts are decimals in that block's currency. The backend passes it to the prompt
- * as JSON without reading its fields.
+ * computes. Amounts are decimals in that block's currency. The backend rewrites the money fields
+ * as glossary strings ("RM1,116.20") before the prompt (`moneyKeys` in
+ * `apps/backend/internal/chat/money.go`); a new money field belongs in that list too.
  */
 
 const amountByNameSchema = z.object({ name: z.string(), amount: z.number() });

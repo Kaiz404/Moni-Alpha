@@ -28,7 +28,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 
 	var userContent strings.Builder
 	userContent.WriteString("FINANCE_SNAPSHOT:\n")
-	userContent.Write(req.Snapshot)
+	userContent.Write(modelSnapshot(req.Snapshot))
 	userContent.WriteString("\n\nUSER_QUESTION:\n")
 	userContent.WriteString(strings.TrimSpace(req.Message))
 
@@ -61,7 +61,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 
 	return AnalyzeResult{
 		Status:  "ok",
-		Reply:   clamp(reply, 2000),
+		Reply:   clamp(glossaryReply(reply), 2000),
 		ModelID: llm.Model,
 	}
 }

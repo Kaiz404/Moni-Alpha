@@ -55,6 +55,7 @@ export function matches(cited: number, source: number): boolean {
   return (
     Math.abs(cited - source) <= 0.01 ||
     cited === Math.round(source) ||
+    cited === Math.floor(source) ||
     cited === Math.round(source * 10) / 10
   );
 }
