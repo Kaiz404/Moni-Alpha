@@ -44,6 +44,7 @@ export function Page({
   phoneSub,
   crumb,
   meta,
+  phoneTitle = title,
   children,
 }: {
   title: string;
@@ -61,6 +62,8 @@ export function Page({
   phoneSub?: string;
   /** A line under the title: Review's "RM115.80 not counted yet". */
   meta?: string;
+  /** The phone layout's title when it differs from the desktop's, as on a Settings section. */
+  phoneTitle?: string;
   children: ReactNode;
 }) {
   const { user } = useShellApi();
@@ -98,7 +101,7 @@ export function Page({
         )}
         {(phone === 'tab' || phone === 'tab-with-moni') && (
           <>
-            <h1 className="phone-title">{title}</h1>
+            <h1 className="phone-title">{phoneTitle}</h1>
             {phone === 'tab-with-moni' && <AskMoniButton />}
           </>
         )}
@@ -107,7 +110,7 @@ export function Page({
             <Link href={back} className="back-button press" aria-label="Back">
               <Icon name="chevron-left" size={22} />
             </Link>
-            <h1 className="phone-pushed-title">{title}</h1>
+            <h1 className="phone-pushed-title">{phoneTitle}</h1>
           </>
         )}
       </header>
