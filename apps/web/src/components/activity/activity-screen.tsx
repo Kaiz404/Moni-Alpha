@@ -211,7 +211,6 @@ export function ActivityScreen() {
   };
 
   useScreenKeys((key) => {
-    if (pane) return false;
     const current = all[openIndex] ?? page.rows[0];
     switch (key) {
       case 'Escape':

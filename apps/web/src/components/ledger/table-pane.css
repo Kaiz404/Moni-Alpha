@@ -1,0 +1,707 @@
+/* Budget and Debts (W2-Budget, W2-Debts): the tables, the docked detail pane and its forms, on top of
+   ledger.css's cards and rows. One tree for every layout: the pane docks on the sidebar and rail
+   layouts, overlays the rail with one column, and is the pushed page on the phone layout. */
+
+.shell {
+  --detail-width: 408px;
+}
+
+.ledger {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* On the sidebar layout, and the rail from 1240 wide, the pane docks on the right from top to bottom
+   as Moni chat does, and the page (its header too) makes room for it. Narrower than that a docked pane
+   would leave the tables under 600 wide, so the rail opens it over the page as the one-column rail
+   does. Moni chat docks in its place while it is open. */
+html[data-layout='sidebar'] .shell:not([data-pane='chat']) .shell-main:has(.detail) {
+  padding-right: calc(var(--detail-width) + 24px);
+}
+
+@media (min-width: 1240px) {
+  html[data-layout='rail'] .shell:not([data-pane='chat']) .shell-main:has(.detail) {
+    padding-right: calc(var(--detail-width) + 24px);
+  }
+}
+
+@media (max-width: 1239.98px) {
+  html[data-layout='rail'] .detail {
+    display: none;
+  }
+
+  html[data-layout='rail'] .detail[data-open] {
+    display: flex;
+    z-index: 30;
+    animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+    box-shadow:
+      var(--shadow-float),
+      0 0 0 1.5px var(--color-hairline);
+  }
+
+  html[data-layout='rail'] .detail-scrim[data-open] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    background: var(--scrim);
+    animation: fade-in 200ms ease both;
+  }
+}
+
+.shell[data-pane='chat'] .detail,
+.shell[data-pane='chat'] .detail-scrim {
+  display: none !important;
+}
+
+.ledger-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+html[data-layout='phone'] .ledger-main {
+  gap: 12px;
+}
+
+.ledger .card-head {
+  justify-content: flex-start;
+  gap: 16px;
+  min-height: 50px;
+  padding: 0 14px 0 22px;
+}
+
+:where(.ledger) .card-head > .card-title {
+  flex: 1 1 auto;
+}
+
+.skeleton {
+  background: var(--color-sand-light);
+  animation: fade-in 400ms ease both;
+}
+
+.hint-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+html[data-layout='rail-one-column'] .hint-keys,
+html[data-layout='phone'] .hint-keys {
+  display: none;
+}
+
+.round-btn {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  background: var(--color-card);
+  transition: background-color var(--duration-control) var(--ease-control);
+}
+
+.round-btn:hover:not(:disabled) {
+  background: var(--color-sand-light);
+}
+
+.round-btn:disabled {
+  opacity: 0.4;
+}
+
+.round-btn.small {
+  width: 36px;
+  height: 36px;
+}
+
+.chip {
+  height: 40px;
+  padding: 0 12px 0 16px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  white-space: nowrap;
+}
+
+.chip select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.chip:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.ledger .btn-out {
+  height: 44px;
+}
+
+.person-tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--color-on-pastel);
+  background: var(--color-block-lilac);
+}
+
+.person-tile[data-side='in'] {
+  background: var(--color-block-mint);
+}
+
+.meter {
+  display: block;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  overflow: hidden;
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--color-ink-2);
+  transition: width var(--duration-value) var(--ease-value);
+}
+
+.meter[data-tone='over'] > span {
+  background: var(--color-coral);
+}
+
+.meter[data-tone='key'] > span {
+  background: var(--color-mint-key);
+}
+
+.tone-over {
+  color: var(--color-over);
+}
+
+.tone-near {
+  color: var(--color-on-lemon);
+}
+
+.tone-plain {
+  color: var(--color-ink-2);
+}
+
+.tone-quiet {
+  color: var(--color-muted);
+}
+
+.tone-in {
+  color: var(--color-deep-mint);
+}
+
+.seg-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9999px;
+  background: var(--color-sand);
+}
+
+.seg-tabs button {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  transition:
+    background-color var(--duration-control) var(--ease-control),
+    color var(--duration-control) var(--ease-control);
+}
+
+.seg-tabs button[aria-checked='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* ---------- table rows ---------- */
+
+.grid-head,
+.grid-row,
+.grid-total {
+  display: grid;
+  align-items: center;
+  column-gap: 10px;
+  padding: 0 10px 0 22px;
+}
+
+.grid-head {
+  height: 30px;
+  border-bottom: 1.5px solid var(--color-sand-light);
+  white-space: nowrap;
+}
+
+.grid-head > :not(:first-child),
+.grid-total > .num,
+.grid-row > .num {
+  text-align: right;
+  justify-self: end;
+}
+
+.grid-row {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.grid-row:hover {
+  background: var(--color-sand-light);
+}
+
+.grid-row[aria-selected='true'] {
+  background: var(--color-sand);
+}
+
+.grid-row[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-foreground);
+}
+
+.grid-row:focus-visible {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: -2px;
+}
+
+.row-more {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.grid-row:hover .row-more,
+.grid-row[aria-selected='true'] .row-more,
+.row-more:focus-visible {
+  opacity: 1;
+}
+
+.grid-total {
+  border-top: 1.5px solid var(--color-hairline);
+}
+
+.row-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.row-name > b {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+:where(.ledger) .row-text > b {
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:where(.ledger) .row-text > span {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- the detail pane ---------- */
+
+.detail {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: var(--detail-width);
+  z-index: 5;
+  border-radius: 26px;
+  background: var(--color-card);
+  padding: 14px 22px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-layout='rail-one-column'] .detail,
+html[data-layout='phone'] .detail {
+  display: none;
+}
+
+html[data-layout='rail-one-column'] .detail[data-open],
+html[data-layout='phone'] .detail[data-open] {
+  display: flex;
+  z-index: 30;
+  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+}
+
+html[data-layout='rail-one-column'] .detail[data-open] {
+  box-shadow:
+    var(--shadow-float),
+    0 0 0 1.5px var(--color-hairline);
+}
+
+html[data-layout='phone'] .detail[data-open] {
+  inset: 0;
+  width: auto;
+  border-radius: 0;
+  background: var(--color-background);
+  padding: 12px var(--spacing-screen) 32px;
+}
+
+html[data-layout='phone'] .shell:has(.detail[data-open]) .tabbar {
+  display: none;
+}
+
+.detail-scrim {
+  display: none;
+}
+
+html[data-layout='rail-one-column'] .detail-scrim[data-open] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: var(--scrim);
+  animation: fade-in 200ms ease both;
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.pane-money {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pane-money-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detail-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.detail-top .count {
+  flex: 1 1 auto;
+  font-size: 13px;
+  color: var(--color-muted);
+  padding-left: 4px;
+}
+
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.detail-name {
+  margin: 0;
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.detail-rule {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1.5px solid var(--color-sand-light);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.detail-empty span {
+  max-width: 260px;
+}
+
+.hero-amount {
+  font-size: 30px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.field-row > .label-text {
+  flex: 1 1 auto;
+  font-size: 14px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.pill-field {
+  max-width: 250px;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 120ms ease;
+}
+
+button.pill-field:hover {
+  background: var(--color-hairline);
+}
+
+.pill-field select,
+.pill-field input {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  min-width: 0;
+}
+
+.pill-field:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+/* The capsule a budget or amount is typed into, with its Enter and Esc hint under it. */
+.edit-capsule {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 104px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  box-shadow: 0 0 0 2px var(--color-foreground);
+  z-index: 6;
+}
+
+.edit-capsule > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.edit-capsule input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground);
+}
+
+.edit-hint {
+  position: absolute;
+  top: 40px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: var(--color-on-ink-body);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-float);
+  animation: fade-in 120ms ease both;
+}
+
+.edit-hint .kbd {
+  background: transparent;
+  border-color: var(--color-primary-pressed);
+  color: var(--color-on-ink-meta);
+}
+
+html[data-layout='phone'] .edit-hint {
+  display: none;
+}
+
+.tl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tl-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.tl-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 36px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--color-sand);
+}
+
+.tl-node {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sand);
+  color: var(--color-on-pastel);
+}
+
+.tl-node[data-kind='repayment'] {
+  background: var(--color-mint);
+}
+
+.tl-node[data-kind='due'] {
+  background: var(--color-card);
+  color: var(--color-ink-2);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+}
+
+.tl-item .row-text {
+  flex: 1 1 auto;
+}
+
+.tl-item .row-text > b {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.tl-amount {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.dashed-tile {
+  border-radius: 20px;
+  border: 1.5px dashed var(--color-border-strong);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.desk-nav-group {
+  display: contents;
+}
+
+.phone-back {
+  display: none;
+}
+
+html[data-layout='phone'] .desk-nav-group {
+  display: contents;
+}
+
+.phone-back {
+  display: inline-flex;
+}
+
+html[data-layout='phone'] .desk-nav {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-layout='rail-one-column'] .detail[data-open],
+  html[data-layout='phone'] .detail[data-open] {
+    animation: fade-in 180ms ease both;
+  }
+
+  .meter > span {
+    transition: none;
+  }
+}

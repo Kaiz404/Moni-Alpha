@@ -1,0 +1,702 @@
+/* W2-Budget: the ring card beside the bills, the budget table, the category pane's chart and list.
+   The phone layout is the mobile Budget tab: the ring card, one ring per category, then the bills. */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.phone-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+
+
+.budget-top {
+  display: grid;
+  grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.budget-top:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html[data-layout='rail-one-column'] .budget-top,
+html[data-layout='phone'] .budget-top {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container ledger-main (max-width: 760px) {
+  .budget-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ledger-main {
+  container: ledger-main / inline-size;
+}
+
+.ring-card {
+  min-height: 236px;
+  padding: 20px 24px 20px 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 22px;
+}
+
+html[data-layout='phone'] .ring-card {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 18px;
+}
+
+html[data-layout='phone'] .ring-card .spend-ring {
+  align-self: center;
+}
+
+.spend-ring {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  flex: none;
+}
+
+.spend-ring svg {
+  position: absolute;
+  inset: 0;
+}
+
+.ring-slice {
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.ring-slice:hover {
+  opacity: 0.85;
+}
+
+.ring-glyph {
+  position: absolute;
+  pointer-events: none;
+}
+
+.ring-glyph .cat-bubble {
+  background: transparent !important;
+}
+
+.ring-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ring-total {
+  display: flex;
+  align-items: baseline;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ring-total small {
+  font-size: 15px;
+}
+
+.ring-of {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.ring-words {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ring-headline {
+  margin-top: 4px;
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ring-sub {
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--color-ink-2);
+}
+
+.ring-rule {
+  height: 1.5px;
+  background: var(--color-sand-light);
+  margin: 8px 0 4px;
+}
+
+.ring-perday {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.bills-card {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bills-card .card-head {
+  min-height: 44px;
+}
+
+.bills-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bill-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  grid-template-areas: 'icon name meta amount';
+  align-items: center;
+  column-gap: 12px;
+  min-height: 42px;
+  padding: 0 20px;
+}
+
+.bill-row > .cat-bubble {
+  grid-area: icon;
+}
+
+.bill-row > b {
+  grid-area: name;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bill-meta {
+  grid-area: meta;
+  font-size: 13px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.bill-meta [data-tone='soon'] {
+  color: var(--color-on-lemon);
+  font-weight: 700;
+}
+
+.bill-meta [data-tone='late'] {
+  color: var(--color-over);
+  font-weight: 700;
+}
+
+.bill-amount {
+  grid-area: amount;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 76px;
+  text-align: right;
+}
+
+html[data-layout='phone'] .bill-row {
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name amount'
+    'icon meta amount';
+  min-height: 56px;
+  padding: 6px 18px;
+}
+
+html[data-layout='phone'] .phone-controls .round-btn {
+  display: none;
+}
+
+.bills-none {
+  margin: 0;
+  padding: 4px 22px 12px;
+}
+
+.budgets-card {
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  container: budgets / inline-size;
+}
+
+.copy-btn {
+  height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.budget-row {
+  grid-template-columns: minmax(0, 1fr) 88px 96px 88px 84px 94px 98px 32px;
+}
+
+.grid-row.budget-row {
+  height: 40px;
+}
+
+.grid-total.budget-row {
+  height: 56px;
+}
+
+/* The header holds the month and the view beside the command field, so the field shows only its cat
+   and its key cap on this page. */
+html:not([data-layout='phone']) .shell-main:has([data-screen='budget']) .page-head {
+  gap: 16px;
+}
+
+.shell-main:has([data-screen='budget']) .page-head .cmd-field {
+  width: auto;
+}
+
+.shell-main:has([data-screen='budget']) .page-head .cmd-field-text {
+  display: none;
+}
+
+.page-head .seg-tabs button {
+  padding: 0 12px;
+}
+
+/* Narrower cards drop the bar first, then the past columns, keeping category, spent, budget and left. */
+@container budgets (max-width: 860px) {
+  .budget-row {
+    grid-template-columns: minmax(110px, 1fr) 84px 92px 84px 96px 104px 28px;
+    column-gap: 8px;
+  }
+
+  .budget-row [data-col='bar'] {
+    display: none;
+  }
+}
+
+@container budgets (max-width: 660px) {
+  .budget-row {
+    grid-template-columns: minmax(0, 1fr) 84px 92px 84px 28px;
+  }
+
+  .budget-row [data-col='last'],
+  .budget-row [data-col='avg'] {
+    display: none;
+  }
+}
+
+.grid-section {
+  height: 30px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 18px 4px;
+}
+
+.budget-cell {
+  justify-self: end;
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bcell {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: inset 0 -1.5px 0 var(--color-border-strong);
+  border-radius: 6px 6px 0 0;
+  transition: background-color 120ms ease;
+}
+
+.bcell:hover:not(:disabled) {
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+  border-radius: 9999px;
+}
+
+.bcell:disabled {
+  box-shadow: none;
+  color: var(--color-foreground);
+}
+
+.set-btn {
+  height: 30px;
+  padding: 0 12px 0 8px;
+  border-radius: 9999px;
+  border: 1.5px dashed var(--color-border-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.set-btn:hover {
+  background: var(--color-card);
+  border-color: var(--color-ink-2);
+}
+
+.left-cell {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bar-cell {
+  padding-left: 4px;
+}
+
+.past-cell {
+  font-size: 15px;
+  color: var(--color-ink-2);
+}
+
+.grid-row > .num {
+  font-size: 15px;
+}
+
+.grid-total > .num {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.grid-total .row-text > b {
+  font-size: 15px;
+}
+
+.budgets-empty {
+  margin: 24px auto 40px;
+  text-align: center;
+  align-items: center;
+}
+
+/* ---------- the phone layout's rings ---------- */
+
+.rings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ring-tile {
+  border-radius: 22px;
+  background: var(--color-card);
+  padding: 14px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  text-align: center;
+}
+
+.ring-tile[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.ring-tile > b {
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 600;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ring-tile > .num {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ring-tile-art {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.ring-tile-glyph {
+  position: absolute;
+  inset: 15px;
+}
+
+/* ---------- the category pane ---------- */
+
+.pane-left {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.history-plot {
+  position: relative;
+  margin-top: 10px;
+}
+
+.history-plot svg {
+  position: absolute;
+  inset: 0;
+}
+
+.history-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow-bar var(--duration-value) var(--ease-value) both;
+}
+
+@keyframes grow-bar {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.history-axis {
+  position: absolute;
+  left: 0;
+  width: 44px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-muted);
+}
+
+.history-budget {
+  position: absolute;
+  right: 0;
+  border-top: 2px dashed var(--color-deep-mint);
+}
+
+.history-budget-label {
+  position: absolute;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  color: var(--color-deep-mint);
+  background: var(--color-card);
+  padding-right: 6px;
+}
+
+html[data-layout='phone'] .history-budget-label {
+  background: var(--color-background);
+}
+
+.history-value {
+  position: absolute;
+  width: 80px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.history-value > span {
+  background: var(--color-card);
+  padding: 0 4px;
+  border-radius: 6px;
+}
+
+.history-ticks {
+  display: flex;
+  box-sizing: border-box;
+}
+
+.history-ticks > span {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-muted);
+}
+
+.history-ticks > span[data-current] {
+  color: var(--color-foreground);
+  font-weight: 700;
+}
+
+.pane-list-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+}
+
+.ledger .see-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  color: var(--color-deep-mint);
+  font-weight: 700;
+}
+
+.pane-list {
+  display: flex;
+  flex-direction: column;
+  margin: 2px -10px 0;
+}
+
+.pane-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 14px;
+}
+
+.pane-row:hover {
+  background: var(--color-sand-light);
+}
+
+.pane-row .row-text {
+  flex: 1 1 auto;
+}
+
+.pane-row .row-text > b {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.pane-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-count {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  background: var(--color-pending-fill);
+  color: var(--color-on-lilac);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pane-row-amount {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---------- calendar ---------- */
+
+.calendar-card {
+  padding: 6px 0 18px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 18px;
+}
+
+.calendar-dow {
+  text-align: center;
+  padding: 4px 0;
+}
+
+.calendar-day {
+  min-height: 64px;
+  border-radius: 14px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--color-sand-light);
+}
+
+.calendar-day[data-heat='under'] {
+  background: var(--color-block-mint);
+  color: var(--color-on-pastel);
+}
+
+.calendar-day[data-heat='x1_5'] {
+  background: var(--color-block-lemon);
+  color: var(--color-on-pastel);
+}
+
+.calendar-day[data-heat='x2'] {
+  background: var(--color-block-peach);
+  color: var(--color-on-pastel);
+}
+
+.calendar-day[data-heat='over_x2'] {
+  background: var(--color-coral);
+  color: var(--color-on-pastel);
+}
+
+.calendar-day[data-heat='future'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-sand);
+  color: var(--color-muted);
+}
+
+.calendar-day[data-bill] {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.calendar-date {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calendar-spent {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
+html[data-layout='phone'] .calendar-day {
+  min-height: 48px;
+  padding: 4px;
+}
+
+html[data-layout='phone'] .calendar-spent {
+  font-size: 10px;
+}
+
+html[data-layout='phone'] .calendar-grid {
+  gap: 4px;
+  padding: 0 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-bar {
+    animation: fade-in 150ms ease both;
+  }
+}

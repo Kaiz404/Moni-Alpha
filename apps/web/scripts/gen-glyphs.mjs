@@ -38,6 +38,11 @@ const names = [
     'tag-outline',
     'chevron-up',
     'check',
+    // Budget and Debts: a repayment, a write-off, copying a reminder, tapping to start.
+    'cash-check',
+    'text-box-remove-outline',
+    'content-copy',
+    'gesture-tap',
   ]),
 ].sort();
 const pascal = (name) => `mdi${name.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase())}`;
