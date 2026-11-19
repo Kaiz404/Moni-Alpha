@@ -85,12 +85,13 @@ tags:
 - assertVisible:
     id: home.avatar
 
-# The Home ask box opens the same page.
+# The Home ask box opens the same page with its input focused, where Back would only drop the keyboard.
 - tapOn:
     id: home.ask-box
 - assertVisible:
     id: chat.back
-- pressKey: Back
+- tapOn:
+    id: chat.back
 - assertVisible:
     id: home.avatar
 
