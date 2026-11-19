@@ -26,7 +26,7 @@ import {
   planTransfer,
 } from '../transactions';
 import type { LedgerView, PlanContext } from '../types';
-import { planWalletDelete } from '../wallets';
+import { planWalletCreate, planWalletDelete } from '../wallets';
 
 const NOW = '2026-10-14T03:00:00.000Z';
 const minor = (value: number) => value as MinorAmount;
@@ -627,5 +627,50 @@ describe('applyToTables', () => {
     expect(() =>
       applyToTables(tables, { insert: [], patch: [{ table: 'wallets', id: 'gone', patch: { name: 'x' } }], softDelete: [] }),
     ).toThrow('Cannot patch missing row: gone');
+  });
+});
+
+describe('planWalletCreate', () => {
+  it('adds the wallet with its starting balance as a decimal, confirmed now, at the given place', () => {
+    const wallet = {
+      name: 'Maybank Savings',
+      type: 'bank' as const,
+      currency: 'MYR',
+      initialBalanceMinor: minor(228180),
+      color: '#F9D51F',
+      icon: 'bank',
+      cardStyleId: 'citrus-pop',
+    };
+    expect(planWalletCreate(wallet, context(), 2)).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [
+          {
+            table: 'wallets',
+            row: {
+              id: 'new-1',
+              user_id: 'user-1',
+              name: 'Maybank Savings',
+              type: 'bank',
+              currency: 'MYR',
+              initial_balance: '2281.80',
+              color: '#F9D51F',
+              icon: 'bank',
+              card_style_id: 'citrus-pop',
+              notification_package: null,
+              notification_app_label: null,
+              notification_account_hint: null,
+              balance_confirmed_at: NOW,
+              is_active: true,
+              display_order: 2,
+              deleted: false,
+            },
+          },
+        ],
+        patch: [],
+        softDelete: [],
+      },
+      result: 'new-1',
+    });
   });
 });

@@ -2,7 +2,7 @@ import type { StoredRow } from '@repo/core';
 import { syncState } from '@legendapp/state';
 import { assertMigrated, wallets$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
-import { commit, ledgerView } from '@/lib/store/writes';
+import { commit, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { recordSourceLinked } from '@/lib/notifications/capture-health';
@@ -10,8 +10,7 @@ import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
 import type { CreateWallet, UpdateWallet, MinorAmount } from '@repo/types';
 import { decimalToMinor, minorToDecimal } from '@repo/types';
-import { planWalletDelete, toFinanceWallet } from '@repo/core';
-import { randomUUID } from 'expo-crypto';
+import { planWalletCreate, planWalletDelete, toFinanceWallet } from '@repo/core';
 
 type WalletRow = StoredRow<'wallets'>;
 
@@ -64,29 +63,7 @@ export async function getWalletById(id: string) {
 }
 
 export async function createWallet(data: CreateWallet) {
-  const userId = await getUserId();
-  if (!userId) throw new Error('User ID required');
-
-  const id = randomUUID();
-
-  wallets$[id].set({
-    id,
-    user_id: userId,
-    name: data.name,
-    type: data.type,
-    currency: data.currency ?? 'USD',
-    initial_balance: minorToDecimal(data.initialBalanceMinor),
-    color: data.color,
-    icon: data.icon,
-    card_style_id: data.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
-    notification_package: data.notificationPackage ?? null,
-    notification_app_label: data.notificationAppLabel ?? null,
-    notification_account_hint: data.notificationAccountHint ?? null,
-    balance_confirmed_at: new Date().toISOString(),
-    is_active: true,
-    display_order: 0,
-    deleted: false,
-  });
+  const id = commit(planWalletCreate(data, await planContext()));
 
   if (data.notificationPackage) recordSourceLinked(data.notificationPackage);
 
