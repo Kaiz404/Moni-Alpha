@@ -72,6 +72,7 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       await ep.locator('.chart-label').allTextContents(),
     );
     await ep.getByRole('button', { name: /^Add a transaction/ }).click();
+    await ep.locator('aside[data-pane="add"]').waitFor({ timeout: 5000 }).catch(() => {});
     check("Activity's Add a transaction opens Add", await ep.locator('aside[data-pane="add"]').isVisible());
     await ep.keyboard.press('Escape');
     await ep.goto(`${base}/activity?categories=00000000-0000-4000-8000-000000000000`);
