@@ -579,6 +579,30 @@ html[data-layout='phone'] .edit-hint {
 
 html[data-layout='phone'] .phone-back {
   display: inline-flex;
+  width: 44px;
+  height: 44px;
+}
+
+/* On the phone layout a control drawn under 44 (the month chip, a budget pill, Month | Calendar, Remind) keeps a 44
+   hit area. The pill clips its text, so a clear border makes its room instead. */
+html[data-layout='phone'] .pill-field {
+  height: 44px;
+  border-block: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html[data-layout='phone'] :is(.chip, .seg-tabs button, .ledger .btn, .detail-body .btn) {
+  position: relative;
+}
+
+html[data-layout='phone'] :is(.chip, .seg-tabs button, .ledger .btn, .detail-body .btn)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 
 html[data-layout='phone'] .desk-nav {
