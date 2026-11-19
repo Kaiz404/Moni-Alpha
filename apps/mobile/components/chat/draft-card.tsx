@@ -17,9 +17,9 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { budgetProgress$, categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
+import { editedProposal } from '@repo/core';
 import {
   approve,
-  editedProposal,
   notMine,
   undo,
   type ReviewEdits,

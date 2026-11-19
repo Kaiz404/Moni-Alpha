@@ -1,26 +1,33 @@
-import type { StoredRow } from '@repo/core';
 import {
+  planReview,
+  toProposal,
+  type CaptureMark,
+  type Planned,
+  type ReviewChanges,
+  type ReviewContext,
+  type ReviewDecision,
+  type ReviewView,
+  type StoredRow,
+} from '@repo/core';
+import {
+  autoAddRules$,
   isMigrated,
   proposedTransactions$,
   wallets$,
 } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
-import { ledgerView } from '@/lib/store/writes';
-import { checkTransfer, toProposal } from '@repo/core';
+import { commit, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
-  capturePairingSchema,
   decimalToMinor,
   minorToDecimal,
-  proposedTransactionStatusSchema,
   type CreateProposedTransaction,
   type ProposedTransaction,
   type ProposedTransactionSourceType,
-  type TransactionAlert,
   type TransactionSource,
 } from '@repo/types';
-import { createTransaction, getTransactions } from './transactions';
+import { getTransactions } from './transactions';
 import { findDuplicate, type DuplicateMatch, type LedgerEntry } from '@/lib/ai/duplicates';
 import {
   institutionOfWallet,
@@ -191,87 +198,62 @@ export async function createProposedTransaction(
   return result;
 }
 
-export async function approveProposedTransaction(
+/** What a review decision reads on the phone: the live wallets and the user's auto-add rules. */
+export function reviewView(): ReviewView {
+  return {
+    walletsById: ledgerView().walletsById,
+    autoAddRules: getRecordValues<StoredRow<'auto_add_rules'>>(autoAddRules$),
+  };
+}
+
+export async function reviewContext(): Promise<ReviewContext> {
+  return {
+    ...(await planContext()),
+    reviewHistory: isMigrated('review_history'),
+    autoAddRules: isMigrated('review_later_and_auto_add_rules'),
+  };
+}
+
+/** The capture log entries a decision names, written on this device. */
+export function markCaptures(marks: readonly CaptureMark[]): void {
+  for (const { captureId, status, transactionId, pairedProposalId } of marks) {
+    if (pairedProposalId) markCaptureStatus(captureId, status, transactionId, pairedProposalId);
+    else if (transactionId) markCaptureStatus(captureId, status, transactionId);
+    else markCaptureStatus(captureId, status);
+  }
+}
+
+/**
+ * Plans a decision with @repo/core's `planReview`, with where the phone was when the capture
+ * arrived. Writes nothing; `applyReview` carries it out.
+ */
+export async function planDecision(
   proposal: ProposedTransaction,
-  wallets: { walletId: string; transferToWalletId?: string | null },
-  alert?: TransactionAlert,
-  /** Moni completed this capture without asking, so the row is marked Auto. */
-  added: { automatically: boolean } = { automatically: false },
-): Promise<string> {
-  if (!proposal.amountMinor || !proposal.type) {
-    throw new Error('Cannot approve: amount or type is missing');
-  }
-
-  const walletId = wallets.walletId;
-  const transferToWalletId = wallets.transferToWalletId ?? proposal.transferToWalletId ?? null;
-
-  if (proposal.type === 'transfer') {
-    const problem = checkTransfer(ledgerView(), walletId, transferToWalletId);
-    if (problem) throw new Error(problem.kind === 'error' ? problem.message : 'Select the wallet it went to');
-  }
-
-  const earlyLocation = getProposalLocationSnapshot(proposal.id);
-
-  const transaction = await createTransaction({
-    walletId,
-    amountMinor: proposal.amountMinor,
-    type: proposal.type,
-    transferToWalletId: proposal.type === 'transfer' ? transferToWalletId : null,
-    categoryId: proposal.categoryId ?? null,
-    description: proposal.description ?? null,
-    merchant: proposal.merchant ?? null,
-    transactionDate: proposal.transactionDate ?? new Date().toISOString(),
-    locationLatitude: earlyLocation?.latitude ?? null,
-    locationLongitude: earlyLocation?.longitude ?? null,
-    locationName: earlyLocation?.name ?? null,
-    metadata: {
-      ...(alert ? { alert } : {}),
-      ...(proposal.pairing ? { pairing: proposal.pairing } : {}),
-      ...(added.automatically ? { ai_suggested: true } : {}),
-    },
-  }, proposalSource(proposal.sourceType));
-
-  closeProposal(proposal, 'approved', transaction.id);
-  return transaction.id;
+  decision: ReviewDecision,
+): Promise<Planned<ReviewChanges>> {
+  const at = decision.kind === 'approve' ? getProposalLocationSnapshot(proposal.id) : null;
+  const placed: ReviewDecision =
+    decision.kind === 'approve' && at && decision.place === undefined
+      ? { ...decision, place: { latitude: at.latitude, longitude: at.longitude, name: at.name ?? null } }
+      : decision;
+  return planReview(proposal, placed, reviewView(), await reviewContext());
 }
 
-export async function rejectProposedTransaction(id: string): Promise<void> {
-  const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
-  const proposal = row ? toProposal(row) : null;
-  if (!proposal) throw new Error(`Cannot reject missing proposal: ${id}`);
-  closeProposal(proposal, 'rejected');
-}
-
-/** Before review_history is pushed there is no reviewed_at column, so the row is soft-deleted. */
-function closeProposal(
-  proposal: Pick<ProposedTransaction, 'id' | 'sourceType' | 'pairing'>,
-  status: 'approved' | 'rejected',
-  transactionId?: string,
-): void {
-  if (proposal.sourceType === 'notification') {
-    // run-extraction stores a notification's proposal under the id of its capture log entry.
-    if (status === 'approved') markCaptureStatus(proposal.id, 'added', transactionId);
-    else markCaptureStatus(proposal.id, 'ignored');
-  }
-  const absorbed = proposal.pairing?.absorbed;
-  if (absorbed?.sourceType === 'notification') {
-    if (status === 'approved') markCaptureStatus(absorbed.id, 'same_payment', transactionId);
-    else markCaptureStatus(absorbed.id, 'ignored');
-  }
-  const now = new Date().toISOString();
-  if (!isMigrated('review_history')) {
-    patchRow(proposedTransactions$, proposal.id, { status, updated_at: now });
-    softDelete(proposal.id);
-    return;
-  }
-  patchRow(proposedTransactions$, proposal.id, {
-    status,
-    reviewed_at: now,
-    transaction_id: transactionId ?? null,
-    updated_at: now,
-  });
-  clearProposalLocationSnapshot(proposal.id);
+/** Writes a planned decision, then the phone's own side: the capture log and the location snapshot. */
+export function applyReview(proposalId: string, plan: Planned<ReviewChanges>): ReviewChanges {
+  const changes = commit(plan);
+  markCaptures(changes.captureMarks);
+  clearProposalLocationSnapshot(proposalId);
   emitProposedTransactionsChanged();
+  return changes;
+}
+
+/** Plans and writes a decision, or throws why it could not. */
+export async function commitReview(
+  proposal: ProposedTransaction,
+  decision: ReviewDecision,
+): Promise<ReviewChanges> {
+  return applyReview(proposal.id, await planDecision(proposal, decision));
 }
 
 export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {

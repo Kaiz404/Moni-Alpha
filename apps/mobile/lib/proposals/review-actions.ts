@@ -1,48 +1,38 @@
-import {
-  capturePairingSchema,
-  type MinorAmount,
-  type ProposedTransaction,
-  type TransactionType,
-} from '@repo/types';
+import type { ProposedTransaction, TransactionType } from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
-import { checkTransfer, merchantKey, type StoredRow } from '@repo/core';
-import { markCaptureStatus } from '@/lib/notifications/capture-status';
+import {
+  editedProposal,
+  planNotATransfer,
+  planReopen,
+  planSimilarRule,
+  type ReviewChanges,
+  type ReviewEdits as EditsOnCapture,
+  type StoredRow,
+} from '@repo/core';
 import { canPairInto, pairCapture, toAbsorbedCapture, undoPairing } from '@/lib/proposals/pairing';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { keepProposalReceipt } from '@/lib/receipts/upload-queue';
 import { proposedTransactions$ } from '@/lib/store';
-import { hasRow, patchRow } from '@/lib/store/helpers';
-import { ledgerView } from '@/lib/store/writes';
+import { hasRow } from '@/lib/store/helpers';
+import { commit } from '@/lib/store/writes';
 import {
-  createAutoAddRule,
-  deleteAutoAddRule,
-  listAutoAddRules,
-} from '@/lib/supabase/auto-add-rules';
-import { getUserId } from '@/lib/supabase/client';
-import {
-  approveProposedTransaction,
+  applyReview,
   findProposalDuplicate,
   isOpenProposal,
-  rejectProposedTransaction,
+  markCaptures,
+  planDecision,
+  reviewContext,
+  reviewView,
   type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
-import { deleteTransaction } from '@/lib/supabase/transactions';
-import { captureAlert } from '@repo/core';
 import { retypeFields } from '@/lib/transactions/type-change';
 
 /**
  * What the user changed on a capture before deciding. A field left undefined keeps the
  * proposal's value; `walletId: null` means no wallet is picked yet.
  */
-export type ReviewEdits = {
-  amountMinor?: MinorAmount;
-  merchant?: string;
-  categoryId?: string | null;
-  walletId?: string | null;
-  transferToWalletId?: string | null;
-  /** The capture was read as the wrong type. Set through `retypeEdits`. */
-  type?: TransactionType;
+export type ReviewEdits = EditsOnCapture & {
   /** "Don't ask about similar": Approve also adds an auto-add rule for this app and merchant. */
   similar?: boolean;
 };
@@ -57,7 +47,8 @@ export type ReviewOutcome =
       proposal: ProposedTransaction;
       row: ProposalRowSnapshot;
       transactionId: string;
-      ruleAdded: boolean;
+      /** The auto-add rule "Don't ask about similar" saved, and whether this Approve created it. */
+      rule: ReviewChanges['rule'];
     }
   | { action: 'notMine'; proposal: ProposedTransaction; row: ProposalRowSnapshot }
   | { action: 'pair'; proposal: ProposedTransaction };
@@ -91,88 +82,24 @@ export function retypeEdits(proposal: ProposedTransaction, next: TransactionType
   return next === proposal.type ? { type: undefined, categoryId: undefined } : retypeFields(next);
 }
 
-/** The proposal as it will be written, edits applied. */
-export function editedProposal(
-  proposal: ProposedTransaction,
-  edits: ReviewEdits,
-): ProposedTransaction {
-  const type = reviewType(proposal, edits);
-  const transfer = type === 'transfer';
-  const merchant = edits.merchant === undefined ? proposal.merchant : edits.merchant.trim() || null;
-  return {
-    ...proposal,
-    type,
-    amountMinor: edits.amountMinor ?? proposal.amountMinor,
-    merchant: transfer ? null : merchant,
-    categoryId: transfer
-      ? null
-      : edits.categoryId === undefined
-        ? proposal.categoryId
-        : edits.categoryId,
-    walletId: edits.walletId === undefined ? proposal.walletId : edits.walletId,
-    transferToWalletId: !transfer
-      ? null
-      : edits.transferToWalletId === undefined
-        ? proposal.transferToWalletId
-        : edits.transferToWalletId,
-  };
-}
-
-async function addSimilarRule(proposal: ProposedTransaction): Promise<boolean> {
-  const key = merchantKey(proposal.merchant);
-  if (
-    proposal.sourceType !== 'notification' ||
-    !proposal.sourceApp ||
-    !key ||
-    !proposal.walletId ||
-    !proposal.categoryId
-  ) {
-    return false;
-  }
-  try {
-    await createAutoAddRule({
-      merchantKey: key,
-      sourceApp: proposal.sourceApp,
-      walletId: proposal.walletId,
-      categoryId: proposal.categoryId,
-    });
-    return true;
-  } catch (error) {
-    console.warn('[review] auto-add rule not saved:', messageOf(error, 'unknown'));
-    return false;
-  }
-}
-
 /** Writes the ledger row. Nothing is written until every required field is present. */
 export async function approve(
   proposal: ProposedTransaction,
   edits: ReviewEdits = {},
 ): Promise<ReviewResult> {
-  const next = editedProposal(proposal, edits);
-  if (!next.walletId) return { status: 'needsInput', field: 'wallet' };
-  if (next.type === 'transfer') {
-    const problem = checkTransfer(ledgerView(), next.walletId, next.transferToWalletId);
-    if (problem?.kind === 'needsInput') return { status: 'needsInput', field: problem.field };
-    if (problem) return { status: 'error', message: problem.message };
-  }
-  if (!next.amountMinor || next.amountMinor <= 0) {
-    return { status: 'error', message: 'Enter an amount above zero.' };
-  }
-
+  const { similar, ...changes } = edits;
   const row = openRow(proposal.id);
+  const plan = await planDecision(proposal, { kind: 'approve', edits: changes, similar });
+  if (plan.kind === 'needsInput') return { status: 'needsInput', field: plan.field };
+  if (plan.kind === 'error') return { status: 'error', message: plan.message };
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
   try {
-    const transactionId = await approveProposedTransaction(
-      next,
-      { walletId: next.walletId, transferToWalletId: next.transferToWalletId },
-      captureAlert(proposal, proposal.id),
-    );
-    keepProposalReceipt(next, transactionId);
-    // A rule has no type, so it would add the next alert under the type Moni misread.
-    const ruleAdded = edits.similar && !edits.type ? await addSimilarRule(next) : false;
+    const { transactionId, rule } = applyReview(proposal.id, plan);
+    const next = editedProposal(proposal, changes);
+    keepProposalReceipt(next, transactionId!);
     return {
       status: 'done',
-      outcome: { action: 'approve', proposal: next, row, transactionId, ruleAdded },
+      outcome: { action: 'approve', proposal: next, row, transactionId: transactionId!, rule },
     };
   } catch (error) {
     return { status: 'error', message: messageOf(error, "Couldn't save. Try again.") };
@@ -183,15 +110,21 @@ export type ApprovedOutcome = Extract<ReviewOutcome, { action: 'approve' }>;
 
 /** "Don't ask about similar" after Approve, from the Approved notification. */
 export async function dontAskAboutSimilar(outcome: ApprovedOutcome): Promise<ApprovedOutcome> {
-  if (outcome.ruleAdded) return outcome;
-  return { ...outcome, ruleAdded: await addSimilarRule(outcome.proposal) };
+  if (outcome.rule) return outcome;
+  try {
+    const rule = commit(planSimilarRule(outcome.proposal, {}, reviewView(), await reviewContext()));
+    return { ...outcome, rule };
+  } catch (error) {
+    console.warn('[review] auto-add rule not saved:', messageOf(error, 'unknown'));
+    return outcome;
+  }
 }
 
 export async function notMine(proposal: ProposedTransaction): Promise<ReviewResult> {
   const row = openRow(proposal.id);
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
   try {
-    await rejectProposedTransaction(proposal.id);
+    applyReview(proposal.id, await planDecision(proposal, { kind: 'notMine' }));
     return { status: 'done', outcome: { action: 'notMine', proposal, row } };
   } catch (error) {
     return { status: 'error', message: messageOf(error, "Couldn't save. Try again.") };
@@ -217,60 +150,32 @@ export async function samePayment(
 
 /**
  * The card's way out when Moni read an alert as moving the user's own money and it wasn't: the
- * capture stays in Review with the merchant the alert named. A bank's alert is spending out of that
- * wallet; with no source wallet the alert came from the side the money arrived in.
+ * capture stays in Review with the merchant the alert named.
  */
 export function notATransfer(proposal: ProposedTransaction): void {
-  patchRow(proposedTransactions$, proposal.id, {
-    type: proposal.walletId ? 'expense' : 'income',
-    wallet_id: proposal.walletId ?? proposal.transferToWalletId,
-    transfer_to_wallet_id: null,
-    description: null,
-    updated_at: new Date().toISOString(),
-  });
+  commit(planNotATransfer(proposal, { now: new Date().toISOString() }));
   emitProposedTransactionsChanged();
 }
 
-function restoreRow(row: ProposalRowSnapshot): void {
-  const pending = { status: 'pending', snoozed_until: null, updated_at: new Date().toISOString() };
-  if (hasRow(proposedTransactions$, row.id)) {
-    patchRow(proposedTransactions$, row.id, { ...pending, reviewed_at: null, transaction_id: null });
-  } else {
-    proposedTransactions$[row.id].set({ ...row, ...pending, deleted: false });
-  }
-  if (row.source_type === 'notification') markCaptureStatus(row.id, 'waiting_for_review');
-  const absorbed = capturePairingSchema.safeParse(row.pairing).data?.absorbed;
-  if (absorbed?.sourceType === 'notification') {
-    markCaptureStatus(absorbed.id, 'same_payment', undefined, row.id);
-  }
+function reopen(row: ProposalRowSnapshot, changes: Pick<ReviewChanges, 'transactionId' | 'rule'>): void {
+  const plan = planReopen(row, changes, hasRow(proposedTransactions$, row.id), { now: new Date().toISOString() });
+  markCaptures(commit(plan).captureMarks);
   emitProposedTransactionsChanged();
 }
 
 export function moveBackToReview(proposal: RejectedProposal): void {
   const row = proposedTransactions$[proposal.id].peek() as ProposalRowSnapshot | undefined;
-  if (row) restoreRow(row);
-}
-
-async function removeSimilarRule(proposal: ProposedTransaction): Promise<void> {
-  const userId = await getUserId();
-  const key = merchantKey(proposal.merchant);
-  if (!userId || !key) return;
-  const rule = listAutoAddRules(userId).find(
-    (r) => r.sourceApp === proposal.sourceApp && r.merchantKey === key,
-  );
-  if (rule) deleteAutoAddRule(rule.id);
+  if (row) reopen(row, { transactionId: null, rule: null });
 }
 
 /** Puts the capture back in review. Every write sets values, so running it twice converges. */
 export async function undo(outcome: ReviewOutcome): Promise<void> {
   switch (outcome.action) {
     case 'approve':
-      await deleteTransaction(outcome.transactionId);
-      if (outcome.ruleAdded) await removeSimilarRule(outcome.proposal);
-      restoreRow(outcome.row);
+      reopen(outcome.row, { transactionId: outcome.transactionId, rule: outcome.rule });
       return;
     case 'notMine':
-      restoreRow(outcome.row);
+      reopen(outcome.row, { transactionId: null, rule: null });
       return;
     case 'pair':
       await undoPairing(outcome.proposal.id);
