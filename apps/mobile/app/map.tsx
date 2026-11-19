@@ -17,7 +17,8 @@ import { MapEmpty, MapEmptyNote, type EmptyReason } from '@/components/map/map-e
 import { MapHeader } from '@/components/map/map-header';
 import { MapSheet } from '@/components/map/map-sheet';
 import { mapsAvailable } from '@/components/map/maps-available';
-import { FALLBACK_REGION, mapStyles } from '@/components/map/map-style';
+import { FALLBACK_REGION } from '@/components/map/map-style';
+import { mapStyles } from '@repo/design';
 import { PlaceCard } from '@/components/map/place-card';
 import { PlacePins, usePinClusters } from '@/components/map/place-pins';
 import { TopPlaces } from '@/components/map/top-places';

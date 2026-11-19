@@ -2,7 +2,7 @@
 
 import { mdiCar, mdiCart, mdiMapMarkerOutline, mdiShopping, mdiSilverwareForkKnife } from '@mdi/js';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { MapArt } from '@/components/places/map-art';
+import { MapArt } from './map-art';
 import { useMoment } from './moment';
 import { MdiIcon } from './parts';
 

@@ -12,11 +12,16 @@ import {
   walletToCheckIn,
   type FinanceDebtActivity,
 } from '@repo/core';
+import { miniMapStyles } from '@repo/design';
 import { minorToNumber } from '@repo/types';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Icon } from '@/components/icon';
+import { useSize } from '@/components/ledger/chart-parts';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
+import { useMapsUsable } from '@/components/places/map-ground';
+import { useTheme } from '@/components/use-theme';
+import { MAPS_KEY, staticFrame, staticMapUrl } from '@/lib/google-maps';
 import { commit, planContext } from '@/lib/ledger/commit';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
@@ -217,16 +222,15 @@ export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; 
   );
 }
 
-/** Pins keep their places' layout: longitude across, latitude down, inside the tile's free area. */
-function pinSpots(points: readonly { latitude: number; longitude: number }[]): [number, number][] {
-  const span = (values: number[]) => [Math.min(...values), Math.max(...values)] as const;
-  const [west, east] = span(points.map((point) => point.longitude));
-  const [south, north] = span(points.map((point) => point.latitude));
-  const at = (value: number, low: number, high: number) => (high - low < 1e-6 ? 0.5 : (value - low) / (high - low));
-  return points.map((point) => [0.04 + 0.62 * at(point.longitude, west, east), 0.08 + 0.56 * (1 - at(point.latitude, south, north))]);
-}
+/** Static Maps sizes step by 40 px, so a small resize asks for the same image again from the cache. */
+const STEP = 40;
+const MAX_STATIC = 640;
 
-/** Where you spend: the drawn map art with this month's three biggest places as pins. */
+/**
+ * Where you spend: a Maps Static API image of this month's three biggest places with their pins drawn on
+ * top, styled like the phone's mini map. It is one image, not a live map, because Home loads far more
+ * often than the map page. The whole tile opens the map.
+ */
 export function PlacesCard({ ledger }: { ledger: Ledger }) {
   const { transactions, currency, calendar, now, projection } = ledger;
   const places = useMemo(
@@ -234,6 +238,13 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
       groupPlaces(transactions, { currency, range: { from: firstDayOf(calendar.monthKey(now)), to: calendar.dayKey(now) } }, calendar).slice(0, 3),
     [transactions, currency, calendar, now],
   );
+  const [ref, size] = useSize<HTMLAnchorElement>();
+  const usable = useMapsUsable();
+  const dark = useTheme().resolved === 'dark';
+  const width = Math.min(MAX_STATIC, Math.ceil(size.width / STEP) * STEP);
+  const height = Math.min(MAX_STATIC, Math.ceil(size.height / STEP) * STEP);
+  const frame = width > 0 && height > 0 && places.length ? staticFrame(places.map((place) => ({ lat: place.latitude, lng: place.longitude })), width, height, 36) : null;
+  const offset = { x: (size.width - width) / 2, y: (size.height - height) / 2 };
   return (
     <section aria-label="Where you spend" className="card places-card" data-card="map">
       <div className="section-head">
@@ -256,24 +267,37 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
           </span>
         </div>
       ) : (
-        <div className="map-art" role="img" aria-label={places.map((place) => `${place.name}, ${formatMoney(place.totalMinor, currency, { whole: true })}`).join('; ')}>
-          <svg viewBox="0 0 400 140" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0,98 C120,87 220,133 400,112" className="road road-wide" />
-            <path d="M248,0 C240,56 300,84 280,140" className="road" />
-            <path d="M60,0 L100,140" className="road road-thin" />
-            <path d="M320,7 C360,42 380,56 400,53" className="river" />
-          </svg>
-          {places.map((place, index, all) => {
-            const category = place.categories[0]?.categoryId ? projection.categoriesById[place.categories[0].categoryId] : undefined;
-            const [x, y] = pinSpots(all)[index]!;
-            return (
-              <span key={place.id} className="map-pin" style={{ left: `${x * 100}%`, top: `${y * 100}%` }} title={place.name}>
-                <Bubble icon={category?.icon} color={category?.color ?? null} size={26} glyph={15} />
-                <span className="num">{formatMoney(place.totalMinor, currency, { whole: true })}</span>
-              </span>
-            );
-          })}
-        </div>
+        <Link
+          ref={ref}
+          href="/home/places"
+          className="mini-map press"
+          aria-label={`Open map: ${places.map((place) => `${place.name}, ${formatMoney(place.totalMinor, currency, { whole: true })}`).join('; ')}`}
+        >
+          {usable && frame && MAPS_KEY ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a Google image, sized by the request itself
+            <img
+              className="mini-map-image"
+              alt=""
+              width={width}
+              height={height}
+              style={{ left: offset.x, top: offset.y }}
+              src={staticMapUrl({ key: MAPS_KEY, center: frame.center, zoom: frame.zoom, width, height, styles: dark ? miniMapStyles.dark : miniMapStyles.light })}
+            />
+          ) : (
+            <span className="map-unavailable">Map unavailable</span>
+          )}
+          {frame &&
+            places.map((place) => {
+              const category = place.categories[0]?.categoryId ? projection.categoriesById[place.categories[0].categoryId] : undefined;
+              const at = frame.at({ lat: place.latitude, lng: place.longitude });
+              return (
+                <span key={place.id} className="map-pin" style={{ left: at.x + offset.x, top: at.y + offset.y }} title={place.name}>
+                  <Bubble icon={category?.icon} color={category?.color ?? null} size={26} glyph={15} />
+                  <span className="num">{formatMoney(place.totalMinor, currency, { whole: true })}</span>
+                </span>
+              );
+            })}
+        </Link>
       )}
     </section>
   );

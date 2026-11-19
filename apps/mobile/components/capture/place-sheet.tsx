@@ -26,7 +26,7 @@ import Animated, {
 import { useUniwind } from 'uniwind';
 
 import { FieldBubble } from '@/components/ui/field-bubble';
-import { FALLBACK_REGION, shopMapStyles } from '@/components/map/map-style';
+import { FALLBACK_REGION } from '@/components/map/map-style';
 import { mapsAvailable } from '@/components/map/maps-available';
 import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -53,7 +53,7 @@ import {
 import { placeLabel, type LatLng } from '@repo/core';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { scrubStep } from '@/lib/haptics';
-import { springs } from '@repo/design';
+import { shopMapStyles, springs } from '@repo/design';
 import { getPlacesClient } from '@/lib/places/client';
 import { OWN_COORDS, type SavedPlace } from '@/lib/places/coords';
 import { createGoogleSearch, GOOGLE_MIN_CHARS, type GoogleSearch } from '@/lib/places/place-search';

@@ -84,25 +84,45 @@ export function projector(region: Region, size: Box) {
   });
 }
 
+/** Where the fitted points sit on screen and the way back, with the scale a Google map needs to match. */
+export type FitFrame = {
+  project: (point: LatLng) => Point;
+  unproject: (point: Point) => LatLng;
+  /** Screen px per degree of longitude, the unit Google's zoom is measured in. */
+  pxPerLngDegree: number;
+};
+
 /**
  * Places every point inside `box` less `insets`, north up, at one scale across and down (a degree of
  * longitude shrunk by the cosine of the latitude), centred. A spread under `minSpan` degrees is drawn
- * as `minSpan`, so one place or a tight cluster sits in the middle instead of filling the box.
+ * as `minSpan`, so one place or a tight cluster sits in the middle instead of filling the box. Across a
+ * city this is Web Mercator to well under a pixel, so a Google map under the pins lines up.
  */
-export function fitProjector(points: readonly LatLng[], box: Box, insets: Insets, minSpan = 0.01) {
+export function fitFrame(points: readonly LatLng[], box: Box, insets: Insets, minSpan = 0.01): FitFrame {
   const free = { width: box.width - insets.left - insets.right, height: box.height - insets.top - insets.bottom };
   const centre = { x: insets.left + free.width / 2, y: insets.top + free.height / 2 };
-  if (!points.length) return (): Point => centre;
   const lats = points.map((point) => point.latitude);
   const lngs = points.map((point) => point.longitude);
-  const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+  const midLat = points.length ? (Math.min(...lats) + Math.max(...lats)) / 2 : 3.139;
+  const midLng = points.length ? (Math.min(...lngs) + Math.max(...lngs)) / 2 : 101.6869;
   const across = Math.cos((midLat * Math.PI) / 180);
-  const spanX = Math.max((Math.max(...lngs) - Math.min(...lngs)) * across, minSpan);
-  const spanY = Math.max(Math.max(...lats) - Math.min(...lats), minSpan);
+  const spanX = Math.max(points.length ? (Math.max(...lngs) - Math.min(...lngs)) * across : 0, minSpan);
+  const spanY = Math.max(points.length ? Math.max(...lats) - Math.min(...lats) : 0, minSpan);
   const scale = Math.min(free.width / spanX, free.height / spanY);
-  return (point: LatLng): Point => ({
-    x: centre.x + (point.longitude - midLng) * across * scale,
-    y: centre.y - (point.latitude - midLat) * scale,
-  });
+  return {
+    project: (point) => ({
+      x: centre.x + (point.longitude - midLng) * across * scale,
+      y: centre.y - (point.latitude - midLat) * scale,
+    }),
+    unproject: (point) => ({
+      latitude: midLat - (point.y - centre.y) / scale,
+      longitude: midLng + (point.x - centre.x) / (across * scale),
+    }),
+    pxPerLngDegree: across * scale,
+  };
+}
+
+/** The Google Maps zoom at which a degree of longitude is `pxPerLngDegree` screen px (256 px tiles). */
+export function googleZoom(pxPerLngDegree: number): number {
+  return Math.log2((pxPerLngDegree * 360) / 256);
 }

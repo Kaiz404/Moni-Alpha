@@ -8,7 +8,7 @@ import { useUniwind } from 'uniwind';
 
 import { MapHeader } from '@/components/map/map-header';
 import { PinBubble } from '@/components/map/place-pins';
-import { mapStyles } from '@/components/map/map-style';
+import { mapStyles } from '@repo/design';
 import { mapsAvailable } from '@/components/map/maps-available';
 import {
   MoniNoticed,

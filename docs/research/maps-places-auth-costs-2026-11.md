@@ -192,6 +192,27 @@ Use the Go backend for any Places call. `[inferred from the points below]`
 - **Suggested limits.** Set the Autocomplete (New) and Place Details daily quotas in Cloud Console. Add a budget alert at $20. Mirror the cap in the backend so the app gets a clean `unavailable` instead of a Google error. `[guess on numbers]`
   - 1,000 Autocomplete calls a day is about 30,000 a month. At 70% picks that bounds design 2c near **$94 a month** (RM385): $57 Autocomplete plus $38 Details.
 
+## Web maps (added 20 Nov 2026, issue #88)
+
+The web draws a real Google map on Where you spend and a static image on Home's tile. Prices were read on 20 Nov 2026 from the [price list](https://developers.google.com/maps/billing-and-pricing/pricing). `[proven]`
+
+| SKU | Used for | Free a month | Then per 1,000 | Above 100,000 |
+| --- | --- | --- | --- | --- |
+| Dynamic Maps (Essentials) | Every Maps JavaScript API map, with or without a map ID | 10,000 | $7.00 | $5.60 |
+| Static Maps (Essentials) | Home's Where you spend tile | 10,000 | $2.00 | $1.60 |
+
+- The phone's free Maps SDK SKU does not apply in a browser. Each Maps JavaScript API map created is one Dynamic Maps load. `[proven SKU rule]`
+- Home loads far more often than the map page, so Home's tile is one Static Maps image with the pins drawn by the web on top. The size steps by 40 px and the URL changes only when the month's top places do, so a repeat view comes from the browser cache and bills nothing. `[inferred]`
+- Usage, all `[guess]`: web MAU is 10%, 20% and 40% of the MAU above (300, 1,000 and 3,200); uncached Home views per web MAU a month are 10, 30 and 60; map page opens are 1, 4 and 12.
+
+| Line | Low | Expected | High |
+| --- | --- | --- | --- |
+| Home tile, Static Maps | $0 (3,000) | $40 (30,000) | $327 (192,000) |
+| Home tile if it were a live map, Dynamic Maps | $0 | $140 | $1,145 |
+| Where you spend, Dynamic Maps | $0 (300) | $0 (4,000) | $199 (38,400) |
+
+Set a daily quota on both APIs in Google Cloud so a bug or a scraper cannot run up the bill. Above about 25,000 Static Maps a day Google asks for signed URLs, which need a server; the web has none for app data, so revisit the tile before that. `[guess on threshold, not verified]`
+
 ## Recommendation
 
 1. **Change nothing in today's maps, geocoding or sign-in for cost reasons.** All four cost $0 at 10,000 users. Do not add a map ID without pricing it first. Move the OAuth consent screen to In production before launch. `[proven]`

@@ -1,6 +1,7 @@
 'use client';
 
-import { clusterPins, fitProjector, formatMoney, type Box, type Insets, type Place } from '@repo/core';
+import { clusterPins, fitFrame, formatMoney, type Box, type Insets, type Place } from '@repo/core';
+import { springCurve, springs } from '@repo/design';
 import type { CurrencyCode } from '@repo/types';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
@@ -8,7 +9,7 @@ import { Bubble } from '@/components/ledger/glyph';
 import type { LayoutKind } from '@/lib/layout';
 import { FIT, heatSize, panView, pinWidth, toView, zoomView, type MapView } from '@/lib/places-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
-import { MapArt } from './map-art';
+import { MapGround, useMapsUsable } from './map-ground';
 import { Mdi } from './mdi';
 
 /** W2-Places' 40-tall capsules with a little air: closer than this up and down, they merge. */
@@ -17,6 +18,52 @@ const PIN_ROW = 44;
 /** Room for the controls floating on the map, so no pin sits under them. */
 function insetsFor(layout: LayoutKind | null): Insets {
   return layout === 'phone' ? { top: 36, right: 64, bottom: 64, left: 64 } : { top: 96, right: 80, bottom: 96, left: 80 };
+}
+
+const SHEET = springCurve(springs.sheet);
+const SHEET_POINTS = [...SHEET.linear.matchAll(/-?[\d.]+/g)].map((match) => Number(match[0]));
+
+function sheetEase(t: number): number {
+  const at = t * (SHEET_POINTS.length - 1);
+  const low = Math.floor(at);
+  const high = Math.min(low + 1, SHEET_POINTS.length - 1);
+  return SHEET_POINTS[low]! + (SHEET_POINTS[high]! - SHEET_POINTS[low]!) * (at - low);
+}
+
+/**
+ * The view the map shows, sliding to `target` on the sheet spring, so the Google camera and the pins
+ * move on one clock. A drag, reduced motion, or `slide` off jump straight there.
+ */
+function useSlidingView(target: MapView, slide: boolean): MapView {
+  const [shown, setShown] = useState(target);
+  const current = useRef(target);
+  useEffect(() => {
+    const jump = !slide || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const from = current.current;
+    if (jump || (from.zoom === target.zoom && from.x === target.x && from.y === target.y)) {
+      current.current = target;
+      setShown(target);
+      return;
+    }
+    const start = performance.now();
+    let frame = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / SHEET.durationMs);
+      const k = sheetEase(t);
+      const next = {
+        zoom: from.zoom * (target.zoom / from.zoom) ** k,
+        x: from.x + (target.x - from.x) * k,
+        y: from.y + (target.y - from.y) * k,
+      };
+      current.current = t < 1 ? next : target;
+      setShown(current.current);
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the target's three numbers are the dependency
+  }, [target.zoom, target.x, target.y, slide]);
+  return shown;
 }
 
 function useBox() {
@@ -52,20 +99,23 @@ export type MapProps = {
 };
 
 /**
- * The drawn map with a pin per place by its coordinates. Zoom and Fit scale the art with a CSS transform
- * and move the pins with it; pins whose capsules touch at the current zoom merge into one with a count.
+ * The Google map with a pin per place by its coordinates. Zoom and Fit move the map's camera and the pins
+ * together; pins whose capsules touch at the current zoom merge into one with a count.
  */
-export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, view, onView, onPick, onHover, onHeat, emptyLine, locationOff }: MapProps) {
+export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, view: target, onView, onPick, onHover, onHeat, emptyLine, locationOff }: MapProps) {
   const [ref, box] = useBox();
   const currency = ledger.currency as CurrencyCode;
-  const fitted = useMemo(() => (box ? fitProjector(everywhere, box, insetsFor(layout)) : null), [box, everywhere, layout]);
+  const frame = useMemo(() => (box ? fitFrame(everywhere, box, insetsFor(layout)) : null), [box, everywhere, layout]);
+  const fitted = frame?.project;
+  const google = useMapsUsable();
+  const [dragging, setDragging] = useState(false);
+  const view = useSlidingView(target, google && !dragging);
   const at = (place: Place) => (fitted && box ? toView(fitted(place), view, box) : { x: 0, y: 0 });
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
   const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), view, box), (total, members) => pinWidth(whole(total), members), PIN_ROW) : [];
   const leadOf = new Map(clusters.flatMap((cluster) => cluster.members.map((member) => [member.id, cluster] as const)));
   const max = places.reduce((top, place) => Math.max(top, place.totalMinor), 0);
   const drag = useRef<{ x: number; y: number; view: MapView } | null>(null);
-  const [dragging, setDragging] = useState(false);
   const endDrag = () => {
     drag.current = null;
     setDragging(false);
@@ -74,16 +124,16 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
   const zoom = (factor: number) => {
     if (!box) return;
     const selected = places.find((place) => place.id === selectedId);
-    onView(zoomView(view, factor, selected ? at(selected) : { x: box.width / 2, y: box.height / 2 }, box));
+    onView(zoomView(target, factor, selected ? at(selected) : { x: box.width / 2, y: box.height / 2 }, box));
   };
   const pick = (id: string) => {
     const cluster = leadOf.get(id);
-    if (cluster && cluster.members.length > 1 && box) onView(zoomView(view, 2, at(cluster.lead), box));
+    if (cluster && cluster.members.length > 1 && box) onView(zoomView(target, 2, at(cluster.lead), box));
     onPick(cluster?.lead.id ?? id);
   };
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (view.zoom === 1 || (event.target as HTMLElement).closest('button')) return;
-    drag.current = { x: event.clientX, y: event.clientY, view };
+    if (target.zoom === 1 || (event.target as HTMLElement).closest('button')) return;
+    drag.current = { x: event.clientX, y: event.clientY, view: target };
     setDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -97,17 +147,17 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
       ref={ref}
       className="places-map"
       data-heat={heat || undefined}
-      data-zoomed={view.zoom > 1 || undefined}
+      data-zoomed={target.zoom > 1 || undefined}
+      data-zoom={target.zoom}
       data-faded={locationOff || undefined}
       data-dragging={dragging || undefined}
+      data-google={google || undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
     >
-      <div className="map-art-pan" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
-        <MapArt />
-      </div>
+      <MapGround frame={frame} view={view} box={box} />
       {box &&
         places.map((place) => {
           const { x, y } = at(place);
@@ -220,11 +270,11 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
           </span>
         </button>
         <span className="map-float map-zoom-pair">
-          <button type="button" className="map-btn" aria-label="Zoom in" disabled={view.zoom >= 4} onClick={() => zoom(1.5)}>
+          <button type="button" className="map-btn" aria-label="Zoom in" disabled={target.zoom >= 4} onClick={() => zoom(1.5)}>
             <Mdi name="plus" size={22} />
           </button>
           <span className="map-zoom-rule" aria-hidden="true" />
-          <button type="button" className="map-btn" aria-label="Zoom out" disabled={view.zoom <= 1} onClick={() => zoom(1 / 1.5)}>
+          <button type="button" className="map-btn" aria-label="Zoom out" disabled={target.zoom <= 1} onClick={() => zoom(1 / 1.5)}>
             <Mdi name="minus" size={22} />
           </button>
         </span>

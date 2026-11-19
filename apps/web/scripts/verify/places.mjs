@@ -130,6 +130,10 @@ export async function verifyPlaces(t) {
     first: ringgit(await p.locator('.place-row .place-amount .num').first().textContent()),
     rowSum: (await p.locator('.place-row .place-amount .num').allTextContents()).reduce((sum, text) => sum + Math.round(ringgit(text) * 100), 0),
   });
+  const art = await p.locator('.places-map svg.map-art-layer').count();
+  const google = await p.locator('.map-ground[data-google]').count();
+  const unavailable = await p.locator('.map-ground[data-unavailable]').getByText('Map unavailable').isVisible();
+  check('the map is a Google map, or reads Map unavailable with no key; never drawn art', art === 0 && (google === 1 || unavailable), { art, google, unavailable });
   const s30 = await summary();
   check(
     `Last 30 days: spent at places is the located expenses' total (${cents(month.totalMinor)}) at ${month.places} places, largest first, and the rows add up`,
@@ -210,7 +214,7 @@ export async function verifyPlaces(t) {
   await p.waitForURL((url) => !url.search.includes('view='));
 
   const shownAt = () => p.locator('.map-pin-big[data-shown]').count();
-  const scale = () => p.locator('.map-art-pan').evaluate((el) => el.style.transform);
+  const scale = () => p.locator('.places-map').getAttribute('data-zoom');
   const fitPins = await shownAt();
   const fitCount = await p.locator('.map-pin-big[data-shown] .pin-count').count();
   await p.getByRole('button', { name: 'Zoom in' }).click();
@@ -219,11 +223,12 @@ export async function verifyPlaces(t) {
   await settle(p);
   const zoomed = await scale();
   const zoomPins = await shownAt();
-  check('+ zooms the art with a transform, and merged pins come apart', /scale\(3\.375\)/.test(zoomed) && zoomPins >= fitPins && (fitCount === 0 || zoomPins > fitPins), { zoomed, fitPins, fitCount, zoomPins });
+  check('+ zooms the map, and merged pins come apart', zoomed === '3.375' && zoomPins >= fitPins && (fitCount === 0 || zoomPins > fitPins), { zoomed, fitPins, fitCount, zoomPins });
   await shot(p, 'places-1440-light-zoomed');
   await p.keyboard.press('f');
   await settle(p);
-  check('F fits every place again', /scale\(1\)/.test(await scale()) && (await shownAt()) === fitPins, await scale());
+  await p.waitForFunction((count) => document.querySelectorAll('.map-pin-big[data-shown]').length === count, fitPins, { timeout: 3_000 }).catch(() => {});
+  check('F fits every place again', (await scale()) === '1' && (await shownAt()) === fitPins, await scale());
 
   await p.getByRole('radio', { name: 'Visits' }).click();
   await p.waitForURL(/sort=visits/);
@@ -292,7 +297,16 @@ export async function verifyPlaces(t) {
   const home = await pinned({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const h = await home.newPage();
   await open(h, '/home');
-  await h.getByRole('link', { name: 'Open map' }).click();
+  const tile = h.locator('section[aria-label="Where you spend"] .mini-map');
+  await tile.waitFor({ timeout: 20_000 });
+  const tileState = {
+    pins: await tile.locator('.map-pin').count(),
+    image: await tile.locator('img.mini-map-image').count(),
+    unavailable: await tile.getByText('Map unavailable').isVisible(),
+    art: await h.locator('section[aria-label="Where you spend"] .map-art').count(),
+  };
+  check("Home's Where you spend tile is a Google static map, or Map unavailable with no key, with the month's top places pinned", tileState.pins > 0 && tileState.pins <= 3 && tileState.art === 0 && (tileState.image === 1 || tileState.unavailable), tileState);
+  await h.getByRole('link', { name: 'Open map', exact: true }).click();
   await h.waitForURL(/\/home\/places/);
   check("Home's Where you spend card opens the map", new URL(h.url()).pathname === '/home/places', h.url());
   await home.close();

@@ -89,6 +89,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 NEXT_PUBLIC_MONI_APP_SCHEME=moni   # what the sign-in QR opens; moni-e2e for the Moni E2E app
 NEXT_PUBLIC_AI_API_URL=            # the Go AI gateway; unset, the web has no AI
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=   # browser Maps key (Google Maps below); unset, the maps read Map unavailable
 MONI_MAINTENANCE_UNTIL=            # an ISO time while an update runs: every page but the legal ones shows the maintenance page
 ```
 
@@ -113,7 +114,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000   # browser origins allowed to call i
 
 The web app calls the gateway from the browser, so its origin must be in `CORS_ALLOWED_ORIGINS`: `http://localhost:3000` locally, the Vercel domain in production. Today that is `https://moni-web-plum.vercel.app,http://localhost:3000` on `moni-ai-backend`.
 
-The web app deploys as Vercel project `moni-web` (team Kai's projects): root directory `apps/web`, framework Next.js, functions in `sin1`, and the env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_AI_API_URL` for production and preview. Supabase Auth's site URL is the web origin, and its redirect allow list holds `https://moni-web-plum.vercel.app/**` and the localhost origins beside the `moni://` deep links. Deploy with `npx vercel@59 deploy --prod` from the repo root after `vercel link --project moni-web`. Each entry is an exact origin (`https://app.example.com`), with no path or wildcard; the backend refuses to start on anything else.
+The web app deploys as Vercel project `moni-web` (team Kai's projects): root directory `apps/web`, framework Next.js, functions in `sin1`, and the env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_AI_API_URL` and `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` for production and preview. Supabase Auth's site URL is the web origin, and its redirect allow list holds `https://moni-web-plum.vercel.app/**` and the localhost origins beside the `moni://` deep links. Deploy with `npx vercel@59 deploy --prod` from the repo root after `vercel link --project moni-web`. Each entry is an exact origin (`https://app.example.com`), with no path or wildcard; the backend refuses to start on anything else.
 
 ## WSL Android toolchain
 
@@ -204,6 +205,12 @@ The spending map (`apps/mobile/app/map.tsx`, `place/[id].tsx`) renders transacti
 3. Rebuild the dev client (`npx expo run:android` locally). A grey/blank map means a missing or wrongly restricted key.
 
 The Android key is recoverable from an installed APK, so protect it with Google Cloud restrictions: enable only Maps SDK for Android, restrict to package `com.anonymous.moni`, and add the SHA-1 fingerprints for every signing certificate used to build the app.
+
+The web draws the same map with the **Maps JavaScript API** on Where you spend and a **Maps Static API** image on Home's tile, both styled from `@repo/design`'s map styles. It needs its own browser key, because the Android key is restricted to the app:
+
+1. Create a key, restrict its APIs to **Maps JavaScript API** and **Maps Static API**, and restrict its application to **Websites** with the web's origins: `https://moni-web-plum.vercel.app/*`, `https://moni-web-*.vercel.app/*` for previews, any custom domain, and `http://localhost:3000/*` for development.
+2. Set it as `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `apps/web/.env.local` and in the Vercel project for production and preview. It ships to the browser, so the referrer restriction is its only guard.
+3. Without the key, or when Google refuses it, both maps read **Map unavailable** and the pins still show. Costs: `docs/research/maps-places-auth-costs-2026-11.md`, Web maps.
 
 ## Places search (backend)
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
 import { createCalendar } from '../../calendar';
-import { clusterPins, fitProjector, zoomMoved } from '../place-map';
+import { clusterPins, fitFrame, googleZoom, zoomMoved } from '../place-map';
 import { groupPlaces } from '../places';
 import type { FinanceTransaction } from '../types';
 
@@ -88,12 +88,12 @@ describe('clusterPins', () => {
   });
 });
 
-describe('fitProjector', () => {
+describe('fitFrame', () => {
   const box = { width: 220, height: 120 };
   const insets = { top: 10, right: 10, bottom: 10, left: 10 };
 
   it('frames the points at one scale, north up, centred in the free area', () => {
-    const at = fitProjector(
+    const { project: at } = fitFrame(
       [
         { latitude: 0, longitude: 0 },
         { latitude: 0.01, longitude: 0.01 },
@@ -108,12 +108,23 @@ describe('fitProjector', () => {
   });
 
   it('puts one place in the middle', () => {
-    const at = fitProjector([MAMAK], box, insets);
-    expect(at(MAMAK)).toEqual({ x: 110, y: 60 });
+    expect(fitFrame([MAMAK], box, insets).project(MAMAK)).toEqual({ x: 110, y: 60 });
   });
 
-  it('puts the middle of the free area under nothing at all', () => {
-    expect(fitProjector([], box, { top: 40, right: 10, bottom: 0, left: 10 })(KLCC)).toEqual({ x: 110, y: 80 });
+  it('frames Kuala Lumpur in the middle of the free area when there is nothing', () => {
+    expect(fitFrame([], box, { top: 40, right: 10, bottom: 0, left: 10 }).project({ latitude: 3.139, longitude: 101.6869 })).toEqual({ x: 110, y: 80 });
+  });
+
+  it('reads a screen point back to the place under it', () => {
+    const frame = fitFrame([MAMAK, KLCC], box, insets);
+    const back = frame.unproject(frame.project(KLCC));
+    expect([back.latitude.toFixed(6), back.longitude.toFixed(6)]).toEqual([KLCC.latitude.toFixed(6), KLCC.longitude.toFixed(6)]);
+  });
+});
+
+describe('googleZoom', () => {
+  it('is zoom 0 when the world’s 360 degrees fill one 256 px tile, and one up per doubling', () => {
+    expect([googleZoom(256 / 360), googleZoom(512 / 360), googleZoom(256 * 4096 / 360)]).toEqual([0, 1, 12]);
   });
 });
 

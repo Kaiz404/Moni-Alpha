@@ -56,16 +56,11 @@ html[data-layout='phone'] .places-stage {
 }
 
 .places-map {
-  --land: color-mix(in srgb, var(--color-sand-light) 70%, var(--color-canvas));
-  --park: color-mix(in srgb, var(--color-block-mint) 30%, var(--land));
-  --water: color-mix(in srgb, var(--color-sky) 26%, var(--land));
-  --road: color-mix(in srgb, var(--color-bloom) 80%, var(--land));
-  --street: var(--color-card);
   position: absolute;
   inset: 0;
   overflow: hidden;
   border-radius: var(--radius-card);
-  background: var(--land);
+  background: var(--color-sand);
   touch-action: pan-y;
   user-select: none;
 }
@@ -85,46 +80,47 @@ html[data-layout='phone'] .places-map {
   cursor: grabbing;
 }
 
-.map-art-pan {
+/* The Google map under the pins: it takes no gestures, the page's zoom and pan move its camera. */
+.map-ground {
   position: absolute;
   inset: 0;
-  transform-origin: center;
-  transition: transform var(--duration-sheet) var(--ease-sheet);
+  pointer-events: none;
 }
 
-.map-art-layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.map-ground[data-unavailable] {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 22px;
 }
 
-.map-art-layer .park {
-  fill: var(--park);
+.map-unavailable {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-card);
+  color: var(--color-ink-2);
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.map-art-layer .water {
-  fill: var(--water);
+/* Google's logo and terms sit in the bottom corners and must stay visible. */
+.places-map[data-google] .map-views,
+.places-map[data-google] .map-zoom {
+  bottom: 34px;
 }
 
-.map-art-layer .river,
-.map-art-layer .road,
-.map-art-layer .street {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* The camera and the pins slide on one clock in script, so the pins' own slide is off. */
+.places-map[data-google] .map-pin-big {
+  transition:
+    transform var(--duration-control) var(--ease-control),
+    opacity 200ms ease;
 }
 
-.map-art-layer .river {
-  stroke: var(--water);
-}
-
-.map-art-layer .road {
-  stroke: var(--road);
-}
-
-.map-art-layer .street {
-  stroke: var(--street);
+.places-map[data-google] .heat-blob {
+  transition: opacity 240ms ease;
 }
 
 .places-map[data-faded] .map-pin-big,
@@ -148,8 +144,7 @@ html[data-layout='phone'] .places-map {
 }
 
 .places-map[data-dragging] .map-pin-big,
-.places-map[data-dragging] .heat-blob,
-.places-map[data-dragging] .map-art-pan {
+.places-map[data-dragging] .heat-blob {
   transition: none;
 }
 
@@ -1467,7 +1462,6 @@ html[data-layout='phone'] :is(.pseg button, .map-pin-big)::before {
     animation: fade-in 180ms ease both;
   }
 
-  .map-art-pan,
   .map-pin-big,
   .heat-blob,
   .place-bar > span,

@@ -5,7 +5,8 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useUniwind } from 'uniwind';
 
 import { mapsAvailable } from '@/components/map/maps-available';
-import { FALLBACK_REGION, miniMapStyles } from '@/components/map/map-style';
+import { FALLBACK_REGION } from '@/components/map/map-style';
+import { miniMapStyles } from '@repo/design';
 import { PlacePins, usePinClusters } from '@/components/map/place-pins';
 import { usePlaceSources } from '@/components/map/use-places';
 import { IconSymbol } from '@/components/ui/icon-symbol';
