@@ -527,7 +527,6 @@ html[data-layout='phone'] .drawer-head .icon-round {
 
 .capture-pop {
   max-height: 320px;
-  overflow-y: auto;
 }
 
 .capture-hint {

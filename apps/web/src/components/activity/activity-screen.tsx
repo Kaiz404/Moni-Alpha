@@ -10,8 +10,9 @@ import {
 } from '@repo/core';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Cat } from '@/components/brand';
+import { Floating } from '@/components/controls/floating';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { Page } from '@/components/shell/page';
@@ -69,7 +70,8 @@ const PHONE_KINDS = [
 ] as const;
 
 type Shown = ActivityEntry;
-type Menu = { id: string; x: number; y: number };
+/** A row's menu: at the click for a right-click, under the ⋯ for a key press. */
+type Menu = { id: string; anchor: { readonly current: HTMLElement }; point?: { x: number; y: number } };
 type CellEdit = { id: string; text: string };
 
 function readViews(): SavedView[] {
@@ -134,6 +136,11 @@ export function ActivityScreen() {
   const [bulkOpen, setBulkOpen] = useState<'category' | 'wallet' | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
   const [columns, setColumns] = useState<ColumnWidths>({});
+  const listCard = useRef<HTMLElement>(null);
+  const saveViewButton = useRef<HTMLButtonElement>(null);
+  const cellField = useRef<HTMLLabelElement>(null);
+  const bulkCategory = useRef<HTMLButtonElement>(null);
+  const bulkWallet = useRef<HTMLButtonElement>(null);
   useEffect(() => setViews(readViews()), []);
   useEffect(() => setColumns(readColumns()), []);
   const resizeColumn = (key: ResizableColumn, width: number | null) =>
@@ -280,9 +287,9 @@ export function ActivityScreen() {
   const rowMenu = (event: MouseEvent, item: Shown) => {
     event.preventDefault();
     event.stopPropagation();
-    const box = (event.currentTarget as HTMLElement).closest('.activity-list-card')!.getBoundingClientRect();
     setCell(null);
-    setMenu({ id: item.id, x: event.clientX - box.left, y: event.clientY - box.top });
+    const fromPointer = event.clientX !== 0 || event.clientY !== 0;
+    setMenu({ id: item.id, anchor: { current: event.currentTarget as HTMLElement }, point: fromPointer ? { x: event.clientX, y: event.clientY } : undefined });
   };
   const amountCell = (item: Shown) => {
     const amount = rowAmount(item.row);
@@ -332,7 +339,7 @@ export function ActivityScreen() {
       const matches = categories.filter((category) => category.name.toLowerCase().includes(cell.text.trim().toLowerCase())).slice(0, 6);
       return (
         <span className="cell-edit-anchor" onClick={(event) => event.stopPropagation()}>
-          <label className="cell-edit">
+          <label ref={cellField} className="cell-edit">
             <Bubble icon={item.row.icon} color={item.row.color} size={22} glyph={12} />
             <span className="sr-only">Category for {item.title}</span>
             <input
@@ -358,18 +365,18 @@ export function ActivityScreen() {
               }}
             />
           </label>
-          <div role="listbox" aria-label="Categories" className="popover cell-pop motion-pop">
+          <Floating anchor={cellField} role="listbox" label="Categories" className="cell-pop" autoFocus={false} onClose={() => setCell(null)}>
             {matches.map((category, index) => (
               <button type="button" role="option" aria-selected={index === 0} key={category.id} className="popover-row" onClick={() => saveCell(item, category.id)}>
                 <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
-                {category.name}
+                <span className="popover-row-text">{category.name}</span>
                 <span className="popover-side num">{leftFor(category.id)}</span>
               </button>
             ))}
             <div className="popover-foot">
               <span className="kbd">↵</span>Save<span className="kbd">Tab</span>Next cell<span className="kbd">Esc</span>Cancel
             </div>
-          </div>
+          </Floating>
         </span>
       );
     }
@@ -465,14 +472,14 @@ export function ActivityScreen() {
             </button>
           ))}
           <span className="grow-space" />
-          <span className="picker-anchor">
-            <button type="button" className="btn btn-out save-view press" aria-expanded={naming !== null} onClick={() => setNaming(naming === null ? '' : null)}>
+          <button ref={saveViewButton} type="button" className="btn btn-out save-view press" aria-haspopup="dialog" aria-expanded={naming !== null} onClick={() => setNaming(naming === null ? '' : null)}>
               <Glyph name="bookmark-outline" size={18} />
               Save view
             </button>
-            {naming !== null && (
+          {naming !== null && (
+            <Floating anchor={saveViewButton} role="dialog" label="Save view" align="end" className="save-pop" onClose={() => setNaming(null)}>
               <form
-                className="popover save-pop motion-pop"
+                className="save-form"
                 onSubmit={(event) => {
                   event.preventDefault();
                   if (naming.trim()) saveView(naming);
@@ -486,15 +493,15 @@ export function ActivityScreen() {
                   Save view
                 </button>
               </form>
-            )}
-          </span>
+            </Floating>
+          )}
         </div>
         <RunningCard ledger={ledger} />
         <div className="activity-body">
           <div data-only="sidebar rail rail-one-column">
             <FilterBar ledger={ledger} filters={filtersOf(query)} base={base} range={range} onChange={setFilters} />
           </div>
-          <section aria-label="Transactions" className="card activity-list-card" onClick={() => setMenu(null)}>
+          <section ref={listCard} aria-label="Transactions" className="card activity-list-card">
             {!ledger.loaded ? (
               <div className="activity-loading" aria-busy="true" aria-label="Loading transactions">
                 {Array.from({ length: 8 }, (_, index) => (
@@ -679,7 +686,7 @@ export function ActivityScreen() {
               </>
             )}
             {menu && menuItem && (
-              <div role="menu" aria-label={menuItem.title} className="popover row-menu motion-pop" style={{ left: menu.x + 8, top: menu.y + 8 }} onClick={(event) => event.stopPropagation()}>
+              <Floating anchor={menu.anchor} point={menu.point} boundary={listCard} role="menu" label={menuItem.title} className="row-menu" onClose={() => setMenu(null)}>
                 {menuItem.kind !== 'transfer' && (
                   <button type="button" role="menuitem" className="popover-row" onClick={() => (setMenu(null), setCell({ id: menuItem.id, text: '' }))}>
                     <Glyph name="tag-outline" size={18} />
@@ -700,13 +707,13 @@ export function ActivityScreen() {
                   Open details
                   <span className="kbd menu-key">Enter</span>
                 </button>
-                <span className="menu-rule" aria-hidden="true" />
+                <span className="popover-rule" aria-hidden="true" />
                 <button type="button" role="menuitem" className="popover-row" data-tone="over" onClick={() => (setMenu(null), removeRows([menuItem.id], `${menuItem.title} deleted`))}>
                   <Icon name="delete-outline" size={18} />
                   Delete
                   <span className="kbd menu-key">Del</span>
                 </button>
-              </div>
+              </Floating>
             )}
           </section>
         </div>
@@ -720,40 +727,36 @@ export function ActivityScreen() {
                 {selected.size} selected{selectedOut ? ` · −${formatMoney(selectedOut, ledger.currency)}` : ''}
               </span>
               <span className="bulk-rule" aria-hidden="true" />
-              <span className="picker-anchor">
-                <button type="button" className="bulk-btn press" aria-expanded={bulkOpen === 'category'} onClick={() => setBulkOpen(bulkOpen === 'category' ? null : 'category')}>
-                  <Glyph name="tag-outline" size={18} />
-                  Category
-                </button>
-                {bulkOpen === 'category' && (
-                  <div role="listbox" aria-label="Category for selected rows" className="popover bulk-pop motion-pop">
+              <button ref={bulkCategory} type="button" className="bulk-btn press" aria-haspopup="listbox" aria-expanded={bulkOpen === 'category'} onClick={() => setBulkOpen(bulkOpen === 'category' ? null : 'category')}>
+                <Glyph name="tag-outline" size={18} />
+                Category
+              </button>
+              {bulkOpen === 'category' && (
+                <Floating anchor={bulkCategory} role="listbox" label="Category for selected rows" side="top" className="bulk-pop" onClose={() => setBulkOpen(null)}>
                     {categories.map((category) => (
                       <button type="button" role="option" aria-selected={false} key={category.id} className="popover-row" onClick={() => editRows([...selected], { categoryId: category.id }, `${selected.size} moved to ${category.name}`)}>
                         <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
-                        {category.name}
+                        <span className="popover-row-text">{category.name}</span>
                       </button>
                     ))}
-                  </div>
-                )}
-              </span>
-              <span className="picker-anchor">
-                <button type="button" className="bulk-btn press" aria-expanded={bulkOpen === 'wallet'} onClick={() => setBulkOpen(bulkOpen === 'wallet' ? null : 'wallet')}>
-                  <Glyph name="wallet-outline" size={18} />
-                  Wallet
-                </button>
-                {bulkOpen === 'wallet' && (
-                  <div role="listbox" aria-label="Wallet for selected rows" className="popover bulk-pop motion-pop">
+                </Floating>
+              )}
+              <button ref={bulkWallet} type="button" className="bulk-btn press" aria-haspopup="listbox" aria-expanded={bulkOpen === 'wallet'} onClick={() => setBulkOpen(bulkOpen === 'wallet' ? null : 'wallet')}>
+                <Glyph name="wallet-outline" size={18} />
+                Wallet
+              </button>
+              {bulkOpen === 'wallet' && (
+                <Floating anchor={bulkWallet} role="listbox" label="Wallet for selected rows" side="top" className="bulk-pop" onClose={() => setBulkOpen(null)}>
                     {ledger.wallets
                       .filter((wallet) => wallet.currency === ledger.currency)
                       .map((wallet) => (
                         <button type="button" role="option" aria-selected={false} key={wallet.id} className="popover-row" onClick={() => editRows([...selected], { walletId: wallet.id }, `${selected.size} moved to ${ledger.walletNames[wallet.id] ?? wallet.name}`)}>
                           <Bubble icon={wallet.icon} color={wallet.color} size={26} glyph={14} />
-                          {wallet.name}
+                          <span className="popover-row-text">{wallet.name}</span>
                         </button>
                       ))}
-                  </div>
-                )}
-              </span>
+                </Floating>
+              )}
               <a
                 className="bulk-btn press"
                 download={`moni-activity-${today}.csv`}

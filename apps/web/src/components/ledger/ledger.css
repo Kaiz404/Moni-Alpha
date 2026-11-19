@@ -501,71 +501,6 @@ html:not([data-layout='phone']) .icon-round-key {
   animation: fade-in 180ms ease both;
 }
 
-/* ---------- popovers and menus ---------- */
-
-.picker-anchor {
-  position: relative;
-}
-
-.popover {
-  position: absolute;
-  z-index: 25;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 220px;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  border-radius: 22px;
-  background: var(--color-card);
-  box-shadow:
-    var(--shadow-float),
-    0 0 0 1.5px var(--color-hairline);
-  transform-origin: top right;
-}
-
-.popover-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 10px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.popover-row:hover,
-.popover-row:focus-visible,
-.popover-row[aria-selected='true'] {
-  background: var(--color-sand-light);
-  outline: none;
-}
-
-.popover-row[data-tone='over'] {
-  color: var(--color-over);
-}
-
-.popover-side {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-warning);
-}
-
-.popover-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px -6px -6px;
-  padding: 10px 12px;
-  background: var(--color-sand-light);
-  font-size: 12px;
-  color: var(--color-muted);
-}
-
 .motion-pop {
   animation: pop var(--duration-control) var(--ease-control) both;
 }
@@ -744,14 +679,7 @@ html:not([data-layout='phone']) .icon-round-key {
 }
 
 .bulk-pop {
-  top: auto;
-  bottom: calc(100% + 10px);
-  left: 0;
-  right: auto;
   max-height: 360px;
-  overflow: auto;
-  color: var(--color-foreground);
-  transform-origin: bottom left;
 }
 
 /* ---------- numbered pages (Activity, a wallet, Merchant names) ---------- */

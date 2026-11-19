@@ -100,6 +100,9 @@
 .save-pop {
   width: 280px;
   padding: 14px;
+}
+
+.save-form {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -305,10 +308,7 @@
 }
 
 .filter-pop {
-  left: 0;
-  right: auto;
   width: 260px;
-  transform-origin: top left;
 }
 
 .filter-scroll {
@@ -599,11 +599,7 @@
 }
 
 .cell-pop {
-  left: -4px;
-  right: auto;
   width: 300px;
-  top: 38px;
-  transform-origin: top left;
 }
 
 .more {
@@ -631,21 +627,11 @@
 }
 
 .row-menu {
-  right: auto;
-  top: auto;
   width: 256px;
-  transform-origin: top left;
 }
 
 .menu-key {
   margin-left: auto;
-}
-
-.menu-rule {
-  display: block;
-  height: 1.5px;
-  margin: 4px 0;
-  background: var(--color-sand-light);
 }
 
 /* ---------- the grouped list ---------- */
@@ -949,7 +935,6 @@ html[data-layout='phone'] .icon-round-line {
 
 .pane-pop {
   max-height: 340px;
-  overflow: auto;
 }
 
 .pane-alert {

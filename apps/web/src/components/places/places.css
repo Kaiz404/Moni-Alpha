@@ -414,21 +414,8 @@ html[data-layout='phone'] .map-chip {
 }
 
 .map-popover {
-  left: 0;
-  right: auto;
   width: 320px;
   max-height: 360px;
-  overflow-y: auto;
-  transform-origin: top left;
-}
-
-.map-option {
-  width: 100%;
-}
-
-.map-option-label {
-  flex: 1 1 auto;
-  text-align: left;
 }
 
 .map-views {

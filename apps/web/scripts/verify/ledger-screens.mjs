@@ -292,6 +292,27 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('x');
   const bulk = a.getByRole('toolbar', { name: 'Selected rows' });
   check('X ticks the open row and the Ink bulk bar appears', (await bulk.isVisible()) && /^1 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
+  const placed = (menu) =>
+    menu.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const side = document.querySelector('aside')?.getBoundingClientRect();
+      return { onScreen: box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight, offPane: !side || box.right <= side.left + 1 };
+    });
+  const edgeRow = a.locator('.activity-table [role="row"][data-row-id]').nth(1);
+  const edgeBox = await edgeRow.boundingBox();
+  await edgeRow.click({ button: 'right', position: { x: edgeBox.width - 6, y: edgeBox.height / 2 } });
+  const edgeFit = await placed(a.getByRole('menu'));
+  await settle(a);
+  await shot(a, 'activity-1440-menu-beside-pane');
+  check('beside the open pane the row menu flips left, all on screen and off the pane', edgeFit.onScreen && edgeFit.offPane, edgeFit);
+  await a.keyboard.press('Escape');
+  const lastRow = a.locator('.activity-table [role="row"][data-row-id]').last();
+  await lastRow.scrollIntoViewIfNeeded();
+  const lastBox = await lastRow.boundingBox();
+  await a.mouse.click(lastBox.x + 40, lastBox.y + lastBox.height / 2, { button: 'right' });
+  const lastFit = await placed(a.getByRole('menu'));
+  check("the last row's menu stays on screen", lastFit.onScreen && lastFit.offPane, lastFit);
+  await a.keyboard.press('Escape');
   await a.locator('.activity-table [role="row"][data-row-id]').nth(2).getByRole('checkbox').click();
   check('a second tick counts 2', /^2 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
   await settle(a);
