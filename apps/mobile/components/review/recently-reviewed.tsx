@@ -302,14 +302,14 @@ export function HistoryToggle({
       testID={tid('review', 'history', 'toggle')}
       accessibilityRole="button"
       accessibilityState={{ expanded: open }}
-      accessibilityLabel={`Recently reviewed, ${count}`}
+      accessibilityLabel={count ? `Recently reviewed, ${count}` : 'Recently reviewed'}
       onPress={onPress}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-hairline"
       className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
     >
       <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-        {`Recently reviewed · ${count}`}
+        {count ? `Recently reviewed · ${count}` : 'Recently reviewed'}
       </Text>
       <IconSymbol
         name={open ? 'chevron-up' : 'chevron-down'}

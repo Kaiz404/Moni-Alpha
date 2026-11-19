@@ -32,7 +32,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { AddedForYou } from '@/components/review/added-for-you';
-import { AutoAddRules } from '@/components/review/auto-add-rules';
+import { AutoAddRules, useAutoAddRuleItems } from '@/components/review/auto-add-rules';
 import { CaughtUp, NothingToReview } from '@/components/review/caught-up';
 import { EdgeCues } from '@/components/review/edge-cues';
 import {
@@ -522,6 +522,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
 
   const { queue, results, setLeaving, decide, remove, restore, reopen } = session;
   const history = useRecentlyReviewed();
+  const hasRules = useAutoAddRuleItems().length > 0;
   const [historyOpen, setHistoryOpen] = useState(false);
   const moveBack = useCallback(
     (proposal: RejectedProposal) => {
@@ -1156,7 +1157,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           >
             {card.message}
           </Text>
-        ) : reviewedCount ? (
+        ) : reviewedCount || hasRules ? (
           <HistoryToggle
             count={reviewedCount}
             open={false}

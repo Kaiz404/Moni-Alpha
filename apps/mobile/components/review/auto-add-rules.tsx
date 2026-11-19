@@ -41,7 +41,7 @@ function askAgain({ rule, name }: AutoAddRuleItem) {
   });
 }
 
-function useAutoAddRuleItems(): AutoAddRuleItem[] {
+export function useAutoAddRuleItems(): AutoAddRuleItem[] {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   return useValue(() => {

@@ -25,8 +25,11 @@ function askAgain(item: AutoAddRuleItem) {
   );
 }
 
-/** The rules "Don't ask about similar" made, beside the decisions that made them. */
-function RuleList({ rules, categoriesById }: { rules: AutoAddRuleItem[]; categoriesById: Ledger['projection']['categoriesById'] }) {
+/**
+ * The rules "Don't ask about similar" made, beside the decisions that made them. A browser can't read
+ * an Android app's icon, so each row shows the wallet that app is linked to, as the bank alerts do.
+ */
+function RuleList({ rules, wallets }: { rules: AutoAddRuleItem[]; wallets: Ledger['wallets'] }) {
   if (rules.length === 0) return null;
   return (
     <>
@@ -35,10 +38,14 @@ function RuleList({ rules, categoriesById }: { rules: AutoAddRuleItem[]; categor
       </div>
       <ul className="recent-rows" aria-label="Don't ask about similar">
         {rules.map((item) => {
-          const category = categoriesById[item.rule.categoryId];
+          const app = wallets.find((wallet) => wallet.notificationPackage === item.rule.sourceApp);
           return (
             <li key={item.rule.id} className="recent-row" data-rule={item.rule.merchantKey}>
-              <Bubble icon={category?.icon} color={category?.color} size={36} glyph={18} />
+              {app ? (
+                <Bubble icon={app.icon} color={app.color} size={36} glyph={18} label={app.notificationAppLabel ?? app.name} />
+              ) : (
+                <Bubble icon="bell-outline" color={null} size={36} glyph={18} label="Bank alert" />
+              )}
               <span className="inbox-text">
                 <b>{item.name}</b>
                 <span>{item.line}</span>
@@ -105,7 +112,7 @@ export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () =
           })}
         </ul>
       )}
-      <RuleList rules={ledger.autoAddRules} categoriesById={projection.categoriesById} />
+      <RuleList rules={ledger.autoAddRules} wallets={ledger.wallets} />
     </div>
   );
 }

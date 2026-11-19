@@ -158,6 +158,7 @@ beforeEach(() => {
   mockParams = {};
   store.proposedTransactions$.set({});
   store.transactions$.set({});
+  store.autoAddRules$.set({});
   store.wallets$.set({ [MAYBANK]: { id: MAYBANK, currency: 'MYR', deleted: false } });
   store.categories$.set({
     [FOOD]: {
@@ -718,6 +719,25 @@ describe('Review deck', () => {
       await show(<ReviewScreen />);
       await decide('notMine');
       expect(screen.getByTestId('review.history.toggle')).toBeTruthy();
+    });
+
+    it("reaches an older Don't ask about similar rule while cards wait and nothing was reviewed", async () => {
+      seed('p1');
+      store.autoAddRules$.set({
+        'rule-1': {
+          id: 'rule-1',
+          user_id: 'user-1',
+          merchant_key: 'spotify',
+          source_app: 'com.spotify.music',
+          wallet_id: 'w1',
+          category_id: 'c1',
+          deleted: false,
+        },
+      });
+      await show(<ReviewScreen />);
+      expect(screen.getByText('Recently reviewed')).toBeTruthy();
+      fireEvent.press(screen.getByTestId('review.history.toggle'));
+      expect(screen.getByTestId('review.rule.spotify.ask-again')).toBeTruthy();
     });
   });
 

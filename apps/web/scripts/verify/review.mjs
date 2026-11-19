@@ -192,6 +192,19 @@ export async function verifyReview(t) {
     ruleLines,
   );
   await shot(p, 'review-1440-recent');
+  const [seeded] = query('auto-add-rules');
+  if (seeded) {
+    const row = recent.locator(`.recent-row[data-rule="${seeded.merchant_key}"]`);
+    await row.getByRole('button', { name: 'Ask again' }).click();
+    const asked = p.getByRole('status').filter({ hasText: 'Moni will ask about' });
+    await asked.waitFor({ timeout: 5000 }).catch(() => {});
+    await asked.hover().catch(() => {});
+    const gone = await until('auto-add-rules', (r) => !r.some((each) => each.id === seeded.id));
+    check('Ask again removes the rule, with a toast that offers Undo', gone.ok && !(await visible(row)) && (await visible(asked.getByRole('button', { name: 'Undo' }))));
+    await asked.getByRole('button', { name: 'Undo' }).click();
+    const back = await until('auto-add-rules', (r) => r.some((each) => each.id === seeded.id));
+    check("Undo puts the Don't ask about similar rule back, on screen and in the dev project", back.ok && (await visible(row)));
+  }
   await recent.getByRole('button', { name: 'Move back to Review' }).first().click();
   const moved = await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'pending' && !row.reviewed_at));
   check('Move back to Review puts the capture back', moved.ok);
