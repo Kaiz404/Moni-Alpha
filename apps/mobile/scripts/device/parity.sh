@@ -105,7 +105,15 @@ run_side() {
   for area in "${areas[@]}"; do
     [[ -d $runs/$area ]] && cp -r "$runs/$area" "$out/$side/$area"
   done
-  [[ $side == base ]] || rm -rf "$cache/runs/head-$$"
+  if [[ $side == head ]]; then
+    # A head area that ran becomes a base for the next parity whose base is this commit.
+    for area in "${areas[@]}"; do
+      local keep=$cache/runs/$ikey/$area
+      [[ -d $runs/$area && ! -f $keep/.done ]] || continue
+      rm -rf "$keep" && mkdir -p "$(dirname "$keep")" && cp -r "$runs/$area" "$keep" && touch "$keep/.done"
+    done
+    rm -rf "$cache/runs/head-$$"
+  fi
 }
 
 run_side base "$base"
