@@ -154,7 +154,8 @@ if [[ -n $out ]]; then
   find "$run/maestro" -name '*.png' -exec cp {} "$out/" \; 2>/dev/null || true
   cat "$run/overlays.txt" >>"$out/overlays.txt"
 fi
-cases=$(grep -o '<testcase ' "$run/report.xml" 2>/dev/null | wc -l)
-failed=$(grep -o '<failure' "$run/report.xml" 2>/dev/null | wc -l)
+cases=$(grep -o '<testcase ' "$run/report.xml" 2>/dev/null | wc -l || true)
+# grep exits 1 when no flow failed, which pipefail would turn into this script's exit.
+failed=$(grep -o '<failure' "$run/report.xml" 2>/dev/null | wc -l || true)
 echo "$((cases - failed))/$cases flows passed, report $run/report.xml"
 exit "$rc"

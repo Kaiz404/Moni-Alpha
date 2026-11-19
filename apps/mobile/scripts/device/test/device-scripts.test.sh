@@ -83,6 +83,10 @@ while [ $# -gt 0 ]; do
 done
 mkdir -p "$shots"
 printf '\211PNG' >"$shots/smoke-home.png"
+if [ -n "$FAKE_MAESTRO_GREEN" ]; then
+  printf '<testsuites><testsuite><testcase name="a"/><testcase name="b"/></testsuite></testsuites>\n' >"$report"
+  exit 0
+fi
 printf '<testsuites><testsuite><testcase name="a"/><testcase name="b"><failure/></testcase></testsuite></testsuites>\n' >"$report"
 exit 1
 MAESTRO
@@ -317,6 +321,11 @@ run_flows() {
 out=$(run_flows --sha rf-key --tag smoke --out "$tmp/rf-out" 2>/dev/null)
 expect "run-flows.sh exits with Maestro's code" 1 $?
 [[ $out == "1/2 flows passed, report $tmp/runs/rf-key/"*"/report.xml" ]] && pass "run-flows.sh prints the passed count from report.xml" || fail "run-flows.sh summary: $out"
+for log in rf-adb rf-node rf-maestro; do cp "$tmp/$log.log" "$tmp/$log.kept"; done
+out=$(FAKE_MAESTRO_GREEN=1 run_flows --sha rf-key --tag smoke 2>/dev/null)
+expect "run-flows.sh exits 0 when every flow passes" 0 $?
+[[ $out == "2/2 flows passed, report $tmp/runs/rf-key/"*"/report.xml" ]] && pass "run-flows.sh prints the summary when no flow failed" || fail "run-flows.sh green summary: $out"
+for log in rf-adb rf-node rf-maestro; do mv "$tmp/$log.kept" "$tmp/$log.log"; done
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
 [[ $maestro_args == "test --device 100.64.0.9:40000 --no-reinstall-driver --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,needs-scanner,perf --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
 [[ $maestro_args == *"-e E2E_EMAIL=e2e+test@example.com -e E2E_PASSWORD=pw-123 $(cd "$dir/../.." && pwd)/.maestro "* ]] && pass "run-flows.sh passes the e2e credentials and the workspace" || fail "maestro env args: $maestro_args"
