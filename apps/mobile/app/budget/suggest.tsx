@@ -209,9 +209,14 @@ export default function SuggestBudgetScreen() {
       router.back();
       return;
     }
-    if (target.kind === 'total')
-      await setMonthlyBudget(Number(amountMinor) / 100);
-    else await upsertCategoryBudget(target.id, currency, amountMinor);
+    try {
+      if (target.kind === 'total')
+        await setMonthlyBudget(Number(amountMinor) / 100);
+      else await upsertCategoryBudget(target.id, currency, amountMinor);
+    } catch {
+      showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
+      return;
+    }
     showToast({
       text: `${nameOf(target)} set to ${formatMoney(amountMinor, currency, { whole: true })}`,
     });

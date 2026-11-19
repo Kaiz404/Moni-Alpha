@@ -85,12 +85,18 @@ export async function upsertCategoryBudget(
 
 /**
  * The month's total budget in the main currency, whole units, or null to fall
- * back to the sum of category budgets. Shows at once; the profile saves behind it.
+ * back to the sum of category budgets. Shows at once; the profile saves behind it,
+ * and a refused save puts the old total back before it throws.
  */
 export async function setMonthlyBudget(total: number | null): Promise<void> {
-  const current = profilePreferences$.peek() ?? userPreferencesSchema.parse({});
-  profilePreferences$.set({ ...current, monthly_budget: total });
-  await updateProfilePreferences(supabase, { monthly_budget: total });
+  const previous = profilePreferences$.peek();
+  profilePreferences$.set({ ...(previous ?? userPreferencesSchema.parse({})), monthly_budget: total });
+  try {
+    await updateProfilePreferences(supabase, { monthly_budget: total });
+  } catch (error) {
+    profilePreferences$.set(previous);
+    throw error;
+  }
 }
 
 export async function deleteCategoryBudget(categoryId: string, currency: string): Promise<void> {

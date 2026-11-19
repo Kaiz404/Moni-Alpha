@@ -1,11 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 
 import SuggestBudgetScreen from '@/app/budget/suggest';
 import { getAiClient } from '@/lib/ai/client';
 import { pickedSuggestion$ } from '@/lib/budget/suggestion';
-import { upsertCategoryBudget } from '@/lib/supabase/category-budgets';
+import { setMonthlyBudget, upsertCategoryBudget } from '@/lib/supabase/category-budgets';
+import { showToast } from '@/lib/toast/toast-store';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
@@ -104,6 +105,21 @@ describe('Ask Moni to suggest a budget', () => {
     });
     expect(upsertCategoryBudget).not.toHaveBeenCalled();
     expect(router.back).toHaveBeenCalled();
+  });
+
+  it('stays open with the amount and says so when the monthly total does not save', async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({});
+    jest.mocked(setMonthlyBudget).mockRejectedValueOnce(new Error('offline'));
+    render(<SuggestBudgetScreen />);
+    fireEvent.press(screen.getByTestId('budget.suggest.pick.monthly-total'));
+    fireEvent.press(await screen.findByTestId('budget.suggest.answer.0.most-days'));
+    fireEvent.press(screen.getByTestId('budget.suggest.next'));
+    fireEvent.press(await screen.findByText('Set budget'));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith({ text: "Couldn't save that. Try again.", tone: 'removed' }));
+    expect(setMonthlyBudget).toHaveBeenCalledWith(450);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(screen.getByText('RM450 a month')).toBeTruthy();
   });
 
   it("says so when Moni can't suggest one, with Try again", async () => {

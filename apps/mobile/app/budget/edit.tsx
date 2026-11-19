@@ -175,6 +175,8 @@ export default function EditBudgetsScreen() {
             : `${counted} budgets saved`,
       });
       router.back();
+    } catch {
+      showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
     } finally {
       setSaving(false);
     }
