@@ -225,6 +225,8 @@ export async function verifyChat(t) {
     const caption = await card.locator('.answer-caption').textContent();
     check(`the model's reply is the caption (${realGateway ? 'the local gateway' : 'the stubbed gateway'})`, Boolean(caption) && (realGateway || caption === STUB_REPLY), caption);
     const bar = card.locator('.week-bar').first();
+    await bar.scrollIntoViewIfNeeded();
+    await p.waitForTimeout(600);
     const barBox = await bar.boundingBox();
     await p.mouse.move(barBox.x + barBox.width * 0.3, barBox.y + barBox.height * 0.5);
     const tip = card.locator('.week-tip');
