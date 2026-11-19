@@ -59,7 +59,7 @@ import {
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { transactionRow } from '@/lib/transactions/row';
+import { transactionRow } from '@repo/core';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

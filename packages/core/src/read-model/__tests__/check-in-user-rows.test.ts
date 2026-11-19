@@ -49,6 +49,48 @@ describe('user rows', () => {
     expect(overrides.map((override) => [override.id, override.status])).toEqual([['b', 'dismissed']]);
   });
 
+  it('reads a verdict row into minor units and an upper-case currency', () => {
+    expect(
+      recurringOverridesFromRows(
+        {
+          a: {
+            id: 'a',
+            user_id: 'u',
+            series_key: 'MYR|expense|netflix',
+            status: 'confirmed',
+            kind: 'subscription',
+            expected_amount: '55.00',
+            expected_day: 10,
+            currency: 'myr',
+            remind: true,
+            created_at: '2026-10-01T00:00:00.000Z',
+            updated_at: null,
+          },
+        },
+        'u',
+      ),
+    ).toEqual([
+      {
+        id: 'a',
+        userId: 'u',
+        seriesKey: 'MYR|expense|netflix',
+        status: 'confirmed',
+        kind: 'subscription',
+        expectedAmountMinor: 5500,
+        expectedDay: 10,
+        currency: 'MYR',
+        skipPeriod: null,
+        remind: true,
+        name: null,
+        walletId: null,
+        categoryId: null,
+        dueOnce: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z',
+      },
+    ]);
+  });
+
   it('names a merchant key by its latest alias', () => {
     const aliases = merchantAliasesFromRows(
       {

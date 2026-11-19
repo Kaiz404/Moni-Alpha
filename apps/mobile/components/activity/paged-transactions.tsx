@@ -12,7 +12,8 @@ import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { pageOf, type Page } from '@/lib/finance/paged';
 import { tid, type Screen, type TestId } from '@/lib/test-ids';
-import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
+import { type TransactionRowData } from '@/lib/transactions/row';
+import { transactionRow, type RowLookups } from '@repo/core';
 import {
   groupActivityDays,
   type ActivityDay,

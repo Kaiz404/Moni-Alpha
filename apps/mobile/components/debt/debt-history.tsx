@@ -13,7 +13,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { tid } from '@/lib/test-ids';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import { type FinanceDebt, type FinanceDebtActivity, dayLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

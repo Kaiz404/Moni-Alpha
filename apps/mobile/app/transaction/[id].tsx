@@ -71,7 +71,7 @@ import {
   moneySign,
 } from '@repo/core';
 import { BALANCE_CORRECTION_TITLE } from '@repo/core';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

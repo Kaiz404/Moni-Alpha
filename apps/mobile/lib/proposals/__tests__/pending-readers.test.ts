@@ -2,11 +2,11 @@ import type { Observable } from '@legendapp/state';
 
 import { financeProjection$, startFinanceProjection } from '@/lib/finance/projection';
 import { pendingProposals$ } from '@/lib/finance/selectors';
+import { isAwaitingReview } from '@repo/core';
 import { approve, notMine } from '@/lib/proposals/review-actions';
 import {
   getLedgerEntries,
   getProposedTransactions,
-  isAwaitingReview,
   listAwaitingReview,
 } from '@/lib/supabase/proposed-transactions';
 

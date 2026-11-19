@@ -34,7 +34,7 @@ import {
 } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import { type DebtSide, formatMoney } from '@repo/core';
 
 const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;

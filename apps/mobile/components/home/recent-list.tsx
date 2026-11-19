@@ -12,10 +12,7 @@ import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { FinanceTransaction } from '@repo/core';
 import { tid } from '@/lib/test-ids';
-import {
-  transactionRow,
-  type RowLookups,
-} from '@/lib/transactions/row';
+import { transactionRow, type RowLookups } from '@repo/core';
 
 /** "Recent": the newest three rows and See all, or the first-run empty tile. */
 export function RecentList({

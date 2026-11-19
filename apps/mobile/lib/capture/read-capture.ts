@@ -17,7 +17,7 @@ import type {
   ReadResult,
 } from '@/lib/capture/capture-stage';
 import { AUTO_PLACE } from '@/lib/capture/entry-place';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import {
   merchantKey,
   type FinanceCategory,

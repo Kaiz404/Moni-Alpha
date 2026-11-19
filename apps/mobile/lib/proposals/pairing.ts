@@ -19,13 +19,8 @@ import {
   type ProposedTransactionRow,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
-import {
-  alertKey,
-  captureAlert,
-  parseMetadata,
-  transactionAlert,
-  transactionPairing,
-} from '@/lib/transactions/alert';
+import { alertKey, captureAlert } from '@repo/core';
+import { parseMetadata, transactionAlert, transactionPairing } from '@/lib/transactions/alert';
 
 type Row = Record<string, unknown> & { id: string };
 

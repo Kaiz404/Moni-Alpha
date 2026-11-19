@@ -1,7 +1,7 @@
 import { decimalToMinor } from '@repo/types';
 import { rowAmount, rowMeta } from '@/components/ui/transaction-row';
 import { expense } from '@/lib/wallets/__tests__/balance-fixture';
-import { transactionRow } from '../row';
+import { transactionRow } from '@repo/core';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),

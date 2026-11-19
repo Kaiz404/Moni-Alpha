@@ -40,7 +40,7 @@ import {
   type Place,
   formatMoney,
 } from '@repo/core';
-import { transactionRow } from '@/lib/transactions/row';
+import { transactionRow } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */

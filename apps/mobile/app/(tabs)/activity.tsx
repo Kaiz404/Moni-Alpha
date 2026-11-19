@@ -25,10 +25,10 @@ import { pickActivityRange } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
-import type { RowLookups } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import type { RowLookups } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 import {
   ACTIVITY_KIND_LABELS,
   filterActivity,

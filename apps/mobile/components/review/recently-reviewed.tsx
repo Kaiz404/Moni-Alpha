@@ -22,8 +22,9 @@ import {
   type ReviewedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
-import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { type TransactionRowData } from '@/lib/transactions/row';
+import { transactionRow, type RowLookups } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 import { merchantName, type FinanceTransaction, dayHeading, formatSignedMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

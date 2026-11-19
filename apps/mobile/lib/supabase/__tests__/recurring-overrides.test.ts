@@ -2,7 +2,6 @@ import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 import {
   addBill,
-  selectRecurringOverrides,
   skipBill,
   updateBill,
   type RecurringOverrideRow,
@@ -44,33 +43,6 @@ function row(over: Partial<RecurringOverrideRow>): RecurringOverrideRow {
     ...over,
   };
 }
-
-describe('selectRecurringOverrides', () => {
-  it('keeps the newest verdict when two devices wrote one for the same series', () => {
-    const selected = selectRecurringOverrides(
-      [
-        row({ id: 'a', status: 'dismissed', updated_at: '2026-10-05T00:00:00.000Z' }),
-        row({ id: 'b', status: 'confirmed', updated_at: '2026-10-03T00:00:00.000Z' }),
-        row({ id: 'c', series_key: 'MYR|expense|unifi', updated_at: '2026-10-02T00:00:00.000Z' }),
-      ],
-      USER,
-    );
-    expect(selected.map((o) => [o.id, o.status])).toEqual([
-      ['a', 'dismissed'],
-      ['c', 'confirmed'],
-    ]);
-    expect(selected[0].expectedAmountMinor).toBe(5500);
-  });
-
-  it("drops cleared rows and other users' rows", () => {
-    expect(
-      selectRecurringOverrides(
-        [row({ id: 'a', deleted: true }), row({ id: 'b', user_id: 'someone-else' })],
-        USER,
-      ),
-    ).toEqual([]);
-  });
-});
 
 const netflix = {
   seriesKey: 'MYR|expense|netflix',

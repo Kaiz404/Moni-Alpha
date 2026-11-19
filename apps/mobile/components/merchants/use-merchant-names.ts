@@ -6,7 +6,7 @@ import { categories$, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 
 export type MerchantRow = MerchantEntry & { icon: TransactionIconName; color: string | null };
 

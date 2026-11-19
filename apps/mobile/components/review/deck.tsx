@@ -106,7 +106,7 @@ import { listAwaitingReview, type RejectedProposal } from '@/lib/supabase/propos
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 import {
   merchantName,

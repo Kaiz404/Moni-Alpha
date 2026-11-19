@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { FinanceTransaction, FinanceWallet } from '../../read-model/types';
 import { planCheckIn, correctBalance } from '../balance-correction';
 import { applyToTables, type MemoryTables } from '../memory';
-import { familiarity, planApprove, planCaptureWallet, timesFiled, usualCaptures } from '../review';
+import { alertKey, captureAlert, familiarity, planApprove, planCaptureWallet, timesFiled, usualCaptures } from '../review';
 import { planTransactionsDelete, planTransactionsEdit } from '../transactions';
 import type { PlanContext } from '../types';
 import { undoWrites } from '../undo';
@@ -211,5 +211,33 @@ describe('planCheckIn', () => {
       table: 'transactions',
       row: { type: 'expense', amount: '11.80', analysis_excluded: true, description: 'Balance correction' },
     });
+  });
+});
+
+describe('captureAlert', () => {
+  const delivery = {
+    sourceType: 'notification' as const,
+    sourceApp: 'com.maybank2u.life',
+    notificationTitle: 'Maybank',
+    notificationBody: '  You spent RM23.40 at GRAB*FOOD  ',
+    notificationReceivedAt: '2026-10-14T05:00:00.000Z',
+    amountMinor: minor(2340),
+    currency: 'MYR',
+  };
+
+  it('keys one delivery by its instant, whatever format the timestamp comes back in', () => {
+    expect(alertKey(delivery)).toBe('["com.maybank2u.life","Maybank","  You spent RM23.40 at GRAB*FOOD  ",1791954000000]');
+    expect(alertKey({ ...delivery, notificationReceivedAt: '2026-10-14T13:00:00+08:00' })).toBe(alertKey(delivery));
+  });
+
+  it('keeps the trimmed alert with the capture it came from, and nothing for a typed capture', () => {
+    expect(captureAlert(delivery, 'p-1')).toEqual({
+      text: 'You spent RM23.40 at GRAB*FOOD',
+      amountMinor: 2340,
+      currency: 'MYR',
+      key: alertKey(delivery),
+      captureId: 'p-1',
+    });
+    expect(captureAlert({ ...delivery, sourceType: 'text' })).toBeUndefined();
   });
 });

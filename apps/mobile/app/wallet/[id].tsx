@@ -21,8 +21,8 @@ import { merchantName } from '@repo/core';
 import { usePageNumber } from '@/lib/finance/paged';
 import { categoriesForUser$, pendingProposals$, transactions$, walletBalanceMinor$, walletById$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import type { RowLookups } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import type { RowLookups } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
 

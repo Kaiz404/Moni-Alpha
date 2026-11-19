@@ -23,7 +23,7 @@ import {
   type ReviewOutcome,
   type ReviewResult,
 } from '@/lib/proposals/review-actions';
-import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';

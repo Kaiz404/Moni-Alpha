@@ -41,7 +41,7 @@ import {
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { AiWalletContext, ExtractResult, RawNotification } from '@repo/types';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { alertKey, captureAlert } from '@/lib/transactions/alert';
+import { alertKey, captureAlert } from '@repo/core';
 import { FALLBACK_CURRENCY, finalizeProposalWallet } from '@/lib/wallets/proposal-wallet';
 
 export type TraceEvent = {

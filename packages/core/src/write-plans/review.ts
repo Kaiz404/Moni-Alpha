@@ -62,25 +62,34 @@ export function usualCaptures<P extends ProposedTransaction>(
   );
 }
 
-/** Which delivery of which alert: a redelivered notification repeats all four parts. */
-function alertKey(proposal: ProposedTransaction): string {
+type AlertDelivery = Pick<ProposedTransaction, 'sourceApp' | 'notificationTitle' | 'notificationBody' | 'notificationReceivedAt'>;
+
+/**
+ * Which delivery of which alert: a redelivered notification repeats all four parts, because
+ * `notificationReceivedAt` is Android's post time. Two real payments differ at least in that.
+ */
+export function alertKey(alert: AlertDelivery): string {
   return JSON.stringify([
-    proposal.sourceApp ?? '',
-    proposal.notificationTitle ?? '',
-    proposal.notificationBody ?? '',
-    proposal.notificationReceivedAt ? Date.parse(proposal.notificationReceivedAt) : null,
+    alert.sourceApp ?? '',
+    alert.notificationTitle ?? '',
+    alert.notificationBody ?? '',
+    // Postgres hands the timestamp back in another format, so compare the instant.
+    alert.notificationReceivedAt ? Date.parse(alert.notificationReceivedAt) : null,
   ]);
 }
 
-/** The bank alert a notification capture keeps on the ledger row it becomes. */
-export function captureAlert(proposal: ProposedTransaction): TransactionAlert | undefined {
+/** The bank alert a notification capture keeps on the ledger row it becomes, read before any edit. */
+export function captureAlert(
+  proposal: AlertDelivery & Pick<ProposedTransaction, 'sourceType' | 'amountMinor' | 'currency'>,
+  captureId?: string,
+): TransactionAlert | undefined {
   if (proposal.sourceType !== 'notification') return undefined;
   const parsed = transactionAlertSchema.safeParse({
     text: proposal.notificationBody?.trim().slice(0, 1000),
     amountMinor: proposal.amountMinor,
     currency: proposal.currency,
     key: alertKey(proposal),
-    captureId: proposal.id,
+    captureId,
   });
   return parsed.success ? parsed.data : undefined;
 }
@@ -114,7 +123,7 @@ export function planApprove(
     const problem = checkTransfer(view, proposal.walletId, proposal.transferToWalletId);
     if (problem) return problem;
   }
-  const alert = captureAlert(proposal);
+  const alert = captureAlert(proposal, proposal.id);
   const row = planTransaction(
     {
       walletId: proposal.walletId,

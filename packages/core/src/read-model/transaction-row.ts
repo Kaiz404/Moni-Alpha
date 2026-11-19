@@ -55,13 +55,11 @@ export type TransactionRow = {
   icon: string;
   /** The bubble's solid colour; null for a transfer's Sand bubble. */
   color: string | null;
-  kind: FinanceTransaction['type'];
   /** The category's name, "Not in budgets" for a balance correction, null for a transfer or none. */
   category: string | null;
   wallet: string;
-  toWallet: string | null;
   autoAdded: boolean;
-};
+} & ({ kind: 'expense' | 'income'; toWallet: null } | { kind: 'transfer'; toWallet: string });
 
 export function transactionRow(transaction: FinanceTransaction, { categoriesById, walletNames }: RowLookups): TransactionRow {
   const category = transaction.categoryId ? categoriesById[transaction.categoryId] : undefined;
@@ -73,22 +71,29 @@ export function transactionRow(transaction: FinanceTransaction, { categoriesById
     currency: transaction.currency,
     icon: transactionIcon(category?.icon, transaction.type),
     color: category?.color ?? null,
-    kind: transaction.type,
     category: category?.name ?? null,
     wallet: walletNames[transaction.walletId] ?? 'Wallet',
-    toWallet: null,
     autoAdded: transaction.autoAdded,
   };
   if (transaction.type === 'transfer')
     return {
       ...base,
+      kind: 'transfer',
       title: transaction.description ?? 'Transfer',
-      icon: 'swap-horizontal',
       color: null,
       category: null,
       toWallet: walletNames[transaction.transferToWalletId ?? ''] ?? 'Wallet',
     };
   if (transaction.balanceCorrection)
-    return { ...base, title: BALANCE_CORRECTION_TITLE, icon: 'scale-balance', color: LEMON, category: 'Not in budgets', autoAdded: false };
-  return base;
+    return {
+      ...base,
+      kind: transaction.type,
+      toWallet: null,
+      title: BALANCE_CORRECTION_TITLE,
+      icon: 'scale-balance',
+      color: LEMON,
+      category: 'Not in budgets',
+      autoAdded: false,
+    };
+  return { ...base, kind: transaction.type, toWallet: null };
 }

@@ -1,4 +1,4 @@
-import type { StoredRow } from '@repo/core';
+import { merchantAliasesFromRows, type StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import { merchantAliasSchema, type MerchantAlias } from '@repo/types';
 import { assertMigrated, merchantAliases$ } from '@/lib/store';
@@ -7,31 +7,8 @@ import { getUserId } from '@/lib/supabase/client';
 
 export type MerchantAliasRow = StoredRow<'merchant_aliases'>;
 
-/** Offline devices can each name the same merchant key. */
-function latestAliasPerMerchantKey(
-  rows: readonly MerchantAliasRow[],
-  userId: string,
-): MerchantAlias[] {
-  const latest = new Map<string, MerchantAlias>();
-  for (const row of rows) {
-    if (row.user_id !== userId || row.deleted || !row.raw_key || !row.display_name) continue;
-    const alias: MerchantAlias = {
-      id: row.id,
-      userId: row.user_id,
-      rawKey: row.raw_key,
-      displayName: row.display_name,
-      createdAt: row.created_at ?? '',
-      updatedAt: row.updated_at ?? row.created_at ?? '',
-      deleted: false,
-    };
-    const current = latest.get(alias.rawKey);
-    if (!current || alias.updatedAt > current.updatedAt) latest.set(alias.rawKey, alias);
-  }
-  return [...latest.values()];
-}
-
 export function listMerchantAliases(userId: string): MerchantAlias[] {
-  return latestAliasPerMerchantKey(getRecordValues<MerchantAliasRow>(merchantAliases$), userId);
+  return merchantAliasesFromRows(merchantAliases$.get() ?? {}, userId);
 }
 
 export async function nameMerchant(rawKey: string, displayName: string): Promise<void> {

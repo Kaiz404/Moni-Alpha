@@ -8,7 +8,7 @@ import { getRecordValues } from '@/lib/store/helpers';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 
 /** An auto-add rule as ADDED WITHOUT ASKING lists it. */
 export type AutoAddRuleRow = {

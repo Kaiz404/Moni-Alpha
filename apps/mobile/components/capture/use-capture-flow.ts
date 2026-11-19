@@ -19,11 +19,8 @@ import { readCapture } from '@/lib/capture/read-capture';
 import { keepScannedReceipt } from '@/lib/receipts/upload-queue';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
-import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import type { TransactionRowData } from '@/lib/transactions/row';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
 import {
   prefetchTransactionLocation,
   type EntryLocation,
@@ -44,7 +41,7 @@ export function useCaptureFlow(source: CaptureSource) {
   const currency = useMainCurrency();
   const [stage, dispatch] = useReducer(captureStage, START);
   const [approving, setApproving] = useState(false);
-  const [added, setAdded] = useState<TransactionRowData | null>(null);
+  const [added, setAdded] = useState(false);
   const [here, setHere] = useState<EntryLocation>({ status: 'none' });
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
@@ -140,19 +137,7 @@ export function useCaptureFlow(source: CaptureSource) {
       );
       if (transaction && stage.quote.source === 'camera')
         void keepScannedReceipt(stage.quote.imageUri, transaction.id).catch(() => {});
-      const category = categories.find((item) => item.id === draft.categoryId);
-      setAdded({
-        kind: draft.kind,
-        title: draft.merchant || category?.name || 'Transaction',
-        date: draft.transactionDate,
-        amountMinor: draft.amountMinor,
-        currency,
-        icon: resolveTransactionIcon(category?.icon, draft.kind),
-        color: category?.color ?? null,
-        category: category?.name ?? null,
-        wallet: compactWalletNames(wallets)[draft.walletId] ?? 'Wallet',
-        autoAdded: false,
-      });
+      setAdded(true);
       dispatch({ type: 'approved' });
     } catch (error) {
       Alert.alert(

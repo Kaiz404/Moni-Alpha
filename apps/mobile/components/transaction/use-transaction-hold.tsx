@@ -97,7 +97,7 @@ export function useTransactionHold(screen: Screen): {
 
   const remove = async (transaction: FinanceTransaction, row: TransactionRowData) => {
     const month = new Date(row.date).toLocaleDateString('en-US', { month: 'long' });
-    const category = 'category' in row ? row.category : null;
+    const category = row.category;
     const confirmed = await openSheet({
       kind: 'confirm',
       title: 'Delete this transaction?',
