@@ -8,19 +8,14 @@ import {
   type FinanceTransaction,
 } from '@repo/core';
 import { decimalToMinor, type UpdateTransaction } from '@repo/types';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { whenSynced } from '@/components/states/connection';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
 type Field = 'category' | 'wallet' | 'type' | null;
-/** W2-States' inline progress on a field: Saving until the server has the row, then Saved for 1.2 s. */
-type FieldSave = { field: Exclude<Field, null> | 'date'; phase: 'saving' | 'saved' } | null;
-
-const SAVED_FOR_MS = 1200;
 
 /**
  * The docked detail pane (W2-Activity): J and K move, each value is a chip with its popover, merchant
@@ -46,13 +41,9 @@ export function DetailPane({
   const [open, setOpen] = useState<Field>(null);
   const [editing, setEditing] = useState<'merchant' | 'amount' | 'note' | null>(null);
   const [draft, setDraft] = useState('');
-  const [fieldSave, setFieldSave] = useState<FieldSave>(null);
-  const saveRun = useRef(0);
   useEffect(() => {
     setOpen(null);
     setEditing(null);
-    setFieldSave(null);
-    saveRun.current += 1;
   }, [transaction.id]);
 
   const row = transactionRow({ ...transaction, merchant: merchantName(transaction.merchant, aliases) }, { categoriesById: projection.categoriesById, walletNames });
@@ -60,38 +51,12 @@ export function DetailPane({
   const source = sourceOf(transaction.metadata);
   const alert = transaction.metadata.alert as { text?: string } | undefined;
   const linked = transaction.debtActivityId !== null;
-  const save = (data: UpdateTransaction, done: string, field?: Exclude<FieldSave, null>['field']) => {
+  // The change's toast says it saved, with Undo, in the one bottom-left slot (#103); the field shows no note of its own.
+  const save = (data: UpdateTransaction, done: string) => {
     setOpen(null);
     setEditing(null);
-    const saved = commit(planTransactionEdit(transaction.id, data, projection, planContext(userId)), done);
-    // Offline the toast already says the change waits in this tab, so the field shows no Saving.
-    if (!saved || !field || !navigator.onLine) return;
-    const run = ++saveRun.current;
-    setFieldSave({ field, phase: 'saving' });
-    void whenSynced().then(() => {
-      if (saveRun.current !== run) return;
-      setFieldSave({ field, phase: 'saved' });
-      setTimeout(() => {
-        if (saveRun.current === run) setFieldSave(null);
-      }, SAVED_FOR_MS);
-    });
+    commit(planTransactionEdit(transaction.id, data, projection, planContext(userId)), done);
   };
-  const label = (text: string, field: Exclude<FieldSave, null>['field']) => (
-    <dt className="pane-label">
-      {text}
-      {fieldSave?.field === field &&
-        (fieldSave.phase === 'saving' ? (
-          <span className="field-saving" role="status">
-            Saving
-          </span>
-        ) : (
-          <span className="field-saved" role="status">
-            <Icon name="check" size={14} />
-            Saved
-          </span>
-        ))}
-    </dt>
-  );
   const categories = Object.values(projection.categoriesById)
     .filter((category) => category.isActive && (category.userId === null || category.userId === userId) && (category.type === null || category.type === transaction.type))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
@@ -208,14 +173,14 @@ export function DetailPane({
         <dl className="pane-fields">
           {transaction.type !== 'transfer' && (
             <div className="pane-field">
-              {label('Category', 'category')}
+              <dt>Category</dt>
               <dd>
                 {chip(
                   'category',
                   <Bubble icon={row.icon} color={row.color} size={26} glyph={15} />,
                   row.category ?? 'Pick a category',
                   categories.map((category) => (
-                    <li key={category.id} role="option" aria-selected={category.id === transaction.categoryId} tabIndex={0} className="popover-row" onClick={() => save({ categoryId: category.id }, `Moved to ${category.name}`, 'category')}>
+                    <li key={category.id} role="option" aria-selected={category.id === transaction.categoryId} tabIndex={0} className="popover-row" onClick={() => save({ categoryId: category.id }, `Moved to ${category.name}`)}>
                       <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
                       {category.name}
                     </li>
@@ -225,7 +190,7 @@ export function DetailPane({
             </div>
           )}
           <div className="pane-field">
-            {label('Wallet', 'wallet')}
+            <dt>Wallet</dt>
             <dd>
               {chip(
                 'wallet',
@@ -234,7 +199,7 @@ export function DetailPane({
                 wallets
                   .filter((wallet) => wallet.currency === transaction.currency)
                   .map((wallet) => (
-                    <li key={wallet.id} role="option" aria-selected={wallet.id === transaction.walletId} tabIndex={0} className="popover-row" onClick={() => save({ walletId: wallet.id }, `Moved to ${walletNames[wallet.id] ?? wallet.name}`, 'wallet')}>
+                    <li key={wallet.id} role="option" aria-selected={wallet.id === transaction.walletId} tabIndex={0} className="popover-row" onClick={() => save({ walletId: wallet.id }, `Moved to ${walletNames[wallet.id] ?? wallet.name}`)}>
                       <Bubble icon={wallet.icon} color={wallet.color} size={26} glyph={14} />
                       {wallet.name}
                     </li>
@@ -244,7 +209,7 @@ export function DetailPane({
           </div>
           {transaction.type !== 'transfer' && (
             <div className="pane-field">
-              {label('Type', 'type')}
+              <dt>Type</dt>
               <dd>
                 {chip(
                   'type',
@@ -253,7 +218,7 @@ export function DetailPane({
                   </span>,
                   transaction.type === 'income' ? 'Income' : 'Expense',
                   (['expense', 'income'] as const).map((type) => (
-                    <li key={type} role="option" aria-selected={type === transaction.type} tabIndex={0} className="popover-row" onClick={() => save({ type, categoryId: null }, type === 'income' ? 'Now income' : 'Now an expense', 'type')}>
+                    <li key={type} role="option" aria-selected={type === transaction.type} tabIndex={0} className="popover-row" onClick={() => save({ type, categoryId: null }, type === 'income' ? 'Now income' : 'Now an expense')}>
                       {type === 'income' ? 'Income' : 'Expense'}
                     </li>
                   )),
@@ -262,7 +227,7 @@ export function DetailPane({
             </div>
           )}
           <div className="pane-field">
-            {label('Date', 'date')}
+            <dt>Date</dt>
             <dd>
               <label className="field-chip field-chip-date press">
                 <span className="mini-bubble">
@@ -280,7 +245,7 @@ export function DetailPane({
                     if (!event.target.value) return;
                     const at = new Date(transaction.transactionDate);
                     const shift = calendar.startOfDay(event.target.value).getTime() - calendar.startOfDay(calendar.dayKey(at)).getTime();
-                    save({ transactionDate: new Date(at.getTime() + shift).toISOString() }, 'Date saved', 'date');
+                    save({ transactionDate: new Date(at.getTime() + shift).toISOString() }, 'Date saved');
                   }}
                 />
               </label>

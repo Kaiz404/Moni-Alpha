@@ -228,13 +228,14 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   const categoryBefore = ((await categoryChip.textContent()) ?? '').trim();
   await categoryChip.click();
   await pane.getByRole('listbox', { name: 'category' }).getByRole('option', { selected: false }).first().click();
-  const saving = pane.locator('.pane-label').filter({ hasText: 'Category' }).getByRole('status');
-  await saving.waitFor({ timeout: 5000 }).catch(() => {});
-  const progress = ((await saving.textContent().catch(() => '')) ?? '').trim();
-  await pane.locator('.field-saved').waitFor({ timeout: 10_000 }).catch(() => {});
-  check('a category picked in the pane shows Saving beside its label, then Saved once the server has it', /^Sav(ing|ed)$/.test(progress) && (await pane.locator('.field-saved').isVisible()), progress);
-  await pane.locator('.field-saved').waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
-  check('Saved hides after 1.2 s', !(await saving.isVisible().catch(() => false)));
+  const moved = a.getByRole('status').filter({ hasText: /^Moved to / });
+  await moved.waitFor({ timeout: 5000 }).catch(() => {});
+  const movedBox = await moved.boundingBox().catch(() => null);
+  check(
+    'a category picked in the pane says so in the bottom-left toast, and the pane shows no note of its own',
+    movedBox !== null && movedBox.x < 320 && movedBox.y > 800 && (await pane.getByRole('status').count()) === 0,
+    movedBox,
+  );
   await a.keyboard.press('Control+z');
   await a.waitForFunction((was) => document.querySelector('aside .pane-field .field-chip')?.textContent?.trim() === was, categoryBefore, { timeout: 5000 }).catch(() => {});
   check('Ctrl Z puts the pane\'s category back', ((await categoryChip.textContent()) ?? '').trim() === categoryBefore, { categoryBefore });
