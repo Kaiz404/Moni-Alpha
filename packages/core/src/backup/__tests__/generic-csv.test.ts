@@ -1,4 +1,7 @@
-import { decodeFile } from '@/lib/backup/decode';
+import { describe, expect, it } from 'vitest';
+
+import { createCalendar } from '../../calendar';
+import { decodeFile } from '../decode';
 import {
   guessDateOrder,
   guessMapping,
@@ -7,9 +10,12 @@ import {
   parseImportDate,
   readGenericTable,
   readImportRows,
-} from '@/lib/backup/generic-csv';
+} from '../generic-csv';
+import { utf16le, utf8 } from './encode';
 
-const dayOf = (cell: string, order: 'dmy' | 'mdy' = 'dmy') => parseImportDate(cell, order)?.day;
+const KL = createCalendar('Asia/Kuala_Lumpur');
+
+const dayOf = (cell: string, order: 'dmy' | 'mdy' = 'dmy') => parseImportDate(cell, order, KL)?.day;
 
 describe('parseImportDate', () => {
   it.each([
@@ -40,30 +46,30 @@ describe('parseImportDate', () => {
   });
 
   it('keeps the exact instant of a timestamp with a zone', () => {
-    expect(parseImportDate('2026-10-14T04:00:00.000Z', 'dmy')?.at).toBe('2026-10-14T04:00:00.000Z');
+    expect(parseImportDate('2026-10-14T04:00:00.000Z', 'dmy', KL)?.at).toBe('2026-10-14T04:00:00.000Z');
   });
 
   it('keeps a time of day as local time', () => {
-    expect(parseImportDate('14/10/2026 12:41 pm', 'dmy')?.at).toBe(
-      new Date(2026, 9, 14, 12, 41).toISOString(),
+    expect(parseImportDate('14/10/2026 12:41 pm', 'dmy', KL)?.at).toBe(
+      '2026-10-14T04:41:00.000Z',
     );
-    expect(parseImportDate('14/10/2026 12:05 am', 'dmy')?.at).toBe(
-      new Date(2026, 9, 14, 0, 5).toISOString(),
+    expect(parseImportDate('14/10/2026 12:05 am', 'dmy', KL)?.at).toBe(
+      '2026-10-13T16:05:00.000Z',
     );
-    expect(parseImportDate('14/10/2026 1:05 pm', 'dmy')?.at).toBe(
-      new Date(2026, 9, 14, 13, 5).toISOString(),
+    expect(parseImportDate('14/10/2026 1:05 pm', 'dmy', KL)?.at).toBe(
+      '2026-10-14T05:05:00.000Z',
     );
   });
 
   it.each(['', 'yesterday', '31/02/2026', '13/13/2026', '2026-13-01', '14 Foo 2026', '14/10'])(
     'refuses %s',
     (cell) => {
-      expect(parseImportDate(cell, 'dmy')).toBeNull();
+      expect(parseImportDate(cell, 'dmy', KL)).toBeNull();
     },
   );
 
   it('refuses a day that only fits the other way round', () => {
-    expect(parseImportDate('10/14/2026', 'dmy')).toBeNull();
+    expect(parseImportDate('10/14/2026', 'dmy', KL)).toBeNull();
   });
 });
 
@@ -129,7 +135,7 @@ describe('readGenericTable', () => {
   });
 
   it('reads a semicolon file', () => {
-    expect(readGenericTable('Date;Amount\n14/10/2026;12,50\n')?.rows[0].cells).toEqual([
+    expect(readGenericTable('Date;Amount\n14/10/2026;12,50\n')?.rows[0]?.cells).toEqual([
       '14/10/2026',
       '12,50',
     ]);
@@ -185,7 +191,7 @@ describe('guessMapping', () => {
 describe('readImportRows', () => {
   const read = (csv: string, order: 'dmy' | 'mdy' = 'dmy') => {
     const table = readGenericTable(csv)!;
-    return readImportRows(table, guessMapping(table.headers), order);
+    return readImportRows(table, guessMapping(table.headers), order, KL);
   };
   const brief = (csv: string) =>
     read(csv).rows.map((row) => [row.day, row.type, row.amountMinor, row.merchant]);
@@ -217,7 +223,7 @@ describe('readImportRows', () => {
   });
 
   it('keeps quoted commas and line breaks in a merchant', () => {
-    expect(brief('Date,Merchant,Amount\n14/10/2026,"Grab, ""KL""\nCentral",-12.00\n')[0][3]).toBe(
+    expect(brief('Date,Merchant,Amount\n14/10/2026,"Grab, ""KL""\nCentral",-12.00\n')[0]![3]).toBe(
       'Grab, "KL"\nCentral',
     );
   });
@@ -259,7 +265,7 @@ describe('decodeFile', () => {
   const ascii = (text: string) => [...text].map((char) => char.charCodeAt(0));
 
   it('reads UTF-8 with accents, Chinese and an emoji', () => {
-    const encoded = Uint8Array.from(Buffer.from('Café,咖啡,😀', 'utf8'));
+    const encoded = utf8('Café,咖啡,😀');
     expect(decodeFile(encoded)).toEqual({
       kind: 'text',
       encoding: 'utf-8',
@@ -276,7 +282,7 @@ describe('decodeFile', () => {
   });
 
   it('reads UTF-16 with a byte order mark either way round', () => {
-    const little = Uint8Array.from([0xff, 0xfe, ...Buffer.from('Café', 'utf16le')]);
+    const little = Uint8Array.from([0xff, 0xfe, ...utf16le('Café')]);
     expect(decodeFile(little)).toEqual({ kind: 'text', encoding: 'utf-16le', text: 'Café' });
     expect(decodeFile(bytes(0xfe, 0xff, 0, 0x61, 0, 0x62))).toEqual({
       kind: 'text',
@@ -286,7 +292,7 @@ describe('decodeFile', () => {
   });
 
   it('recognises UTF-16 with no byte order mark', () => {
-    expect(decodeFile(Uint8Array.from(Buffer.from('Date,Amount\n', 'utf16le')))).toEqual({
+    expect(decodeFile(utf16le('Date,Amount\n'))).toEqual({
       kind: 'text',
       encoding: 'utf-16le',
       text: 'Date,Amount\n',

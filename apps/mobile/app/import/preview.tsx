@@ -9,13 +9,18 @@ import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
 import { applyPlan, type ApplyProgress } from '@/lib/backup/apply';
-import type { ImportRow } from '@/lib/backup/generic-csv';
-import { getImportSession, planImport, setImportSession } from '@/lib/backup/import-session';
-import { TABLES, TABLE_ORDER } from '@/lib/backup/moni-export';
-import { restoreTotals, type ImportPlan } from '@/lib/backup/plan';
+import { getImportSession, planImportNow, setImportSession } from '@/lib/backup/import-session';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { dayLabel, formatSignedMoney } from '@repo/core';
+import {
+  dayLabel,
+  formatSignedMoney,
+  restoreTotals,
+  TABLE_ORDER,
+  TABLES,
+  type ImportPlan,
+  type ImportRow,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 20;
@@ -130,7 +135,7 @@ export default function ImportPreviewScreen() {
   const session = getImportSession();
   const userId = user?.id ?? null;
   const plan = useMemo(
-    () => (session && userId ? planImport(session, userId) : null),
+    () => (session && userId ? planImportNow(session, userId) : null),
     [session, userId],
   );
   const [progress, setProgress] = useState<ApplyProgress | null>(null);
@@ -169,7 +174,7 @@ export default function ImportPreviewScreen() {
     setProgress({ done: 0, total: fresh });
     try {
       // Planned again here: anything that arrived since the preview is not written twice.
-      const latest = planImport(session, userId);
+      const latest = planImportNow(session, userId);
       const written = latest ? await applyPlan(latest, setProgress) : 0;
       showToast({ text: `${verb === 'Add' ? 'Added' : 'Restored'} ${nouns(written)}` });
       leave('/activity');

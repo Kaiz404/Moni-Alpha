@@ -1,15 +1,12 @@
 import { syncState, when } from '@legendapp/state';
-import { planImportRows } from '@repo/core';
+import { planImportRows, STORE_TABLE_NAMES, TABLE_ORDER, type ImportPlan, type RawRow, type TableName } from '@repo/core';
 import { applyWrites } from '@repo/data';
 import { randomUUID } from 'expo-crypto';
 
 import { isMigrated, store } from '@/lib/store';
 import { refreshDebtStatus } from '@/lib/supabase/debts';
 
-import type { RawRow, TableName } from './moni-export';
-import { TABLE_ORDER } from './moni-export';
-import type { ImportPlan } from './plan';
-import { STORE_TABLE_NAMES, STORE_TABLES } from './store-tables';
+import { STORE_TABLES } from './store-tables';
 
 export type ApplyProgress = { done: number; total: number };
 

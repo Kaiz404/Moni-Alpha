@@ -1,12 +1,11 @@
 import { createCategorySchema, decimalToMinor, legacyColor, minorToDecimal, type MerchantAlias } from '@repo/types';
 
-import { merchantKey, merchantName } from '@repo/core';
-
+import type { Calendar } from '../calendar';
+import { merchantKey, merchantName } from '../read-model/merchants';
 import type { ImportRow } from './generic-csv';
 import type { BackupTables, RawRow, TableName } from './moni-export';
 import { TABLE_ORDER } from './moni-export';
 import type { MoniFile, RowProblem } from './read-moni-export';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type TableCount = { fresh: number; here: number };
 
@@ -96,11 +95,13 @@ export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string
       return true;
     });
   }
-  const owned = ({ yours: _yours, source: _source, ...fields }: RawRow): RawRow => ({
-    ...fields,
-    user_id: userId,
-    deleted: false,
-  });
+  /** The file's row as this user's store row, without the columns only the file has. */
+  const owned = (fields: RawRow): RawRow => {
+    const row: RawRow = { ...fields, user_id: userId, deleted: false };
+    delete row.yours;
+    delete row.source;
+    return row;
+  };
   const note = (line: number, reason: string) => problems.push({ line, reason });
 
   const walletIds = new Set(known.wallets);
@@ -264,6 +265,8 @@ export type GenericTarget = {
   userId: string;
   wallet: { id: string; currency: string };
   aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
+  /** The days a stored row's instant falls on, to match the file's local dates. */
+  calendar: Calendar;
 };
 
 function merchantIdentity(
@@ -305,7 +308,7 @@ export function planGeneric(
       continue;
     }
     const key = identity(
-      deviceCalendar.dayKey(date),
+      target.calendar.dayKey(date),
       String(row.type),
       minor,
       String(row.currency ?? '').toUpperCase(),

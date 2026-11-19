@@ -37,7 +37,7 @@ export function detectDelimiter(text: string): string {
   let quoted = false;
   let lines = 0;
   for (let index = 0; index < text.length && lines < SAMPLE_LINES; index += 1) {
-    const char = text[index];
+    const char = text.charAt(index);
     if (char === '"') quoted = !quoted;
     else if (!quoted && char === '\n') lines += 1;
     else if (!quoted && counts.has(char)) counts.set(char, counts.get(char)! + 1);

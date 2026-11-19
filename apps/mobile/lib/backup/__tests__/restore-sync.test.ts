@@ -1,15 +1,20 @@
 import { observe, syncState, when } from '@legendapp/state';
 
-import { applyPlan } from '@/lib/backup/apply';
-import { planImport, readPickedFile, type ImportSession } from '@/lib/backup/import-session';
-import { buildMoniExport, type RawRow } from '@/lib/backup/moni-export';
-import { planRestore, restoreTotals } from '@/lib/backup/plan';
-import { readMoniExport } from '@/lib/backup/read-moni-export';
 import {
-  readBackupTables,
-  readStoreSnapshot,
-  storeHasPulled,
-} from '@/lib/backup/store-tables';
+  backupTables,
+  buildMoniExport,
+  planRestore,
+  readImportFile,
+  readMoniExport,
+  restoreTotals,
+  type ImportSession,
+  type RawRow,
+} from '@repo/core';
+
+import { applyPlan } from '@/lib/backup/apply';
+import { planImportNow } from '@/lib/backup/import-session';
+import { readStoreSnapshot, storeHasPulled } from '@/lib/backup/store-tables';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { authReady$, enableStoreSync, store, transactions$, wallets$ } from '@/lib/store';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 
@@ -194,7 +199,7 @@ const liveIds = (table: string) =>
     .map((row) => row.id);
 
 function exportNow(): string {
-  return buildMoniExport(readBackupTables(USER), USER, new Date());
+  return buildMoniExport(backupTables(readStoreSnapshot(), USER), USER, new Date(), deviceCalendar);
 }
 
 function planFromFile(csv: string) {
@@ -300,7 +305,7 @@ describe('restoring through the real store', () => {
   });
 
   it('adds a generic CSV once: a second run through the store writes nothing', async () => {
-    const session = readPickedFile(
+    const session = readImportFile(
       'bank.csv',
       Uint8Array.from(Buffer.from('Date,Merchant,Amount\n20/10/2026,Roti,-5.00\n20/10/2026,Roti,-5.00\n', 'utf8')),
       USER,
@@ -312,13 +317,13 @@ describe('restoring through the real store', () => {
     };
     const before = serverRows('transactions').length;
 
-    const first = planImport(generic, USER);
+    const first = planImportNow(generic, USER);
     expect(first?.kind === 'generic' && first.fresh.length).toBe(2);
     await applyPlan(first!);
     await settle();
     expect(serverRows('transactions')).toHaveLength(before + 2);
 
-    const second = planImport(generic, USER);
+    const second = planImportNow(generic, USER);
     expect(second?.kind === 'generic' && [second.fresh.length, second.here.length]).toEqual([0, 2]);
     await applyPlan(second!);
     await settle();
@@ -327,9 +332,9 @@ describe('restoring through the real store', () => {
 
   it('leaves out a column whose migration the server does not have yet', async () => {
     const wallet = uuid(2);
-    const tables = readBackupTables(USER);
+    const tables = backupTables(readStoreSnapshot(), USER);
     tables.wallets = [{ ...tables.wallets[0], id: wallet, record_location: true }];
-    const plan = planFromFile(buildMoniExport(tables, USER, new Date()));
+    const plan = planFromFile(buildMoniExport(tables, USER, new Date(), deviceCalendar));
     expect(plan.writes.wallets[0].record_location).toBe(true);
     await applyPlan(plan);
     await settle();
@@ -340,14 +345,14 @@ describe('restoring through the real store', () => {
   it("drops Google's coordinates and the place columns when the server has no place ids yet", async () => {
     const google = uuid(44);
     const own = uuid(45);
-    const tables = readBackupTables(USER);
+    const tables = backupTables(readStoreSnapshot(), USER);
     const lunch = tables.transactions.find((row) => row.id === LUNCH)!;
     const place = { location_latitude: 3.139, location_longitude: 101.6869, location_name: 'Mid Valley' };
     tables.transactions = [
       { ...lunch, ...place, id: google, place_id: 'ChIJgoogle', place_coords_at: '2026-10-01T00:00:00.000Z' },
       { ...lunch, ...place, id: own, place_id: 'ChIJown', place_coords_at: null },
     ];
-    const plan = planFromFile(buildMoniExport(tables, USER, new Date()));
+    const plan = planFromFile(buildMoniExport(tables, USER, new Date(), deviceCalendar));
     expect(plan.writes.transactions.map((row) => row.place_id)).toEqual(['ChIJgoogle', 'ChIJown']);
     await applyPlan(plan);
     await settle();

@@ -26,7 +26,7 @@ function decodeUtf8(bytes: Uint8Array, start: number): string | null {
   const codes: number[] = [];
   let at = start;
   while (at < bytes.length) {
-    const lead = bytes[at];
+    const lead = bytes[at]!;
     if (lead < 0x80) {
       codes.push(lead);
       at += 1;
@@ -37,7 +37,7 @@ function decodeUtf8(bytes: Uint8Array, start: number): string | null {
     if (!extra || at + extra >= bytes.length) return null;
     let point = lead & (0x3f >> extra);
     for (let next = 1; next <= extra; next += 1) {
-      const byte = bytes[at + next];
+      const byte = bytes[at + next]!;
       if ((byte & 0xc0) !== 0x80) return null;
       point = (point << 6) | (byte & 0x3f);
     }
@@ -62,7 +62,7 @@ function decodeUtf16(bytes: Uint8Array, start: number, littleEndian: boolean): s
   const codes: number[] = [];
   for (let at = start; at + 1 < bytes.length; at += 2) {
     codes.push(
-      littleEndian ? bytes[at] | (bytes[at + 1] << 8) : (bytes[at] << 8) | bytes[at + 1],
+      littleEndian ? bytes[at]! | (bytes[at + 1]! << 8) : (bytes[at]! << 8) | bytes[at + 1]!,
     );
   }
   return fromCodes(codes);
@@ -70,7 +70,7 @@ function decodeUtf16(bytes: Uint8Array, start: number, littleEndian: boolean): s
 
 function decodeCp1252(bytes: Uint8Array): string {
   const codes: number[] = [];
-  for (const byte of bytes) codes.push(byte >= 0x80 && byte < 0xa0 ? CP1252[byte - 0x80] : byte);
+  for (const byte of bytes) codes.push(byte >= 0x80 && byte < 0xa0 ? CP1252[byte - 0x80]! : byte);
   return fromCodes(codes);
 }
 

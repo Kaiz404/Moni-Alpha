@@ -1,11 +1,15 @@
-import { parseCsv } from '@/lib/backup/csv';
-import { readPickedFile, planImport, type ImportSession } from '@/lib/backup/import-session';
-import { buildMoniExport, type BackupTables, type RawRow } from '@/lib/backup/moni-export';
-import { planGeneric, planRestore, restoreTotals, type StoreSnapshot } from '@/lib/backup/plan';
-import { readMoniExport, type MoniFile } from '@/lib/backup/read-moni-export';
-import { guessMapping, readGenericTable, readImportRows } from '@/lib/backup/generic-csv';
+import { describe, expect, it } from 'vitest';
 
-jest.mock('@/lib/supabase/merchant-aliases', () => ({ listMerchantAliases: () => [] }));
+import { createCalendar } from '../../calendar';
+import { parseCsv } from '../csv';
+import { guessMapping, readGenericTable, readImportRows } from '../generic-csv';
+import { planImport, readImportFile } from '../import-file';
+import { buildMoniExport, type BackupTables, type RawRow } from '../moni-export';
+import { planGeneric, planRestore, restoreTotals, type StoreSnapshot } from '../plan';
+import { readMoniExport, type MoniFile } from '../read-moni-export';
+import { utf8 } from './encode';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const uuid = (n: number) => `${String(n).padStart(8, '0')}-0000-4000-8000-000000000000`;
@@ -52,7 +56,7 @@ const TABLES: BackupTables = {
 
 const SYSTEM_ONLY: StoreSnapshot = {
   wallets: [],
-  categories: [TABLES.categories[0]],
+  categories: [TABLES.categories[0]!],
   budgets: [],
   debts: [],
   debtActivities: [],
@@ -60,7 +64,7 @@ const SYSTEM_ONLY: StoreSnapshot = {
 };
 
 function exported(tables: BackupTables = TABLES): MoniFile {
-  const read = readMoniExport(buildMoniExport(tables, USER, NOW).slice(1));
+  const read = readMoniExport(buildMoniExport(tables, USER, NOW, KL).slice(1));
   if (read.kind !== 'moni') throw new Error('not a Moni export');
   return read.file;
 }
@@ -139,7 +143,7 @@ describe('a Moni export read back', () => {
   });
 
   it('restores the same rows after a spreadsheet saves it with semicolons and padded rows', () => {
-    const { rows } = parseCsv(buildMoniExport(TABLES, USER, NOW).slice(1));
+    const { rows } = parseCsv(buildMoniExport(TABLES, USER, NOW, KL).slice(1));
     const width = Math.max(...rows.map((row) => row.cells.length));
     const saved = rows
       .map((row) =>
@@ -257,7 +261,7 @@ describe('a Google place read back', () => {
     const read = readMoniExport(csv);
     if (read.kind !== 'moni') throw new Error('not a Moni export');
     expect(read.file.problems).toEqual([]);
-    expect(read.file.rows.transactions[0].fields).toMatchObject({
+    expect(read.file.rows.transactions[0]!.fields).toMatchObject({
       location_latitude: 3.139,
       place_id: null,
       place_coords_at: null,
@@ -266,7 +270,7 @@ describe('a Google place read back', () => {
 
   it('names a fetched time it can not read', () => {
     const read = readMoniExport(
-      buildMoniExport(placed({ place_id: PLACE, place_coords_at: 'last week' }), USER, NOW).slice(1),
+      buildMoniExport(placed({ place_id: PLACE, place_coords_at: 'last week' }), USER, NOW, KL).slice(1),
     );
     if (read.kind !== 'moni') throw new Error('not a Moni export');
     expect(read.file.problems.map((problem) => problem.reason)).toEqual(["Place fetched can't be read"]);
@@ -347,12 +351,12 @@ describe('planRestore: the idempotence rule', () => {
     const file = exported();
     const twice: MoniFile = {
       ...file,
-      rows: { ...file.rows, transactions: [...file.rows.transactions, { ...file.rows.transactions[0], line: 99 }] },
+      rows: { ...file.rows, transactions: [...file.rows.transactions, { ...file.rows.transactions[0]!, line: 99 }] },
     };
     const plan = planRestore(twice, SYSTEM_ONLY, USER);
     expect(plan.counts.transactions.fresh).toBe(6);
     expect(plan.problems).toEqual([
-      { line: 99, reason: `Same id as line ${file.rows.transactions[0].line}` },
+      { line: 99, reason: `Same id as line ${file.rows.transactions[0]!.line}` },
     ]);
   });
 });
@@ -370,9 +374,9 @@ describe('planRestore: rows that point at other rows', () => {
     const store = { ...SYSTEM_ONLY, categories: [reseeded] };
     const plan = planRestore(exported(), store, USER);
     expect(plan.writes.categories.map((row) => row.id)).toEqual([YOGA]);
-    expect(plan.writes.categories[0].color).toBe('#9A76F8');
+    expect(plan.writes.categories[0]!.color).toBe('#9A76F8');
     expect(plan.writes.transactions.find((row) => row.id === LUNCH)?.category_id).toBe(uuid(77));
-    expect(plan.writes.budgets[0].category_id).toBe(uuid(77));
+    expect(plan.writes.budgets[0]!.category_id).toBe(uuid(77));
   });
 
   it('uses a custom category of the same name, because a name is unique among active ones', () => {
@@ -381,10 +385,10 @@ describe('planRestore: rows that point at other rows', () => {
       ...TABLES,
       transactions: [{ ...TABLES.transactions[1], id: uuid(50), category_id: YOGA }],
     });
-    const plan = planRestore(file, { ...SYSTEM_ONLY, categories: [TABLES.categories[0], same] }, USER);
+    const plan = planRestore(file, { ...SYSTEM_ONLY, categories: [TABLES.categories[0]!, same] }, USER);
     expect(plan.writes.categories).toEqual([]);
     expect(plan.counts.categories).toEqual({ fresh: 0, here: 1 });
-    expect(plan.writes.transactions[0].category_id).toBe(uuid(78));
+    expect(plan.writes.transactions[0]!.category_id).toBe(uuid(78));
   });
 
   it('keeps a transaction whose category is gone, with no category', () => {
@@ -395,7 +399,7 @@ describe('planRestore: rows that point at other rows', () => {
       transactions: [{ ...TABLES.transactions[1], category_id: uuid(88) }],
     });
     const plan = planRestore(file, SYSTEM_ONLY, USER);
-    expect(plan.writes.transactions[0].category_id).toBeNull();
+    expect(plan.writes.transactions[0]!.category_id).toBeNull();
   });
 
   it('skips a row whose wallet or debt is nowhere', () => {
@@ -405,8 +409,8 @@ describe('planRestore: rows that point at other rows', () => {
       debts: [],
       categories: [],
       budgets: [],
-      debtActivities: [TABLES.debtActivities[0]],
-      transactions: [TABLES.transactions[1]],
+      debtActivities: [TABLES.debtActivities[0]!],
+      transactions: [TABLES.transactions[1]!],
     });
     const plan = planRestore(file, SYSTEM_ONLY, USER);
     expect(plan.writes.transactions).toEqual([]);
@@ -426,7 +430,7 @@ describe('planRestore: rows that point at other rows', () => {
     });
     const plan = planRestore(file, SYSTEM_ONLY, USER);
     expect(plan.writes.categories).toEqual([]);
-    expect(plan.problems[0].reason).toBe('This category has an icon or colour Moni does not offer');
+    expect(plan.problems[0]!.reason).toBe('This category has an icon or colour Moni does not offer');
   });
 
   it('asks for a debt to be worked out again when it gains activity', () => {
@@ -456,10 +460,10 @@ describe('planRestore: rows reports must leave out', () => {
 
 describe('planGeneric: date, amount and merchant', () => {
   const WALLET = { id: MAYBANK, currency: 'MYR' };
-  const target = { userId: USER, wallet: WALLET, aliases: [] };
+  const target = { userId: USER, wallet: WALLET, aliases: [], calendar: KL };
   const read = (csv: string) => {
     const table = readGenericTable(csv)!;
-    return readImportRows(table, guessMapping(table.headers), 'dmy');
+    return readImportRows(table, guessMapping(table.headers), 'dmy', KL);
   };
   const EMPTY = { ...SYSTEM_ONLY };
   const stored = (writes: RawRow[]): StoreSnapshot => ({
@@ -495,7 +499,7 @@ describe('planGeneric: date, amount and merchant', () => {
         amount: '12.00',
         currency: 'MYR',
         type: 'expense',
-        transaction_date: new Date(2026, 9, 14, 19, 30).toISOString(),
+        transaction_date: '2026-10-14T11:30:00.000Z',
       },
     ]);
     const plan = planGeneric(rows, problems, held, target);
@@ -513,8 +517,8 @@ describe('planGeneric: date, amount and merchant', () => {
       ].join('\n'),
     );
     const held = stored([
-      { user_id: USER, merchant: 'Grab', amount: '12.00', currency: 'MYR', type: 'expense', transaction_date: new Date(2026, 9, 14).toISOString() },
-      { user_id: USER, merchant: 'Kedai', amount: '12.00', currency: 'USD', type: 'expense', transaction_date: new Date(2026, 9, 14).toISOString() },
+      { user_id: USER, merchant: 'Grab', amount: '12.00', currency: 'MYR', type: 'expense', transaction_date: '2026-10-13T16:00:00.000Z' },
+      { user_id: USER, merchant: 'Kedai', amount: '12.00', currency: 'USD', type: 'expense', transaction_date: '2026-10-13T16:00:00.000Z' },
     ]);
     const plan = planGeneric(rows, problems, held, target);
     expect(plan.fresh).toHaveLength(4);
@@ -523,7 +527,7 @@ describe('planGeneric: date, amount and merchant', () => {
   it('applies merchant names on both sides', () => {
     const { rows, problems } = read('Date,Merchant,Amount\n14/10/2026,Touch n Go,-12.00\n');
     const held = stored([
-      { user_id: USER, merchant: 'TNG EWALLET', amount: '12.00', currency: 'MYR', type: 'expense', transaction_date: new Date(2026, 9, 14).toISOString() },
+      { user_id: USER, merchant: 'TNG EWALLET', amount: '12.00', currency: 'MYR', type: 'expense', transaction_date: '2026-10-13T16:00:00.000Z' },
     ]);
     const plan = planGeneric(rows, problems, held, {
       ...target,
@@ -558,23 +562,23 @@ describe('planGeneric: date, amount and merchant', () => {
   });
 });
 
-describe('readPickedFile', () => {
-  const bytes = (text: string) => Uint8Array.from(Buffer.from(text, 'utf8'));
+describe('readImportFile', () => {
+  const bytes = utf8;
 
   it('opens an export of this account as a restore', () => {
-    const read = readPickedFile('moni.csv', bytes(buildMoniExport(TABLES, USER, NOW)), USER);
+    const read = readImportFile('moni.csv', bytes(buildMoniExport(TABLES, USER, NOW, KL)), USER);
     expect(read.kind === 'ok' && read.session.kind).toBe('restore');
   });
 
   it('refuses an export of another account, whose ids this account can not write', () => {
-    expect(readPickedFile('moni.csv', bytes(buildMoniExport(TABLES, uuid(5), NOW)), USER)).toEqual({
+    expect(readImportFile('moni.csv', bytes(buildMoniExport(TABLES, uuid(5), NOW, KL)), USER)).toEqual({
       kind: 'problem',
       reason: 'This export is from another Moni account. Sign in to that account to restore it.',
     });
   });
 
   it('opens any other CSV with a guessed mapping and date order', () => {
-    const read = readPickedFile('bank.csv', bytes('Date,Merchant,Amount\n03/04/2026,Grab,-1\n'), USER);
+    const read = readImportFile('bank.csv', bytes('Date,Merchant,Amount\n03/04/2026,Grab,-1\n'), USER);
     if (read.kind !== 'ok' || read.session.kind !== 'generic') throw new Error('expected generic');
     expect(read.session.choices.mapping).toMatchObject({ date: 0, merchant: 1, amount: 2 });
     expect(read.session.choices.order).toBe('dmy');
@@ -582,23 +586,23 @@ describe('readPickedFile', () => {
   });
 
   it('says why it can not read a workbook, a binary, or an empty file', () => {
-    expect(readPickedFile('a.xlsx', Uint8Array.from([0x50, 0x4b, 3, 4]), USER)).toMatchObject({
+    expect(readImportFile('a.xlsx', Uint8Array.from([0x50, 0x4b, 3, 4]), USER)).toMatchObject({
       reason: "That's an Excel workbook. Save it as a CSV, then choose it again.",
     });
-    expect(readPickedFile('a.bin', Uint8Array.from([1, 2, 0, 4, 0, 0, 7]), USER)).toMatchObject({
+    expect(readImportFile('a.bin', Uint8Array.from([1, 2, 0, 4, 0, 0, 7]), USER)).toMatchObject({
       reason: "That isn't a CSV file.",
     });
-    expect(readPickedFile('a.csv', bytes(''), USER)).toMatchObject({
+    expect(readImportFile('a.csv', bytes(''), USER)).toMatchObject({
       reason: 'This file has no rows to read.',
     });
-    expect(readPickedFile('a.csv', new Uint8Array(21 * 1024 * 1024), USER)).toMatchObject({
+    expect(readImportFile('a.csv', new Uint8Array(21 * 1024 * 1024), USER)).toMatchObject({
       reason: 'This file is over 20 MB.',
     });
   });
 
   it('asks for a wallet before a plan', () => {
-    const read = readPickedFile('bank.csv', bytes('Date,Amount\n14/10/2026,-1\n'), USER);
+    const read = readImportFile('bank.csv', bytes('Date,Amount\n14/10/2026,-1\n'), USER);
     if (read.kind !== 'ok') throw new Error('expected a session');
-    expect(planImport(read.session as ImportSession, USER)).toBeNull();
+    expect(planImport(read.session, SYSTEM_ONLY, { userId: USER, aliases: [], calendar: KL })).toBeNull();
   });
 });

@@ -193,7 +193,7 @@ export function readMoniExport(text: string): MoniFileRead {
 
   const titles = new Map(TABLE_ORDER.map((table) => [TABLES[table].title, table]));
   const isTitle = (row: CsvRow) =>
-    row.cells.slice(1).every((cell) => cell.trim() === '') && titles.has(row.cells[0].trim());
+    row.cells.slice(1).every((cell) => cell.trim() === '') && titles.has(row.cells[0]?.trim() ?? '');
 
   const file: MoniFile = {
     account: first.cells[2]?.trim() ?? '',
@@ -211,7 +211,7 @@ export function readMoniExport(text: string): MoniFileRead {
   let header: string[] | null = null;
   for (const row of rows.slice(1)) {
     if (isTitle(row)) {
-      table = titles.get(row.cells[0].trim())!;
+      table = titles.get(row.cells[0]!.trim())!;
       header = null;
     } else if (table && !header) {
       header = row.cells.map((cell) => cell.trim());
