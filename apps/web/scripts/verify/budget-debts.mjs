@@ -119,7 +119,7 @@ export async function verifyBudgetDebts(t) {
     await ready(p);
     if (!monthStep) {
       check('Budget draws no native select', (await p.locator('select').count()) === 0);
-      await p.locator('.month-nav .chip svg').last().click();
+      await p.locator('.month-nav .chip').filter({ visible: true }).first().locator('svg').last().click();
       const months = p.getByRole('listbox', { name: 'Month' });
       check("the month chip's chevron opens Moni's list with this month ticked", (await months.isVisible()) && (await months.getByRole('option', { selected: true }).count()) === 1);
       await p.keyboard.press('Escape');
