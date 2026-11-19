@@ -1,0 +1,17 @@
+{
+  "status": "ok",
+  "predictions": [
+    {
+      "placeId": "ChIJ1234",
+      "primaryText": "Village Park Restaurant",
+      "secondaryText": "Damansara Utama, Petaling Jaya",
+      "distanceMeters": 120
+    },
+    {
+      "placeId": "ChIJ5678",
+      "primaryText": "Village Grocer",
+      "secondaryText": null,
+      "distanceMeters": null
+    }
+  ]
+}

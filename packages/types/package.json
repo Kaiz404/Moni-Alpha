@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./account-functions": "./src/account-functions.ts",
+    "./ai": "./src/ai.ts",
     "./ai-consent": "./src/ai-consent.ts",
     "./auto-add-rule": "./src/auto-add-rule.ts",
     "./bill": "./src/bill.ts",
@@ -15,8 +16,10 @@
     "./chat": "./src/chat.ts",
     "./database": "./src/database.ts",
     "./debt": "./src/debt.ts",
+    "./finance-snapshot": "./src/finance-snapshot.ts",
     "./merchant-alias": "./src/merchant-alias.ts",
     "./money": "./src/money.ts",
+    "./places": "./src/places.ts",
     "./proposed-transaction": "./src/proposed-transaction.ts",
     "./recurring-override": "./src/recurring-override.ts",
     "./tag": "./src/tag.ts",

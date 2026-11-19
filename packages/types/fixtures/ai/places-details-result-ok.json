@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "place": {
+    "placeId": "ChIJ1234",
+    "latitude": 3.1356,
+    "longitude": 101.6237,
+    "address": "Jalan SS 21/37, Damansara Utama"
+  }
+}

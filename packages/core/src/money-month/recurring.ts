@@ -2,7 +2,7 @@
  * Recurring series and payday from the user's own ledger. Pure and deterministic: series only
  * predict, they never post to the ledger. A series is one currency, one type and one merchant.
  */
-import type { MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
+import type { Cadence, MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
 
 import { addMonths, type Calendar, dayFromNumber, dayNumber, dayOfMonth } from '../calendar';
 import { countsAsCashFlow } from '../ledger';
@@ -23,7 +23,7 @@ export type FactsTransaction = Pick<
   | 'transactionDate'
 >;
 
-export type Cadence = 'weekly' | 'biweekly' | 'monthly';
+export type { Cadence };
 
 /** Gap between payments that still counts as the cadence, and days past due before a series ends. */
 const CADENCES: Record<Cadence, { min: number; max: number; grace: number }> = {

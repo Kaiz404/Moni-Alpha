@@ -1,0 +1,23 @@
+{
+  "imageUri": "file:///cache/scan.jpg",
+  "userContext": "dinner with Aina",
+  "wallets": [
+    {
+      "id": "4f9a7c2e-1b3d-4e5f-8a9b-0c1d2e3f4a5b",
+      "name": "Maybank",
+      "type": "bank",
+      "currency": "MYR",
+      "accountHint": "1234"
+    },
+    {
+      "id": "7b8c9d0e-2f3a-4b5c-9d6e-1f2a3b4c5d6e",
+      "name": "Touch 'n Go",
+      "type": "ewallet",
+      "currency": "MYR",
+      "accountHint": null
+    }
+  ],
+  "clientNow": "2026-10-14T12:41:00+08:00",
+  "timezone": "Asia/Kuala_Lumpur",
+  "imageBase64": "/9j/4AAQSkZJRg=="
+}

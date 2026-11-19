@@ -1,0 +1,345 @@
+{
+  "message": "Can I afford RM800 before payday?",
+  "snapshot": {
+    "schema": "finance_assistant_tool_v4",
+    "generatedAt": "2026-10-14T04:41:00.000Z",
+    "currencies": {
+      "MYR": {
+        "generatedAt": "2026-10-14T04:41:00.000Z",
+        "rolling30": {
+          "periodDays": 30,
+          "currencyHint": "MYR",
+          "generatedAt": "2026-10-14T04:41:00.000Z",
+          "current": {
+            "startIso": "2026-09-14T16:00:00.000Z",
+            "endIso": "2026-10-14T15:59:59.999Z",
+            "expenseTotal": 1116.2,
+            "incomeTotal": 4200,
+            "net": 3083.8,
+            "transactionCount": 41
+          },
+          "prior": {
+            "startIso": "2026-08-15T16:00:00.000Z",
+            "endIso": "2026-09-14T15:59:59.999Z",
+            "expenseTotal": 980.5,
+            "incomeTotal": 4200,
+            "net": 3219.5,
+            "transactionCount": 37
+          },
+          "topCategories": [
+            {
+              "name": "Food & Dining",
+              "amount": 412.3
+            },
+            {
+              "name": "Transport",
+              "amount": 188
+            }
+          ],
+          "topMerchants": [
+            {
+              "name": "GRAB*FOOD",
+              "amount": 96.4
+            }
+          ],
+          "largestExpense": {
+            "amount": 350,
+            "merchant": "TNB",
+            "category": "Utilities",
+            "date": "2026-10-02"
+          },
+          "deltas": {
+            "expensePctVsPrior": 13.8,
+            "incomePctVsPrior": null
+          },
+          "rates": {
+            "dailyExpense": 37.21,
+            "savingsMargin": 0.73
+          }
+        },
+        "calendarMonth": {
+          "currencyHint": "MYR",
+          "currentMonthKey": "2026-10",
+          "previousMonthKey": "2026-09",
+          "expenseCurrentMonthToDate": 640.1,
+          "expensePreviousCalendarMonth": 1010.75,
+          "dayOfMonthNow": 14,
+          "daysInCurrentMonth": 31,
+          "avgDailyExpenseCurrentMonth": 45.72,
+          "avgDailyExpensePreviousMonth": 33.69,
+          "dailyPaceVsPreviousMonthPct": 35.7
+        },
+        "budgetCoach": {
+          "schema": "budget_coach_tool_v1",
+          "monthKey": "2026-10",
+          "currencyHint": "MYR",
+          "generatedAt": "2026-10-14T04:41:00.000Z",
+          "categories": [
+            {
+              "categoryId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "categoryName": "Food & Dining",
+              "currency": "MYR",
+              "budgetAmount": 600,
+              "spentTotal": 412.3,
+              "pctOfBudget": 68.7,
+              "remaining": 187.7,
+              "txCount": 18,
+              "spendDiningOutLike": 250.1,
+              "spendGroceryLike": 140.2,
+              "spendOther": 22,
+              "diningOutSharePct": 60.7,
+              "topMerchants": [
+                {
+                  "name": "Village Park Restaurant",
+                  "amount": 64
+                }
+              ]
+            }
+          ]
+        },
+        "spendingStory": {
+          "currencyHint": "MYR",
+          "periodLabel": "last 30 days",
+          "topCategories": [
+            {
+              "name": "Food & Dining",
+              "amount": 412.3,
+              "sharePct": 36.9
+            }
+          ],
+          "topMerchants": [
+            {
+              "name": "GRAB*FOOD",
+              "amount": 96.4,
+              "sharePct": 8.6
+            }
+          ],
+          "categoryConcentration": 0.214,
+          "expenseTransactionCount": 38
+        },
+        "pendingProposals": {
+          "count": 2,
+          "expenseTotal": 23.4,
+          "incomeTotal": 0
+        },
+        "facts": {
+          "balances": {
+            "liquid": 5230.55,
+            "changeLast30Days": 3083.8,
+            "walletCount": 2
+          },
+          "recurring": [
+            {
+              "name": "Salary",
+              "kind": "income",
+              "cadence": "monthly",
+              "amount": 4200,
+              "lastDate": "2026-09-25",
+              "nextDate": "2026-10-25",
+              "occurrences": 4,
+              "confidence": 0.95,
+              "needsConfirm": false
+            },
+            {
+              "name": "Netflix",
+              "kind": "subscription",
+              "cadence": "monthly",
+              "amount": 55,
+              "lastDate": "2026-09-18",
+              "nextDate": "2026-10-18",
+              "occurrences": 3,
+              "confidence": 0.8,
+              "needsConfirm": true
+            }
+          ],
+          "payday": {
+            "name": "Salary",
+            "amount": 4200,
+            "cadence": "monthly",
+            "nextDate": "2026-10-25"
+          },
+          "forecast": {
+            "status": "ready",
+            "horizon": "payday",
+            "horizonDate": "2026-10-25",
+            "daysLeft": 11,
+            "startBalance": 5230.55,
+            "bills": [
+              {
+                "name": "Netflix",
+                "amount": 55,
+                "date": "2026-10-18"
+              }
+            ],
+            "billsTotal": 55,
+            "income": [],
+            "incomeTotal": 0,
+            "variableSpend": {
+              "low": 310,
+              "likely": 420,
+              "high": 560
+            },
+            "endBalance": {
+              "low": 3815.55,
+              "likely": 3955.55,
+              "high": 4065.55
+            },
+            "afford": {
+              "amount": 800,
+              "worstCaseAfter": 3015.55,
+              "likelyAfter": 3155.55,
+              "fitsWorstCase": true
+            },
+            "historyDays": 120,
+            "coveragePct": 92,
+            "balanceConfirmedDaysAgo": 3
+          }
+        }
+      },
+      "SGD": {
+        "generatedAt": "2026-10-14T04:41:00.000Z",
+        "rolling30": {
+          "periodDays": 30,
+          "currencyHint": "SGD",
+          "generatedAt": "2026-10-14T04:41:00.000Z",
+          "current": {
+            "startIso": "2026-09-14T16:00:00.000Z",
+            "endIso": "2026-10-14T15:59:59.999Z",
+            "expenseTotal": 1116.2,
+            "incomeTotal": 4200,
+            "net": 3083.8,
+            "transactionCount": 41
+          },
+          "prior": {
+            "startIso": "2026-08-15T16:00:00.000Z",
+            "endIso": "2026-09-14T15:59:59.999Z",
+            "expenseTotal": 980.5,
+            "incomeTotal": 4200,
+            "net": 3219.5,
+            "transactionCount": 37
+          },
+          "topCategories": [
+            {
+              "name": "Food & Dining",
+              "amount": 412.3
+            },
+            {
+              "name": "Transport",
+              "amount": 188
+            }
+          ],
+          "topMerchants": [
+            {
+              "name": "GRAB*FOOD",
+              "amount": 96.4
+            }
+          ],
+          "largestExpense": {
+            "amount": 350,
+            "merchant": "TNB",
+            "category": "Utilities",
+            "date": "2026-10-02"
+          },
+          "deltas": {
+            "expensePctVsPrior": 13.8,
+            "incomePctVsPrior": null
+          },
+          "rates": {
+            "dailyExpense": 37.21,
+            "savingsMargin": 0.73
+          }
+        },
+        "calendarMonth": {
+          "currencyHint": "SGD",
+          "currentMonthKey": "2026-10",
+          "previousMonthKey": "2026-09",
+          "expenseCurrentMonthToDate": 640.1,
+          "expensePreviousCalendarMonth": 1010.75,
+          "dayOfMonthNow": 14,
+          "daysInCurrentMonth": 31,
+          "avgDailyExpenseCurrentMonth": 45.72,
+          "avgDailyExpensePreviousMonth": 33.69,
+          "dailyPaceVsPreviousMonthPct": 35.7
+        },
+        "budgetCoach": {
+          "schema": "budget_coach_tool_v1",
+          "monthKey": "2026-10",
+          "currencyHint": "SGD",
+          "generatedAt": "2026-10-14T04:41:00.000Z",
+          "categories": [
+            {
+              "categoryId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "categoryName": "Food & Dining",
+              "currency": "SGD",
+              "budgetAmount": 600,
+              "spentTotal": 412.3,
+              "pctOfBudget": 68.7,
+              "remaining": 187.7,
+              "txCount": 18,
+              "spendDiningOutLike": 250.1,
+              "spendGroceryLike": 140.2,
+              "spendOther": 22,
+              "diningOutSharePct": 60.7,
+              "topMerchants": [
+                {
+                  "name": "Village Park Restaurant",
+                  "amount": 64
+                }
+              ]
+            }
+          ]
+        },
+        "spendingStory": {
+          "currencyHint": "SGD",
+          "periodLabel": "last 30 days",
+          "topCategories": [
+            {
+              "name": "Food & Dining",
+              "amount": 412.3,
+              "sharePct": 36.9
+            }
+          ],
+          "topMerchants": [
+            {
+              "name": "GRAB*FOOD",
+              "amount": 96.4,
+              "sharePct": 8.6
+            }
+          ],
+          "categoryConcentration": 0.214,
+          "expenseTransactionCount": 38
+        },
+        "pendingProposals": {
+          "count": 2,
+          "expenseTotal": 23.4,
+          "incomeTotal": 0
+        },
+        "facts": {
+          "balances": null,
+          "recurring": [],
+          "payday": null,
+          "forecast": {
+            "status": "insufficient",
+            "reasons": [
+              "balance_stale"
+            ],
+            "historyDays": 30,
+            "coveragePct": 64,
+            "balanceConfirmedDaysAgo": null
+          }
+        }
+      }
+    }
+  },
+  "history": [
+    {
+      "role": "user",
+      "content": "[12:30] How much on food this month?"
+    },
+    {
+      "role": "assistant",
+      "content": "[12:30] RM412.30 on Food & Dining so far."
+    }
+  ],
+  "tone": "direct"
+}
