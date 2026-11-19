@@ -18,4 +18,4 @@ Any signed-in page at desktop width. Keys rest while the focus is in a field, ex
 
 ## Gotchas
 
-- Screen keys (J, K, A, X, L, P, D) arrive with their screens; extend `src/lib/keys.ts` and this file then.
+- Screen keys go through `useScreenKeys` (`src/lib/screen-keys.ts`) and are listed in `SHORTCUT_GROUPS`. Home: P, D, Esc ends Customise. Activity: J, K, X, Enter, C, Del, and Esc (closes a menu or cell edit, then clears the ticks, then closes the pane). Review's A and L arrive with Review.

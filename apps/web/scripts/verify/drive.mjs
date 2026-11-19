@@ -11,6 +11,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -31,7 +32,7 @@ const WIDTHS = [
   { width: 390, height: 844, layout: 'phone' },
 ];
 const ROUTES = [
-  { path: '/home', title: /^Welcome to Moni, / },
+  { path: '/home', title: /^(Morning|Afternoon|Evening|Welcome to Moni), / },
   { path: '/activity', title: /^Activity$/ },
   { path: '/budget', title: /^Budget$/ },
   { path: '/debts', title: /^Debts$/ },
@@ -360,18 +361,8 @@ try {
   await stubQr(auth);
   const signedIn = await signInWithPassword(auth);
   check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
-  const seeded = JSON.parse(
-    execFileSync('node', [join(repo, 'apps/mobile/scripts/e2e/seed.mjs'), '--query', 'wallets'], { encoding: 'utf8' }),
-  );
-  const shown = await signedIn
-    .locator('[data-wallet-count]')
-    .getAttribute('data-wallet-count', { timeout: 20_000 })
-    .catch(() => null);
-  check(
-    `Home shows the e2e user's ${seeded.length} wallets from the shared store`,
-    shown === String(seeded.length),
-    { shown, seeded: seeded.length },
-  );
+  const seed = await readSeed({ supabaseUrl, publishable, token: await phoneToken() });
+  check(`the e2e seed was written for ${seed.seedDay}; Home and Activity are checked at 3 pm that day`, Boolean(seed.seedDay), seed.seedDay);
   const storage = await auth.storageState();
   await auth.close();
 
@@ -386,6 +377,8 @@ try {
       const p = await ctx.newPage();
       for (const route of ROUTES) {
         await p.goto(`${base}${route.path}`);
+        // Home and Activity read the store in the browser; their title and rows follow the first pull.
+        await p.waitForFunction(() => !document.querySelector('.home, .activity') || document.querySelector('.home[data-loaded], .activity[data-loaded]'), null, { timeout: 20_000 }).catch(() => {});
         const where = `${route.path} at ${size.width} ${theme}`;
         const layout = await layoutOf(p);
         const navs = await visibleNav(p);
@@ -409,6 +402,9 @@ try {
   for (const size of WIDTHS) {
     await pair(`home-${size.width}`, 'r2/W2-Home.png', join(OUT, `home-${size.width}-light.png`));
   }
+
+  // ---------- Home and Activity against the seed ----------
+  await driveLedgerScreens({ browser, storage, base, check, shot, settle, pair, boardBand, OUT, seed });
 
   // ---------- Delete your account: the public page, the flow in Settings, done ----------
   // stubDeletion keeps every click here away from the real delete-account; live-check.mjs proves that one.
