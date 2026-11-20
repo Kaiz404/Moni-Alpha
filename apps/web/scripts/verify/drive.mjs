@@ -401,8 +401,22 @@ try {
   check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
   const seed = await readSeed({ supabaseUrl, publishable, token: await userToken() });
   check(`the web's e2e seed was written for ${SEED_DAY}; the ledger screens are checked at 3 pm that day`, seed.seedDay === SEED_DAY, seed.seedDay);
-  const storage = await auth.storageState();
+  let storage = await auth.storageState();
   await auth.close();
+  // Every context starts from this one saved session and its one refresh token. Past the access token's
+  // hour, several contexts refresh with that token at once, Supabase reads the reuse as theft and ends
+  // the session, and every later page lands signed out. A run takes over an hour, so sign in afresh
+  // before a part once the saved session is 40 minutes old.
+  let signedInAt = Date.now();
+  const keepSignedIn = async () => {
+    if (Date.now() - signedInAt < Number(process.env.MONI_WEB_RESIGN_MS ?? 40 * 60_000)) return;
+    const again = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await stubQr(again);
+    await signInWithPassword(again);
+    storage = await again.storageState();
+    await again.close();
+    signedInAt = Date.now();
+  };
   const rest = async (path, { method = 'GET', body } = {}) => {
     const token = await userToken();
     const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
@@ -415,12 +429,14 @@ try {
   };
 
   // ---------- first run on an empty account, then the full seed back ----------
+  await keepSignedIn();
   if (runs('firstrun')) {
     await verifyFirstRun({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, webSeed, rest, email: env.email, password: env.password });
     // The full seed it puts back stamps three wallets' check-in with the time of the reseed.
     seeded = JSON.parse(webSeed('--query', 'fingerprint'));
   }
 
+  await keepSignedIn();
   if (runs('routes')) {
   for (const theme of ['light', 'dark']) {
     for (const size of WIDTHS) {
@@ -461,9 +477,11 @@ try {
 
   }
   // ---------- Home and Activity against the seed ----------
+  await keepSignedIn();
   if (runs('ledger')) await driveLedgerScreens({ browser, storage, base, check, shot, settle, pair, boardBand, OUT, seed });
 
   // ---------- Delete your account: the public page, the flow in Settings, done ----------
+  await keepSignedIn();
   if (runs('delete')) {
   // stubDeletion keeps every click here away from the real delete-account; live-check.mjs proves that one.
   const wideEnough = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
@@ -598,6 +616,7 @@ try {
 
   }
   // ---------- reduced motion ----------
+  await keepSignedIn();
   if (runs('motion')) {
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage, reducedMotion });
@@ -634,6 +653,7 @@ try {
 
   }
   // ---------- keyboard ----------
+  await keepSignedIn();
   if (runs('keys')) {
   const keysCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const k = await keysCtx.newPage();
@@ -719,6 +739,7 @@ try {
 
   }
   // ---------- crossing 700 keeps the route and the half-typed field ----------
+  await keepSignedIn();
   if (runs('resize')) {
   const resize = await browser.newContext({ viewport: { width: 1024, height: 768 }, storageState: storage });
   const r = await resize.newPage();
@@ -750,6 +771,7 @@ try {
   await resize.close();
   }
   // ---------- Add: the chooser, Type it, and Ask Moni filling Type it ----------
+  await keepSignedIn();
   if (runs('add')) {
   const addCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const d = await addCtx.newPage();
@@ -840,14 +862,22 @@ try {
   await d.keyboard.press('Escape');
   await addCtx.close();
   }
+  await keepSignedIn();
   if (runs('chat'))
     await verifyChat({ browser, base, storage, check, shot, settle, pair, seed, supabaseUrl, publishable, token: await userToken(), secret: env.SUPABASE_SECRET_KEY, widths: WIDTHS, background: BACKGROUND, realGateway });
+  await keepSignedIn();
   if (runs('settings')) await verifySettings({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND, out: OUT, rest, seed });
+  await keepSignedIn();
   if (runs('states')) await verifyStates({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, rest, password: env.password });
+  await keepSignedIn();
   if (runs('phone')) await verifyPhoneLayout({ browser, base, storage, check, shot, settle, background: BACKGROUND, seed });
+  await keepSignedIn();
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
   if (runs('site')) await verifySite({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND });
 
   // ---------- every write above was undone ----------
