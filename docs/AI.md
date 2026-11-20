@@ -252,7 +252,7 @@ Every extract and chat request is one [Langfuse](https://langfuse.com) trace, se
 
 ## Evals
 
-`evals/` holds labelled cases for text, notifications, receipts and chat, run against the real backend as Langfuse experiments (`pnpm --filter @moni/evals eval`; see `evals/README.md`). Each extraction field is scored on its own, and chat reuses the chat bench's grounding checks. Results are compared per run in Langfuse under Experiments.
+`evals/` holds labelled cases for text, notifications, receipts and chat, run against the real backend as Langfuse experiments (`pnpm --filter @moni/evals eval`; see `evals/README.md`). Each extraction field is scored on its own, and chat reuses the chat bench's grounding checks. Results are compared per run in Langfuse under Experiments. The first baseline and the cheaper-model comparison are in [`research/ai-evals-2026-11.md`](research/ai-evals-2026-11.md).
 
 ## Extraction pipeline details
 

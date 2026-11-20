@@ -2,7 +2,8 @@
  * Runs the eval suites against the real backend and records each as a Langfuse experiment.
  * Starts the backend's eval server (a local token, no rate limit), syncs the datasets, runs every
  * item through its route, scores it, and writes results/<run>.json next to a printed summary.
- *   pnpm --filter @moni/evals eval [suite...] [--name <run name>] [--no-sync] [--concurrency N]
+ *   pnpm --filter @moni/evals eval [suite...] [--model <openrouter id>] [--reasoning <effort>]
+ *     [--name <run name>] [--no-sync] [--concurrency N]
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { execSync } from 'node:child_process';
@@ -37,9 +38,10 @@ const flag = (name: string) => {
 const suites = SUITES.filter((s) => args.includes(s));
 const selected = suites.length ? suites : SUITES;
 const commit = execSync('git rev-parse --short HEAD', { cwd: REPO_DIR }).toString().trim();
-const model = fs
-  .readFileSync(path.join(REPO_DIR, 'apps/backend/internal/llm/models.go'), 'utf8')
-  .match(/const Model = "([^"]+)"/)?.[1];
+const model =
+  flag('--model') ??
+  fs.readFileSync(path.join(REPO_DIR, 'apps/backend/internal/llm/models.go'), 'utf8').match(/const Model = "([^"]+)"/)?.[1];
+const reasoning = flag('--reasoning');
 const runName = flag('--name') ?? `${commit} ${model}`;
 const concurrency = Number(flag('--concurrency') ?? 4);
 const port = process.env.MONI_EVAL_PORT ?? '8787';
@@ -52,7 +54,14 @@ const langfuse = new LangfuseClient();
 async function startBackend(tokenFile: string): Promise<ChildProcess> {
   const server = spawn('go', ['test', './cmd/server', '-run', 'TestEvalServer', '-count=1', '-v', '-timeout', '0'], {
     cwd: path.join(REPO_DIR, 'apps/backend'),
-    env: { ...process.env, MONI_EVAL_SERVE: '1', MONI_EVAL_TOKEN_FILE: tokenFile, MONI_EVAL_PORT: port },
+    env: {
+      ...process.env,
+      MONI_EVAL_SERVE: '1',
+      MONI_EVAL_TOKEN_FILE: tokenFile,
+      MONI_EVAL_PORT: port,
+      MONI_EVAL_MODEL: flag('--model') ?? '',
+      MONI_EVAL_REASONING: reasoning ?? '',
+    },
     detached: true,
     stdio: ['ignore', 'ignore', 'inherit'],
   });
@@ -115,7 +124,7 @@ async function runSuite(suite: Suite, token: string): Promise<Row[]> {
     name: `moni ${suite}`,
     runName: `${runName} ${suite}`,
     description: `${suite} through ${ROUTES[suite]} on ${model} at ${commit}`,
-    metadata: { model, commit, suite },
+    metadata: { model, reasoning: reasoning ?? 'off', commit, suite },
     maxConcurrency: concurrency,
     task: async ({ input }) => {
       const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };

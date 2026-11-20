@@ -20,7 +20,7 @@ import (
 // TestEvalServer serves the real router for the eval runner in evals/ until it is interrupted. A
 // local signing key stands in for Supabase, so it lives in a test file and never ships in the server
 // binary. It writes a user token to MONI_EVAL_TOKEN_FILE, has no rate limit, and joins each request to
-// the runner's trace. Opt in: `pnpm --filter backend eval:serve`.
+// the runner's trace. MONI_EVAL_MODEL swaps the model and MONI_EVAL_REASONING sets its reasoning effort. Opt in: `pnpm --filter backend eval:serve`.
 func TestEvalServer(t *testing.T) {
 	if os.Getenv("MONI_EVAL_SERVE") != "1" {
 		t.Skip("set MONI_EVAL_SERVE=1 to serve the backend for evals")
@@ -47,9 +47,14 @@ func TestEvalServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	unlimited := auth.NewRateLimiter(1_000_000, 1_000_000)
+	client := llm.NewClient(key, liveBaseURL())
+	if model := os.Getenv("MONI_EVAL_MODEL"); model != "" {
+		client = client.WithModel(model, os.Getenv("MONI_EVAL_REASONING"))
+		t.Logf("eval model %s (reasoning %q)", model, os.Getenv("MONI_EVAL_REASONING"))
+	}
 	srv := &http.Server{
 		Addr:    "127.0.0.1:" + envOr("MONI_EVAL_PORT", "8787"),
-		Handler: newRouter(verifier, unlimited, unlimited, llm.NewClient(key, liveBaseURL()), noPlaces(), nil),
+		Handler: newRouter(verifier, unlimited, unlimited, client, noPlaces(), nil),
 	}
 	token := authtest.SignToken(t, priv, "eval-runner", time.Now().Add(12*time.Hour))
 	if err := os.WriteFile(tokenFile, []byte(token), 0o600); err != nil {

@@ -154,3 +154,24 @@ func TestTruncatedTwiceReturnsErrTruncated(t *testing.T) {
 		t.Fatalf("got %v after %d calls, want ErrTruncated after 2", err, calls)
 	}
 }
+
+func TestWithModelSwapsTheModelAndSetsReasoningEffort(t *testing.T) {
+	var received map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&received)
+		json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{{"message": map[string]any{"content": `{"amount": 1}`}}},
+		})
+	}))
+	defer srv.Close()
+
+	var out map[string]any
+	client := NewClient("test-key", srv.URL).WithModel("z-ai/glm-5.3-flash", "minimal")
+	if err := client.CompleteJSON(context.Background(), []Message{{Role: "user", Content: "x"}}, Options{Model: Model}, &out); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := json.Marshal(map[string]any{"model": received["model"], "reasoning": received["reasoning"]})
+	if want := `{"model":"z-ai/glm-5.3-flash","reasoning":{"effort":"minimal"}}`; string(got) != want {
+		t.Fatalf("request = %s, want %s", got, want)
+	}
+}

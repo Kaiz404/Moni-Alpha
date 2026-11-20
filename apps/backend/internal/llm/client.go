@@ -21,6 +21,18 @@ type Client struct {
 	apiKey  string
 	baseURL string
 	http    *http.Client
+	// model and reasoningEffort replace every call's model and turn reasoning on at that effort.
+	// Only the eval server sets them, to compare models on the eval suites.
+	model           string
+	reasoningEffort string
+}
+
+// WithModel returns a client that sends every call to model, with reasoning at effort when it is
+// not empty (some models refuse reasoning off). For the eval server only.
+func (c *Client) WithModel(model, effort string) *Client {
+	out := *c
+	out.model, out.reasoningEffort = model, effort
+	return &out
 }
 
 func NewClient(apiKey, baseURL string) *Client {
@@ -59,7 +71,8 @@ type ChatRequest struct {
 	} `json:"response_format,omitempty"`
 	// Reasoning is off: even low effort spent the whole token budget before the JSON in the benchmark.
 	Reasoning struct {
-		Enabled bool `json:"enabled"`
+		Enabled *bool  `json:"enabled,omitempty"`
+		Effort  string `json:"effort,omitempty"`
 	} `json:"reasoning"`
 	// RequireParameters keeps requests off upstream hosts that would silently ignore JSON mode. ZDR
 	// and DataCollection "deny" keep bank alerts, receipts and chat off hosts that store or train
@@ -152,7 +165,11 @@ func asRateLimited(err error, target **RateLimitedError) bool {
 // completeOnce makes one request, traced as one Langfuse generation.
 func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Options) (string, error) {
 	params := map[string]any{"temperature": opts.Temperature, "max_tokens": opts.MaxTokens, "json_mode": opts.JSONMode}
-	gen := tracing.StartGeneration(ctx, opts.Name, opts.Model, params, messages)
+	model := opts.Model
+	if c.model != "" {
+		model = c.model
+	}
+	gen := tracing.StartGeneration(ctx, opts.Name, model, params, messages)
 	content, usage, err := c.send(ctx, messages, opts)
 	var rle *RateLimitedError
 	gen.End(content, usage, err, errors.Is(err, ErrTruncated) || asRateLimited(err, &rle))
@@ -169,6 +186,15 @@ func (c *Client) send(ctx context.Context, messages []Message, opts Options) (st
 		Messages:    messages,
 		Temperature: opts.Temperature,
 		MaxTokens:   opts.MaxTokens,
+	}
+	if c.model != "" {
+		reqBody.Model = c.model
+	}
+	if c.reasoningEffort != "" {
+		reqBody.Reasoning.Effort = c.reasoningEffort
+	} else {
+		off := false
+		reqBody.Reasoning.Enabled = &off
 	}
 	reqBody.Provider.RequireParameters = true
 	reqBody.Provider.ZDR = true

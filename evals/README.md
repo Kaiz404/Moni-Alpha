@@ -17,10 +17,11 @@ Needs Go, Node 22 and `apps/backend/.env` with `OPENROUTER_API_KEY` and the Lang
 pnpm --filter @moni/evals eval                      # every suite
 pnpm --filter @moni/evals eval receipts chat        # some suites
 pnpm --filter @moni/evals eval --name "prompt v2"   # name the run
+pnpm --filter @moni/evals eval --model z-ai/glm-5.3-flash --reasoning minimal   # another model
 pnpm --filter @moni/evals sync                      # push datasets to Langfuse without running
 ```
 
-`eval` starts the backend's eval server (`TestEvalServer` in `apps/backend/cmd/server/eval_server_test.go`: a local sign-in key, no rate limit, the model in `internal/llm/models.go`), syncs each `datasets/<suite>/items.jsonl` to its Langfuse dataset, sends every item to its route, and scores the response. Each suite becomes one experiment run named `<commit> <model> <suite>`. The backend's own spans nest inside each item's trace, so a failing item shows the prompt and raw model output. It prints a summary per score and per source and writes `results/<run>.json` (gitignored).
+`eval` starts the backend's eval server (`TestEvalServer` in `apps/backend/cmd/server/eval_server_test.go`: a local sign-in key, no rate limit, the model in `internal/llm/models.go` unless `--model` names another OpenRouter id; `--reasoning` turns reasoning on at that effort for models that refuse it off), syncs each `datasets/<suite>/items.jsonl` to its Langfuse dataset, sends every item to its route, and scores the response. Each suite becomes one experiment run named `<commit> <model> <suite>`. The backend's own spans nest inside each item's trace, so a failing item shows the prompt and raw model output. It prints a summary per score and per source and writes `results/<run>.json` (gitignored).
 
 Compare runs in Langfuse under **Experiments**: pick the baseline run, add the new one, and filter by a score.
 

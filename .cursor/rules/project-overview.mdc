@@ -42,6 +42,15 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 - Money: `DECIMAL(12,2)`, 3-letter ISO currency; UUID primary keys
 - Designed for ~1000 users at minimal cost (Supabase free tier, OpenRouter pay-per-token, Cloud Run scale-to-zero)
 
+## AI development (Langfuse)
+
+Langfuse (JP cloud, keys in `apps/backend/.env`) is how Moni's AI is observed and evaluated. Every backend AI request is a Langfuse trace (`docs/AI.md` § Tracing), and `evals/` holds the labelled suites that run as Langfuse experiments (`evals/README.md`). The vendored `langfuse` skill (`.agents/skills/langfuse`) covers the API, CLI and docs.
+
+- Before changing a prompt, a model, a parser or anything that shapes an AI answer, run `pnpm --filter @moni/evals eval` on the affected suites at the old code, change it, run again, and compare the two runs in Langfuse under Experiments. Report the per-field scores, cost and latency of both runs; a drop in any score needs a reason.
+- A bug in an AI answer (from an issue, a production trace or dev testing) becomes a case in the matching `evals/datasets/<suite>` before the fix, so the fix shows up as a score change and stays covered.
+- Only consider models cheaper than the production model, and only those with a zero-data-retention OpenRouter endpoint that supports JSON mode.
+- Expected answers written by an agent are not ground truth; check each against its input.
+
 ## Redesign v2
 
 The mobile app is being rebuilt to a new design kept on a claude.ai design canvas. Before building or changing any mobile screen, read `docs/REDESIGN.md`: which canvas boards to build and which to ignore, the target navigation (Home · Activity · + · Budget · Debts; Moni chat as a pushed page), the rules every screen follows, the code gaps, and the open owner decisions. Values and words: `docs/redesign/tokens.md`, `docs/redesign/glossary.md`.
