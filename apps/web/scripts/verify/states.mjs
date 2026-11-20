@@ -185,8 +185,16 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       check('an account that finished set-up never sees it again', sp.url() === `${base}/home`, sp.url());
       await sp.getByRole('region', { name: 'Get set up' }).waitFor({ timeout: 20_000 }).catch(() => {});
       await sp.getByRole('button', { name: 'Hide Get set up' }).click();
-      check('× hides Get set up, with Undo', (await sp.getByRole('region', { name: 'Get set up' }).count()) === 0 && (await sp.getByRole('status').getByRole('button', { name: 'Undo' }).isVisible()));
+      const clicked = Date.now();
+      const [cardGoneMs, undoShownMs] = await Promise.all(
+        [
+          sp.getByRole('region', { name: 'Get set up' }).waitFor({ state: 'detached', timeout: 2000 }),
+          sp.getByRole('status').getByRole('button', { name: 'Undo' }).waitFor({ timeout: 2000 }),
+        ].map((shown) => shown.then(() => Date.now() - clicked, () => null)),
+      );
+      check('× hides Get set up, with Undo', cardGoneMs !== null && undoShownMs !== null, { cardGoneMs, undoShownMs });
       await sp.waitForTimeout(1500);
+      check('Get set up stays hidden once the save lands', (await sp.getByRole('region', { name: 'Get set up' }).count()) === 0);
       const [hidden] = await rest('profiles?select=preferences');
       check('hiding it is kept in the profile', hidden?.preferences?.setup_checklist_hidden === true, hidden?.preferences);
       await sp.keyboard.press('Control+z');
