@@ -5,7 +5,7 @@
 // checkout's, then the main checkout's), reseeds the web's own e2e user (E2E_WEB_EMAIL) for the boards'
 // day, signs in only as that user, and saves screenshots beside the board renders, with board-and-app
 // pairs for the screens a board draws. The phone's e2e user is never read or written.
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { homedir } from 'node:os';
@@ -22,6 +22,13 @@ import { verifySettings } from './settings.mjs';
 import { verifySite } from './site.mjs';
 import { verifyFirstRun, verifyStates } from './states.mjs';
 import { slotEmail } from '../../../mobile/scripts/e2e/seed.mjs';
+
+// Started without a slot (straight from node, not `pnpm --filter web verify`), it would reseed slot 0's user
+// under another run. Take a slot first, then run as that slot.
+if (process.env.MONI_WEB_SLOT === undefined) {
+  const slotted = spawnSync(join(dirname(fileURLToPath(import.meta.url)), 'with-slot.sh'), [process.execPath, ...process.argv.slice(1)], { stdio: 'inherit' });
+  process.exit(slotted.status ?? 1);
+}
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
