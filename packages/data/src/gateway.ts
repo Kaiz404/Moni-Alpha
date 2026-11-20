@@ -53,7 +53,16 @@ export function createRowGateway(client: MoniSupabase) {
       if (revived.data?.length) return { ok: true, row: revived.data[0] };
       const live = await supabase.from(table).select().eq('id', id);
       // Nothing under this id means another unique key clashed, which is a real failure.
-      return live.data?.length ? { ok: true, row: live.data[0] } : failure(inserted.error.message);
+      if (!live.data?.length) return failure(inserted.error.message);
+      // The same row queued again before its insert returned (an Undo a second after Add marks it
+      // deleted): a newer version wins. A create with no time or an older one, such as a re-queued
+      // row from an old app version, never overwrites the server.
+      const current = live.data[0] as Row;
+      const at = (value: unknown) => (typeof value === 'string' ? Date.parse(value) : Number.NaN);
+      const newer = !Number.isNaN(at(row.updated_at)) && (Number.isNaN(at(current.updated_at)) || at(row.updated_at) > at(current.updated_at));
+      if (!newer) return { ok: true, row: current };
+      const updated = await supabase.from(table).update(row).eq('id', id).select();
+      return updated.error ? failure(updated.error.message) : { ok: true, row: updated.data?.[0] ?? current };
     },
 
     async update(table: SyncedTable, input: Row): Promise<RowResult> {

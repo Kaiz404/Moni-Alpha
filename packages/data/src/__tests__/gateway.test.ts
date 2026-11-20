@@ -31,6 +31,21 @@ describe('a write queued before the palette change', () => {
   });
 });
 
+describe('a create that clashes with a live row of the same id', () => {
+  it('takes a newer version: an Undo that lands before the insert returns still deletes the row', async () => {
+    server.tables.set('transactions', [{ id: 't1', deleted: false, updated_at: '2026-11-20T02:35:48.751745+00:00' }]);
+    await gateway.createOrRevive('transactions', { id: 't1', deleted: true, updated_at: '2026-11-20T02:35:49.000Z' });
+    expect(server.tables.get('transactions')).toEqual([{ id: 't1', deleted: true, updated_at: '2026-11-20T02:35:49.000Z' }]);
+  });
+
+  it('leaves the server row when the queued create is older or carries no time', async () => {
+    server.tables.set('transactions', [{ id: 't1', deleted: false, note: 'kept', updated_at: '2026-11-20T02:35:48.000Z' }]);
+    await gateway.createOrRevive('transactions', { id: 't1', deleted: false, note: 'stale', updated_at: '2026-11-19T00:00:00.000Z' });
+    await gateway.createOrRevive('transactions', { id: 't1', deleted: false, note: 'untimed' });
+    expect(server.tables.get('transactions')).toEqual([{ id: 't1', deleted: false, note: 'kept', updated_at: '2026-11-20T02:35:48.000Z' }]);
+  });
+});
+
 describe('the row gateway', () => {
   it('soft-deletes instead of deleting', async () => {
     server.tables.set('transactions', [{ id: 't1', deleted: false }]);
