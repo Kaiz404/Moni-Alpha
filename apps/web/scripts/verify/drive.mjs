@@ -413,12 +413,21 @@ try {
   // Every context starts from one saved session and its one refresh token. Once that token is used (the
   // access token's hour runs out, or another context refreshes first), Supabase ends the session and later
   // pages land signed out. A sign-in costs seconds, so each part starts from a fresh one.
+  // A refused sign-in (Supabase rate-limits them) must not replace a working session with an empty one.
   const keepSignedIn = async () => {
-    const again = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    await stubQr(again);
-    await signInWithPassword(again);
-    storage = await again.storageState();
-    await again.close();
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const again = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      await stubQr(again);
+      const page = await signInWithPassword(again);
+      const reached = page.url() === `${base}/home`;
+      if (reached) storage = await again.storageState();
+      const said = reached ? '' : ((await page.locator('[role="alert"], .auth-error').first().textContent().catch(() => null)) ?? page.url());
+      await again.close();
+      if (reached) return;
+      console.log(`fresh sign-in refused (${said.trim()}), trying again`);
+      await new Promise((r) => setTimeout(r, 5000 * 2 ** attempt));
+    }
+    console.log('fresh sign-in kept failing; the part runs on the last session');
   };
   const rest = async (path, { method = 'GET', body } = {}) => {
     const token = await userToken();
