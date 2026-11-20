@@ -169,7 +169,11 @@ export async function verifyReview(t) {
   await shot(p, 'review-1440-bulk');
   await bar.getByRole('button', { name: /^Approve/ }).click();
   const both = await until('proposals', (r) => [first.id, pending[1].id].every((id) => r.some((row) => row.id === id && row.status === 'approved')));
-  check('bulk Approve approves both', both.ok && (await visible(p.getByRole('status').filter({ hasText: '2 approved' }))));
+  const bulkToast = await p.getByRole('status').allTextContents().catch(() => []);
+  check('bulk Approve approves both', both.ok && bulkToast.some((text) => text.includes('2 approved')), {
+    statuses: both.rows.filter((row) => [first.id, pending[1].id].includes(row.id)).map((row) => row.status),
+    toast: bulkToast,
+  });
   await p.keyboard.press('Control+z');
   const bothBack = await until('proposals', (r) => [first.id, pending[1].id].every((id) => r.some((row) => row.id === id && row.status === 'pending')));
   check('Ctrl Z puts both back', bothBack.ok);
