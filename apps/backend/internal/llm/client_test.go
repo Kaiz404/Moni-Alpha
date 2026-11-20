@@ -89,7 +89,7 @@ func TestCompleteJSONAsksOpenRouterForJSONWithoutReasoning(t *testing.T) {
 		"model": received["model"], "response_format": received["response_format"],
 		"reasoning": received["reasoning"], "provider": received["provider"],
 	})
-	want := `{"model":"deepseek/deepseek-v4.1-flash","provider":{"data_collection":"deny","require_parameters":true,"zdr":true},"reasoning":{"enabled":false},"response_format":{"type":"json_object"}}`
+	want := `{"model":"deepseek/deepseek-v4.1-flash-1017","provider":{"data_collection":"deny","require_parameters":true,"zdr":true},"reasoning":{"enabled":false},"response_format":{"type":"json_object"}}`
 	if string(got) != want {
 		t.Fatalf("request = %s, want %s", got, want)
 	}

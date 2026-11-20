@@ -9,11 +9,11 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 | Method | Path                       | Purpose                                          | Model                          |
 | ------ | -------------------------- | ------------------------------------------------ | ------------------------------ |
 | GET    | `/health`                  | Liveness (no auth), always 200; `authKeys` is `loaded` or `loading`. `/healthz` answers the same locally, but Cloud Run's frontend keeps that path and returns 404 | —           |
-| POST   | `/v1/extract/text`         | Transaction from free text                       | `deepseek/deepseek-v4.1-flash` |
-| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `deepseek/deepseek-v4.1-flash` |
-| POST   | `/v1/extract/notification` | Transaction from Android notification            | `deepseek/deepseek-v4.1-flash` |
-| POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `deepseek/deepseek-v4.1-flash` |
-| POST   | `/v1/budget/suggest`       | Budget questions, then a suggested monthly amount | `deepseek/deepseek-v4.1-flash` |
+| POST   | `/v1/extract/text`         | Transaction from free text                       | `deepseek/deepseek-v4.1-flash-1017` |
+| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `deepseek/deepseek-v4.1-flash-1017` |
+| POST   | `/v1/extract/notification` | Transaction from Android notification            | `deepseek/deepseek-v4.1-flash-1017` |
+| POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `deepseek/deepseek-v4.1-flash-1017` |
+| POST   | `/v1/budget/suggest`       | Budget questions, then a suggested monthly amount | `deepseek/deepseek-v4.1-flash-1017` |
 | POST   | `/v1/places/autocomplete`  | Shop search suggestions in Malaysia              | Google Places Autocomplete (New) |
 | POST   | `/v1/places/details`       | Coordinates and address of a picked place        | Google Place Details (New), Essentials |
 

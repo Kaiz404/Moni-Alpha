@@ -187,7 +187,7 @@ Nothing goes to an AI provider until the user turns Moni's AI on (#57). The choi
 
 ## Model allocation
 
-Every flow uses `deepseek/deepseek-v4.1-flash` on OpenRouter, chosen by the benchmark below. Source of truth: `llm.Model` in `apps/backend/internal/llm/models.go`; `pnpm --filter backend test:live` fails if OpenRouter stops serving it.
+Every flow uses `deepseek/deepseek-v4.1-flash-1017` on OpenRouter since 2026-11-20. It replaced `deepseek-v4.1-flash`, the pick of the benchmark below, after the eval suites scored it as accurate or better and 6 to 20% cheaper on extraction ([research/ai-evals-2026-11.md](research/ai-evals-2026-11.md)). Source of truth: `llm.Model` in `apps/backend/internal/llm/models.go`; `pnpm --filter backend test:live` fails if OpenRouter stops serving it.
 
 | Flow                       | Endpoint                   | Retry and 429 behaviour                                                                                                                              |
 | -------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |

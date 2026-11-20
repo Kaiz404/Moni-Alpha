@@ -10,6 +10,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
+	"github.com/kaiz404/moni/backend/internal/llm"
 	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
@@ -81,7 +82,7 @@ func TestExtractTextIsTracedAsOneTraceWithAGeneration(t *testing.T) {
 	g := attrs(gen)
 	for key, want := range map[string]string{
 		"langfuse.observation.type":          "generation",
-		"langfuse.observation.model.name":    "deepseek/deepseek-v4.1-flash",
+		"langfuse.observation.model.name":    llm.Model,
 		"langfuse.observation.usage_details": `{"input":120,"output":30}`,
 		"langfuse.observation.cost_details":  `{"total":0.0002}`,
 		"user.id":                            "user-1",

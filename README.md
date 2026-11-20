@@ -55,7 +55,7 @@ Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx 
 |            |                                                                               |
 | ---------- | ----------------------------------------------------------------------------- |
 | Mobile     | Expo SDK 57, expo-router, Legend-State + MMKV, Uniwind (Tailwind), Reanimated |
-| AI backend | Go 1.26, Gin, OpenRouter (`deepseek/deepseek-v4.1-flash` for text and vision) |
+| AI backend | Go 1.26, Gin, OpenRouter (`deepseek/deepseek-v4.1-flash-1017` for text and vision) |
 | Data       | Supabase (Postgres, Auth with ES256 JWTs, Storage, Realtime)                  |
 | Web        | Next.js 16 App Router, `@supabase/ssr`, shared workspace packages             |
 | Monorepo   | Turborepo + pnpm workspaces (Go integrated via package scripts)               |
