@@ -5,7 +5,6 @@ import type { AiConsent } from '@repo/core';
 import type { UserPreferences } from '@repo/types';
 
 import { createRowGateway, type Failure, type Row } from './gateway';
-import { createRowOrder } from './row-order';
 import type { MoniPersist } from './persist';
 import { fetchAiConsent, fetchProfilePreferences } from './profile';
 import type { StoredRow, SyncedTable } from '@repo/core';
@@ -78,14 +77,13 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
     return { data: undefined };
   }
 
-  const inOrder = createRowOrder();
   const create = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
-    const result = await inOrder(`${table}/${String(input.id)}`, () => gateway.createOrRevive(table, input));
+    const result = await gateway.createOrRevive(table, input);
     return result.ok ? { data: result.row } : failWrite(params, result, 'create', input);
   };
 
   const update = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
-    const result = await inOrder(`${table}/${String(input.id)}`, () => gateway.update(table, input));
+    const result = await gateway.update(table, input);
     return result.ok ? { data: result.row } : failWrite(params, result, 'update', input);
   };
 
@@ -106,7 +104,7 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
       collection: table,
       list: list(table) as never,
       create: create(table) as never,
-      update: update(table) as never,
+      ...(table === 'categories' || table === 'wallets' ? { update: update(table) as never } : {}),
       realtime: true,
       retry: RETRY,
       persist: { name: table, ...persistOptions },
