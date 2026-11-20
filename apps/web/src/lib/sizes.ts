@@ -8,6 +8,7 @@ export const PANE_SPANS = {
   transaction: { initial: 380, min: 340, max: 720 },
   category: { initial: 408, min: 340, max: 720 },
   person: { initial: 408, min: 340, max: 720 },
+  wallet: { initial: 408, min: 340, max: 720 },
   review: { initial: 520, min: 400, max: 820 },
   chat: { initial: 420, min: 360, max: 720 },
 } as const satisfies Record<string, Span>;

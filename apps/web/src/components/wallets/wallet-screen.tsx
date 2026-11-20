@@ -279,7 +279,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
             )}
           </section>
         </div>
-        <SidePane label="Edit wallet" open={editing} onClose={() => setParams({ edit: null })}>
+        <SidePane name="wallet" label="Edit wallet" open={editing} onClose={() => setParams({ edit: null })}>
           {editing && <WalletForm editing draft={draft} onDraft={setDraft} onSave={saveEdit} onClose={() => setParams({ edit: null })} alertsFrom={alertsFrom} />}
         </SidePane>
       </div>

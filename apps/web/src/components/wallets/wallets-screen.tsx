@@ -196,7 +196,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
             <Glyph name="chevron-right" size={20} />
           </button>
         </div>
-        <SidePane label="New wallet" open={adding} onClose={() => setParams({ new: null })}>
+        <SidePane name="wallet" label="New wallet" open={adding} onClose={() => setParams({ new: null })}>
           {adding && <WalletForm editing={false} draft={draft} onDraft={setDraft} onSave={save} onClose={() => setParams({ new: null })} />}
         </SidePane>
       </div>
