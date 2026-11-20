@@ -514,10 +514,11 @@ function WalletRows({
               options={(Object.keys(WALLET_KINDS) as WalletKind[]).map((key) => ({ value: key, label: WALLET_KINDS[key].label }))}
               onChange={(kind) => onChange(wallet.key, { kind })}
             />
-            <label className="setup-in setup-wbal num" data-bad={bad || undefined}>
-              <span className="setup-sym">{choices.find((choice) => choice.code === wallet.currency)?.symbol ?? wallet.currency}</span>
-              <span className="sr-only">Wallet {index + 1} starting balance</span>
-              <input value={wallet.balance} inputMode="decimal" placeholder="0.00" onChange={(event) => onChange(wallet.key, { balance: event.target.value })} />
+            <div className="setup-in setup-wbal num" data-bad={bad || undefined}>
+              <label className="setup-wbal-field">
+                <span className="setup-sym">{choices.find((choice) => choice.code === wallet.currency)?.symbol ?? wallet.currency}</span>
+                <input aria-label={`Wallet ${index + 1} starting balance`} value={wallet.balance} inputMode="decimal" placeholder="0.00" onChange={(event) => onChange(wallet.key, { balance: event.target.value })} />
+              </label>
               <Select
                 label={`Wallet ${index + 1} currency`}
                 className="setup-wcur"
@@ -528,7 +529,7 @@ function WalletRows({
               >
                 {wallet.currency}
               </Select>
-            </label>
+            </div>
             <button type="button" className="setup-wx press" aria-label={`Remove ${wallet.name.trim() || `wallet ${index + 1}`}`} onClick={() => onRemove(wallet.key)}>
               <Icon name="close" size={18} />
             </button>

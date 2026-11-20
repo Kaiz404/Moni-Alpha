@@ -627,6 +627,10 @@
   box-shadow: inset 0 0 0 2px var(--color-foreground);
 }
 
+.setup-wbal-field {
+  display: contents;
+}
+
 .setup-wbal input {
   text-align: right;
   font-variant-numeric: tabular-nums;
