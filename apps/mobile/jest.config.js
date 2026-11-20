@@ -3,6 +3,9 @@ process.env.TZ = 'Asia/Kuala_Lumpur';
 
 module.exports = {
   preset: 'jest-expo',
+  // Jest's default cache sits in /tmp, a RAM disk under WSL; it grew past 6 GB there and starved
+  // Chromium of room, crashing web-verify's screenshots.
+  cacheDirectory: require('node:path').join(require('node:os').homedir(), '.cache', 'jest-moni'),
   setupFiles: ['<rootDir>/jest.setup.js'],
   roots: ['<rootDir>/lib', '<rootDir>/components', '<rootDir>/__tests__'],
   testMatch: ['**/__tests__/**/*.test.ts?(x)'],
