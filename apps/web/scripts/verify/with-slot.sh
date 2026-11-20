@@ -3,6 +3,12 @@
 # slot n is its -slot<n> twin), so up to MONI_WEB_VERIFY_SLOTS runs go at once without sharing rows.
 set -uo pipefail
 slots=${MONI_WEB_VERIFY_SLOTS:-3}
+# Chromium writes screenshots through /tmp, a RAM disk under WSL; nearly full, it crashes mid-run.
+tmp_free_mb=$(df -Pm /tmp | awk 'NR == 2 { print $4 }')
+if ((tmp_free_mb < 1024)); then
+  echo "web-verify FAIL: /tmp has ${tmp_free_mb} MB free; Chromium needs room there. See what fills it: du -sh /tmp/* | sort -h" >&2
+  exit 1
+fi
 dir=${XDG_RUNTIME_DIR:-/tmp}
 announced=false
 while :; do
