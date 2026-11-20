@@ -403,19 +403,15 @@ try {
   check(`the web's e2e seed was written for ${SEED_DAY}; the ledger screens are checked at 3 pm that day`, seed.seedDay === SEED_DAY, seed.seedDay);
   let storage = await auth.storageState();
   await auth.close();
-  // Every context starts from this one saved session and its one refresh token. Past the access token's
-  // hour, several contexts refresh with that token at once, Supabase reads the reuse as theft and ends
-  // the session, and every later page lands signed out. A run takes over an hour, so sign in afresh
-  // before a part once the saved session is 40 minutes old.
-  let signedInAt = Date.now();
+  // Every context starts from one saved session and its one refresh token. Once that token is used (the
+  // access token's hour runs out, or another context refreshes first), Supabase ends the session and later
+  // pages land signed out. A sign-in costs seconds, so each part starts from a fresh one.
   const keepSignedIn = async () => {
-    if (Date.now() - signedInAt < Number(process.env.MONI_WEB_RESIGN_MS ?? 40 * 60_000)) return;
     const again = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await stubQr(again);
     await signInWithPassword(again);
     storage = await again.storageState();
     await again.close();
-    signedInAt = Date.now();
   };
   const rest = async (path, { method = 'GET', body } = {}) => {
     const token = await userToken();
