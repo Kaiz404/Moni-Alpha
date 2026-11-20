@@ -819,6 +819,14 @@ try {
   await d.keyboard.press('Control+z');
   await rowShown.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
   check('Ctrl Z takes it back', !(await d.getByText('Verify Kopitiam').first().isVisible().catch(() => false)));
+  // Off the screen is not off the server: the soft delete syncs after the toast, so wait for the row.
+  let liveKopitiam = [];
+  for (let tries = 0; tries < 20; tries++) {
+    liveKopitiam = await rest('transactions?merchant=eq.Verify%20Kopitiam&deleted=eq.false&select=id');
+    if (liveKopitiam.length === 0) break;
+    await d.waitForTimeout(500);
+  }
+  check("Ctrl Z's delete reaches the dev project", liveKopitiam.length === 0, liveKopitiam);
 
   await d.route('**/v1/extract/text', (route) =>
     route.fulfill({
