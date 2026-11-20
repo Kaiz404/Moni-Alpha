@@ -15,6 +15,11 @@ const WORDS = {
     lead: "To fill it in, Moni sends what you wrote and your wallet names to OpenRouter, an AI service in the US, and the AI model it picks. They don't keep it or train on it.",
     meta: 'Moni can be wrong. Check what it fills in before you add it.',
   },
+  budget: {
+    title: 'Ask Moni uses AI',
+    lead: "To suggest a budget, Moni sends your answers and a few months' spending totals to OpenRouter, an AI service in the US, and the AI model it picks. They don't keep it or train on it.",
+    meta: 'Moni can be wrong. Check the amount before you set it.',
+  },
 } as const;
 
 /**

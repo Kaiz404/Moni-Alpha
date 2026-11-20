@@ -92,6 +92,7 @@ export function SuggestDialog({
   if (step.kind === 'consent') {
     return (
       <ConsentDialog
+        use="budget"
         onTurnOn={() =>
           void currentAiConsent()
             .then((consent) => changeAiConsent(turnOnFor(consent, 'chat')))
