@@ -80,6 +80,8 @@ go vet ./...
 
 `pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real OpenRouter API with `.env`'s `OPENROUTER_API_KEY`: it checks OpenRouter still serves `llm.Model` (`internal/llm/models.go`), then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys. With Langfuse keys in `.env`, each request is traced under the `live-test` environment.
 
+`pnpm eval:serve` serves the real router on `127.0.0.1:8787` for the eval runner in `evals/` (`cmd/server/eval_server_test.go`): a local signing key stands in for Supabase, the rate limit is off, and each request joins the caller's trace through its `traceparent` header. The runner starts it itself; see `evals/README.md`.
+
 `pnpm bench:llm` compares candidate models on accuracy, latency and cost. It runs 30 labelled cases (11 text, 14 notifications, 5 receipts in `internal/extract/testdata/bench/`) through the production `extract.Service`, once per model in `benchTargets` (`internal/extract/bench_test.go`), and writes a scorecard to `bench-results/` (gitignored). Groq models need `GROQ_API_KEY`; OpenRouter models need `OPENROUTER_API_KEY` and are skipped without it. `MONI_BENCH_RUNS=1` shortens a run and `MONI_BENCH_MODELS=qwen,glm` keeps only matching models. Free-tier Groq hits per-minute token limits, so a full run takes 10 to 20 minutes; the bench waits out 429s and reports them in their own column instead of as failures.
 
 ## Deploy (Google Cloud Run)

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -166,5 +167,27 @@ func TestFailedModelCallsAreTracedAsErrors(t *testing.T) {
 	}
 	if generations != 2 {
 		t.Errorf("%d generations, want one per attempt (2)", generations)
+	}
+}
+
+func TestTraceparentJoinsTheCallersTraceOnlyWhenAccepted(t *testing.T) {
+	const parent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+	for _, accept := range []bool{true, false} {
+		exporter := tracetest.NewInMemoryExporter()
+		provider := tracing.Install(tracing.Config{AcceptTraceparent: accept}, sdktrace.WithSyncer(exporter))
+		s := newTestServer(t, nil, ok(`{"amount": 3, "type": "expense"}`))
+		req := httptest.NewRequest(http.MethodPost, "/v1/extract/text", strings.NewReader(`{"text":"tea 3"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+s.token("user-1"))
+		req.Header.Set("traceparent", parent)
+		s.handler.ServeHTTP(httptest.NewRecorder(), req)
+
+		root := spanNamed(t, exporter.GetSpans(), "extract-text")
+		joined := root.SpanContext.TraceID().String() == "4bf92f3577b34da6a3ce929d0e0e4736"
+		if joined != accept {
+			t.Errorf("accept=%t: joined caller's trace = %t", accept, joined)
+		}
+		provider.Shutdown(context.Background())
+		tracing.Reset()
 	}
 }

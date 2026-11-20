@@ -250,6 +250,10 @@ Every extract and chat request is one [Langfuse](https://langfuse.com) trace, se
 - **Content:** `LANGFUSE_CAPTURE_CONTENT` defaults to off in `production` and on elsewhere. Off, a trace keeps names, timings, tokens, cost, status and errors, but no request, reply, image or model reason. Turn it on in production only once the privacy policy names Langfuse as a processor.
 - The response header `X-Trace-Id` names the trace, so a client can attach feedback to it later. Clients ignore it today.
 
+## Evals
+
+`evals/` holds labelled cases for text, notifications, receipts and chat, run against the real backend as Langfuse experiments (`pnpm --filter @moni/evals eval`; see `evals/README.md`). Each extraction field is scored on its own, and chat reuses the chat bench's grounding checks. Results are compared per run in Langfuse under Experiments.
+
 ## Extraction pipeline details
 
 - **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/chat/prompts.go`.

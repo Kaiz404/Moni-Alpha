@@ -1,0 +1,27 @@
+{
+  "name": "@moni/evals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "tsx src/sync.ts",
+    "eval": "tsx src/run.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@langfuse/client": "6.1.1",
+    "@langfuse/otel": "6.1.1",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/core": "2.12.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.223.2",
+    "@opentelemetry/otlp-exporter-base": "0.223.2",
+    "@opentelemetry/sdk-trace-base": "2.12.1",
+    "@opentelemetry/sdk-trace-node": "2.12.1",
+    "@repo/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.2"
+  }
+}

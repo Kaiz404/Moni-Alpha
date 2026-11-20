@@ -10,6 +10,7 @@
     "check-types": "go build ./...",
     "test": "go test ./...",
     "test:live": "dotenv -e .env -- env MONI_LIVE_TESTS=1 LANGFUSE_TRACING_ENVIRONMENT=live-test go test ./cmd/server -run Live -count=1 -v",
+    "eval:serve": "dotenv -e .env -- env MONI_EVAL_SERVE=1 LANGFUSE_TRACING_ENVIRONMENT=eval go test ./cmd/server -run TestEvalServer -count=1 -v -timeout 0",
     "bench:llm": "dotenv -e .env -- env MONI_BENCH=1 go test ./internal/extract -run TestBenchModels -count=1 -v -timeout 0"
   },
   "devDependencies": {

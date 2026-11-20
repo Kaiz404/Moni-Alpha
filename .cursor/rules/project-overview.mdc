@@ -19,6 +19,7 @@ packages/brand/   @repo/brand — Cat Pebble mascot, wordmark and lockups as SVG
 packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules, money month, finance read model, AI consent)
 packages/data/    @repo/data — the synced Legend-State store (`createMoniStore`) and Supabase row gateway both apps mount
 packages/ai/      @repo/ai — the Go AI gateway client (`createAiClient`, `createPlacesClient`) both apps create
+evals/            AI eval datasets + runner → Langfuse experiments (evals/README.md)
 supabase/         Migrations, RLS, storage
 docs/             ARCHITECTURE / SETUP / DATABASE / AI / research
 ```

@@ -15,6 +15,7 @@ Docs are lean and single-source-of-truth. When a change affects any area below, 
 | Env vars, setup steps, tooling, keys | `docs/SETUP.md` + relevant `.env.example` |
 | Migrations, tables, RLS, storage buckets | `docs/DATABASE.md` |
 | AI endpoints, models, prompts, rate limits, wire contract | `docs/AI.md` |
+| AI eval suites, datasets, scores | `evals/README.md` + the suite's `datasets/<suite>/README.md` |
 | Backend endpoints/auth/deploy | `apps/backend/README.md` |
 | Mobile structure or data flow | `apps/mobile/README.md` |
 | Mobile visual language, semantic tokens, or component standards | `docs/DESIGN_SYSTEM.md` + `apps/mobile/README.md` |

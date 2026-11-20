@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -29,6 +30,9 @@ type Config struct {
 	Environment string
 	// Release names the deployed build, e.g. the Cloud Run revision.
 	Release string
+	// AcceptTraceparent joins a request to the caller's trace from its W3C traceparent header.
+	// Only the eval server sets it, so an experiment item shows the backend's spans inside it.
+	AcceptTraceparent bool
 	// CaptureContent sends request and model text, receipt images included. Off, traces keep
 	// only names, timings, tokens, status and errors.
 	CaptureContent bool
@@ -37,9 +41,10 @@ type Config struct {
 func (c Config) Enabled() bool { return c.PublicKey != "" && c.SecretKey != "" }
 
 var (
-	tracer         trace.Tracer = noop.NewTracerProvider().Tracer("")
-	captureContent bool
-	media          *mediaUploader
+	tracer            trace.Tracer = noop.NewTracerProvider().Tracer("")
+	captureContent    bool
+	acceptTraceparent bool
+	media             *mediaUploader
 )
 
 // Setup installs the Langfuse exporter. The returned shutdown flushes buffered spans.
@@ -70,6 +75,7 @@ func Setup(ctx context.Context, cfg Config) (func(context.Context) error, error)
 func Reset() {
 	tracer = noop.NewTracerProvider().Tracer("")
 	captureContent = false
+	acceptTraceparent = false
 	media = nil
 }
 
@@ -86,6 +92,7 @@ func Install(cfg Config, opts ...sdktrace.TracerProviderOption) *sdktrace.Tracer
 	provider := sdktrace.NewTracerProvider(opts...)
 	tracer = provider.Tracer("moni-backend")
 	captureContent = cfg.CaptureContent
+	acceptTraceparent = cfg.AcceptTraceparent
 	media = nil
 	return provider
 }
@@ -115,6 +122,9 @@ func Middleware(names map[string]string, userID func(*gin.Context) string) gin.H
 			return
 		}
 		ctx := context.WithValue(c.Request.Context(), userKey{}, userID(c))
+		if acceptTraceparent {
+			ctx = propagation.TraceContext{}.Extract(ctx, propagation.HeaderCarrier(c.Request.Header))
+		}
 		ctx, span := tracer.Start(ctx, name)
 		if span.SpanContext().IsValid() {
 			c.Header("X-Trace-Id", span.SpanContext().TraceID().String())

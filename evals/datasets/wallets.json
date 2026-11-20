@@ -1,0 +1,210 @@
+{
+  "MY": [
+    {
+      "id": "w-my-bank",
+      "name": "Maybank",
+      "type": "bank",
+      "currency": "MYR"
+    },
+    {
+      "id": "w-my-ewallet",
+      "name": "Touch n Go eWallet",
+      "type": "ewallet",
+      "currency": "MYR"
+    },
+    {
+      "id": "w-my-credit",
+      "name": "Maybank Visa",
+      "type": "credit",
+      "currency": "MYR"
+    },
+    {
+      "id": "w-my-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "MYR"
+    }
+  ],
+  "SG": [
+    {
+      "id": "w-sg-bank",
+      "name": "DBS",
+      "type": "bank",
+      "currency": "SGD"
+    },
+    {
+      "id": "w-sg-ewallet",
+      "name": "GrabPay",
+      "type": "ewallet",
+      "currency": "SGD"
+    },
+    {
+      "id": "w-sg-credit",
+      "name": "Citi Rewards",
+      "type": "credit",
+      "currency": "SGD"
+    },
+    {
+      "id": "w-sg-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "SGD"
+    }
+  ],
+  "US": [
+    {
+      "id": "w-us-bank",
+      "name": "Chase Checking",
+      "type": "bank",
+      "currency": "USD"
+    },
+    {
+      "id": "w-us-ewallet",
+      "name": "Venmo",
+      "type": "ewallet",
+      "currency": "USD"
+    },
+    {
+      "id": "w-us-credit",
+      "name": "Amex Gold",
+      "type": "credit",
+      "currency": "USD"
+    },
+    {
+      "id": "w-us-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "USD"
+    }
+  ],
+  "UK": [
+    {
+      "id": "w-uk-bank",
+      "name": "Monzo",
+      "type": "bank",
+      "currency": "GBP"
+    },
+    {
+      "id": "w-uk-ewallet",
+      "name": "PayPal",
+      "type": "ewallet",
+      "currency": "GBP"
+    },
+    {
+      "id": "w-uk-credit",
+      "name": "Barclaycard",
+      "type": "credit",
+      "currency": "GBP"
+    },
+    {
+      "id": "w-uk-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "GBP"
+    }
+  ],
+  "IN": [
+    {
+      "id": "w-in-bank",
+      "name": "HDFC Bank",
+      "type": "bank",
+      "currency": "INR"
+    },
+    {
+      "id": "w-in-ewallet",
+      "name": "Paytm",
+      "type": "ewallet",
+      "currency": "INR"
+    },
+    {
+      "id": "w-in-credit",
+      "name": "ICICI Credit Card",
+      "type": "credit",
+      "currency": "INR"
+    },
+    {
+      "id": "w-in-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "INR"
+    }
+  ],
+  "AU": [
+    {
+      "id": "w-au-bank",
+      "name": "CommBank",
+      "type": "bank",
+      "currency": "AUD"
+    },
+    {
+      "id": "w-au-ewallet",
+      "name": "PayPal",
+      "type": "ewallet",
+      "currency": "AUD"
+    },
+    {
+      "id": "w-au-credit",
+      "name": "ANZ Visa",
+      "type": "credit",
+      "currency": "AUD"
+    },
+    {
+      "id": "w-au-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "AUD"
+    }
+  ],
+  "CA": [
+    {
+      "id": "w-ca-bank",
+      "name": "RBC Chequing",
+      "type": "bank",
+      "currency": "CAD"
+    },
+    {
+      "id": "w-ca-ewallet",
+      "name": "PayPal",
+      "type": "ewallet",
+      "currency": "CAD"
+    },
+    {
+      "id": "w-ca-credit",
+      "name": "TD Visa",
+      "type": "credit",
+      "currency": "CAD"
+    },
+    {
+      "id": "w-ca-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "CAD"
+    }
+  ],
+  "PH": [
+    {
+      "id": "w-ph-bank",
+      "name": "BDO",
+      "type": "bank",
+      "currency": "PHP"
+    },
+    {
+      "id": "w-ph-ewallet",
+      "name": "GCash",
+      "type": "ewallet",
+      "currency": "PHP"
+    },
+    {
+      "id": "w-ph-credit",
+      "name": "BPI Credit Card",
+      "type": "credit",
+      "currency": "PHP"
+    },
+    {
+      "id": "w-ph-cash",
+      "name": "Cash",
+      "type": "cash",
+      "currency": "PHP"
+    }
+  ]
+}
