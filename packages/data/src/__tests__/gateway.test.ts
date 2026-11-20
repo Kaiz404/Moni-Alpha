@@ -46,6 +46,17 @@ describe('a create that clashes with a live row of the same id', () => {
   });
 });
 
+describe('an update that finds no row', () => {
+  it('is retried, since the insert it follows may still be on its way', async () => {
+    server.tables.set('transactions', []);
+    expect(await gateway.update('transactions', { id: 't1', deleted: true })).toEqual({
+      ok: false,
+      message: 'transactions t1 is not on the server yet',
+      retryable: true,
+    });
+  });
+});
+
 describe('the row gateway', () => {
   it('soft-deletes instead of deleting', async () => {
     server.tables.set('transactions', [{ id: 't1', deleted: false }]);

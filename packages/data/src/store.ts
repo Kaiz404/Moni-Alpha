@@ -104,7 +104,7 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
       collection: table,
       list: list(table) as never,
       create: create(table) as never,
-      ...(table === 'categories' || table === 'wallets' ? { update: update(table) as never } : {}),
+      update: update(table) as never,
       realtime: true,
       retry: RETRY,
       persist: { name: table, ...persistOptions },

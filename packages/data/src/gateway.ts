@@ -71,7 +71,11 @@ export function createRowGateway(client: MoniSupabase) {
         .update(withCurrentColor(table, input))
         .eq('id', input.id as string)
         .select();
-      return updated.error ? failure(updated.error.message) : { ok: true, row: updated.data?.[0] };
+      if (updated.error) return failure(updated.error.message);
+      // No row yet: the insert it follows can still be on its way (Undo a second after Add), and rows
+      // are never hard-deleted, so try again rather than report a write that changed nothing.
+      if (!updated.data?.length) return { ok: false, message: `${table} ${String(input.id)} is not on the server yet`, retryable: true };
+      return { ok: true, row: updated.data[0] };
     },
 
     /** Synced rows are never `DELETE`d: a device pulling by `updated_at` would never learn of it. */
