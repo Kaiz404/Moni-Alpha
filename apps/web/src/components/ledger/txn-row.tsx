@@ -13,7 +13,7 @@ export function TxnRow({
   lead,
 }: {
   row: TransactionRow;
-  meta: string;
+  meta: ReactNode;
   href: string;
   style?: CSSProperties;
   lead?: ReactNode;

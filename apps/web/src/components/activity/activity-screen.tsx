@@ -45,6 +45,7 @@ import { reviewHref } from '@/lib/review-view';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { ResizeHandle } from '@/components/ledger/resize-handle';
 import { SidePane } from '@/components/ledger/side-pane';
+import { FromTo } from '@/components/ledger/from-to';
 import { COLUMN_SPANS, parseColumnWidths, type ColumnWidths, type ResizableColumn } from '@/lib/sizes';
 import { ConfirmDelete } from './confirm-delete';
 import { DetailPane } from './detail-pane';
@@ -655,7 +656,13 @@ export function ActivityScreen() {
                             <span className="row-title">{item.title}</span>
                             <span className="row-meta">
                               {item.auto && <span className="auto-pill">Auto</span>}
-                              <span className="row-meta-text">{item.kind === 'transfer' ? `${item.wallet} → ${item.row.toWallet}` : `${item.category ?? 'No category'}${drafted.has(item.id) ? ` → ${ledger.projection.categoriesById[drafted.get(item.id)!]?.name ?? ''}` : ''} · ${item.wallet}`}</span>
+                              {item.row.kind === 'transfer' ? (
+                                <FromTo from={item.wallet} to={item.row.toWallet} />
+                              ) : drafted.has(item.id) ? (
+                                <FromTo from={item.category ?? 'No category'} to={ledger.projection.categoriesById[drafted.get(item.id)!]?.name ?? ''} />
+                              ) : (
+                                <span className="row-meta-text">{`${item.category ?? 'No category'}, ${item.wallet}`}</span>
+                              )}
                             </span>
                           </span>
                           {amountCell(item)}

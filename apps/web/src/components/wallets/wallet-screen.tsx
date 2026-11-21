@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { SidePane } from '@/components/ledger/side-pane';
+import { FromTo } from '@/components/ledger/from-to';
 import { TxnRow } from '@/components/ledger/txn-row';
 import { useQueryParams } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
@@ -257,7 +258,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
                   {shown.map((transaction) => {
                     const row = transactionRow({ ...transaction, merchant: merchantName(transaction.merchant, aliases) }, { categoriesById: projection.categoriesById, walletNames });
                     const day = rowDay(row.date, now, calendar);
-                    return <TxnRow key={row.id} row={row} href={`/activity/${row.id}`} meta={row.kind === 'transfer' ? `${day} · ${row.wallet} → ${row.toWallet}` : `${day} · ${row.category ?? 'No category'}`} />;
+                    return <TxnRow key={row.id} row={row} href={`/activity/${row.id}`} meta={row.kind === 'transfer' ? <FromTo from={row.wallet} to={row.toWallet} /> : `${day} · ${row.category ?? 'No category'}`} />;
                   })}
                 </div>
                 {pages > 1 && (

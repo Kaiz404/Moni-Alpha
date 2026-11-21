@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
+import { FromTo } from '@/components/ledger/from-to';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/lib/ledger/format';
@@ -181,7 +182,8 @@ export function DetailPane({
                 disabled={linked}
                 value={transaction.walletId}
                 listClassName="pane-pop"
-                text={row.kind === 'transfer' ? `${row.wallet} → ${row.toWallet}` : row.wallet}
+                text={row.kind === 'transfer' ? <FromTo from={row.wallet} to={row.toWallet} /> : row.wallet}
+                triggerLabel={row.kind === 'transfer' ? `Wallet: ${row.wallet} to ${row.toWallet}` : undefined}
                 options={wallets
                   .filter((wallet) => wallet.currency === transaction.currency)
                   .map((wallet) => ({

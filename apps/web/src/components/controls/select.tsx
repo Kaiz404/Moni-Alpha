@@ -49,8 +49,8 @@ export function Select<T extends string>({
   listClassName?: string;
   /** The trigger's accessible name, when its text alone would not say what it picks. */
   triggerLabel?: string;
-  /** The trigger's words when they say more than the chosen option's label. */
-  text?: string;
+  /** The trigger's words when they say more than the chosen option's label; a node needs a `triggerLabel`. */
+  text?: ReactNode;
   invalid?: boolean;
   children?: ReactNode;
 }) {
@@ -66,7 +66,7 @@ export function Select<T extends string>({
         className={`select-trigger ${className}`}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={triggerLabel ?? `${label}: ${shown}`}
+        aria-label={triggerLabel ?? `${label}: ${typeof shown === 'string' ? shown : (chosen?.label ?? placeholder)}`}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         data-invalid={invalid ? 'true' : undefined}

@@ -714,3 +714,17 @@ html:not([data-layout='phone']) .icon-round-key {
   color: var(--color-primary-foreground);
   font-weight: 700;
 }
+
+.from-to {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.from-to > span[aria-hidden] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

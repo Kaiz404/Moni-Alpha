@@ -2,9 +2,6 @@
 # Entries are `<file>: <rule>`. Regenerate: pnpm --filter moni lint:taste --write
 apps/mobile/app/bill/[seriesKey].tsx: sparkle icon
 apps/mobile/app/profile.tsx: sparkle icon
-apps/web/src/components/activity/activity-screen.tsx: text arrow
-apps/web/src/components/activity/detail-pane.tsx: text arrow
 apps/web/src/components/setup/setup-flow.tsx: sparkle icon
 apps/web/src/components/shell/panes.tsx: native control
 apps/web/src/components/wallets/wallet-form.tsx: native control
-apps/web/src/components/wallets/wallet-screen.tsx: text arrow
