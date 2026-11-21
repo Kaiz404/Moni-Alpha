@@ -4,7 +4,7 @@ import { planned, refused, type LedgerView, type PlanContext, type Planned } fro
 
 /**
  * A new wallet holding its starting balance, confirmed as of now so the check-in waits a while. The
- * answer is its id. `displayOrder` places it in the user's list; the phone adds one at a time at 0.
+ * answer is its id. `displayOrder` places it in the user's list: `nextWalletOrder` puts it last.
  */
 export function planWalletCreate(
   wallet: CreateWallet,
@@ -79,6 +79,29 @@ export function planWalletEdit(
           patch: { name: edit.name, type: edit.type, color: edit.color, icon: edit.icon, card_style_id: edit.cardStyleId, updated_at: ctx.now },
         },
       ],
+    },
+    null,
+  );
+}
+
+/** The display order that puts a new wallet after every wallet the user already arranged. */
+export function nextWalletOrder(view: Pick<LedgerView, 'walletsById'>): number {
+  return Object.values(view.walletsById).reduce((last, wallet) => Math.max(last, wallet.displayOrder + 1), 0);
+}
+
+/** Reorder: numbers the wallets in `order` from 0, writing only those whose place changed. */
+export function planWalletOrder(
+  order: readonly string[],
+  view: Pick<LedgerView, 'walletsById'>,
+  ctx: Pick<PlanContext, 'now'>,
+): Planned<null> {
+  return planned(
+    {
+      patch: order.flatMap((id, index) => {
+        const wallet = view.walletsById[id];
+        if (!wallet || wallet.displayOrder === index) return [];
+        return [{ table: 'wallets' as const, id, patch: { display_order: index, updated_at: ctx.now } }];
+      }),
     },
     null,
   );

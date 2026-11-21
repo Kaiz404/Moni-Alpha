@@ -2,7 +2,7 @@ import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
 import type { FinanceWallet } from '../types';
-import { keptApartLine, waitingLine, walletGroups, walletListMeta } from '../wallet-list';
+import { keptApartLine, moveWallet, reorderSlot, waitingLine, walletGroups, walletListMeta, walletTint } from '../wallet-list';
 
 const wallet = (id: string, currency: string, type = 'bank') => ({ id, currency, type, name: id }) as FinanceWallet;
 
@@ -18,6 +18,48 @@ describe('walletGroups', () => {
       ['SGD', false, 5000, ['sgd']],
       ['USD', false, 1200, ['usd']],
     ]);
+  });
+});
+
+describe('moveWallet', () => {
+  const groups = walletGroups(
+    [wallet('maybank', 'MYR'), wallet('tng', 'MYR'), wallet('cash', 'MYR', 'cash'), wallet('wise', 'USD'), wallet('dbs', 'SGD')],
+    {},
+    'MYR',
+  );
+
+  it('moves a wallet within its currency and keeps the other groups where they are', () => {
+    expect(moveWallet(groups, 'cash', 0)).toEqual(['cash', 'maybank', 'tng', 'dbs', 'wise']);
+    expect(moveWallet(groups, 'maybank', 1)).toEqual(['tng', 'maybank', 'cash', 'dbs', 'wise']);
+  });
+
+  it('never lets a wallet cross into another currency', () => {
+    expect(moveWallet(groups, 'tng', 9)).toEqual(['maybank', 'cash', 'tng', 'dbs', 'wise']);
+    expect(moveWallet(groups, 'wise', -3)).toEqual(['maybank', 'tng', 'cash', 'dbs', 'wise']);
+  });
+});
+
+describe('reorderSlot', () => {
+  it('takes a neighbour\'s slot once past its middle, and stops at the ends', () => {
+    expect(reorderSlot(1, 78, 158, 4)).toBe(1);
+    expect(reorderSlot(1, 80, 158, 4)).toBe(2);
+    expect(reorderSlot(1, -80, 158, 4)).toBe(0);
+    expect(reorderSlot(1, 900, 158, 4)).toBe(3);
+    expect(reorderSlot(0, -900, 158, 4)).toBe(0);
+  });
+});
+
+describe('walletTint', () => {
+  it('follows the stored colour, so an Aqua bank wallet stays Aqua', () => {
+    expect(walletTint('ocean-deep', 'bank')).toBe('aqua');
+    expect(walletTint('citrus-pop', 'bank')).toBe('lemon');
+    expect(walletTint('violet-dusk', 'ewallet')).toBe('lilac');
+  });
+
+  it('falls back to the wallet type without a known colour', () => {
+    expect(walletTint(null, 'cash')).toBe('mint');
+    expect(walletTint('retired-style', 'investment')).toBe('sky');
+    expect(walletTint(null, 'unknown')).toBe('sand');
   });
 });
 

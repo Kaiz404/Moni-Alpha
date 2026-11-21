@@ -35,6 +35,21 @@ export const WALLET_COLOURS = [
 
 export type WalletColour = (typeof WALLET_COLOURS)[number];
 
+const TYPE_TINT: Record<string, WalletTint> = {
+  bank: 'lemon',
+  cash: 'mint',
+  credit: 'peach',
+  debit: 'peach',
+  ewallet: 'lilac',
+  investment: 'sky',
+  other: 'sand',
+};
+
+/** A wallet's colour as its bubble and card draw it: its stored colour's tint, else one picked by its type. */
+export function walletTint(cardStyleId: string | null, type: string): WalletTint {
+  return WALLET_COLOURS.find((colour) => colour.id === cardStyleId)?.tint ?? TYPE_TINT[type] ?? 'sand';
+}
+
 export function walletColour(id: string): WalletColour {
   return WALLET_COLOURS.find((colour) => colour.id === id)!;
 }
@@ -93,6 +108,30 @@ export function walletGroups(
       totalMinor: members.reduce((sum, wallet) => sum + Number(balances[wallet.id] ?? 0), 0),
     }))
     .sort((a, b) => (a.main ? -1 : b.main ? 1 : a.currency.localeCompare(b.currency)));
+}
+
+/**
+ * Every wallet's id in the order the strip and All wallets show them, after moving one to `to` within its
+ * own currency's group. A wallet never leaves its group, so `to` is clamped to the group's ends.
+ */
+export function moveWallet(groups: readonly WalletGroup[], walletId: string, to: number): string[] {
+  return groups.flatMap((group) => {
+    const ids = group.wallets.map((wallet) => wallet.id);
+    const from = ids.indexOf(walletId);
+    if (from === -1) return ids;
+    ids.splice(from, 1);
+    ids.splice(Math.min(Math.max(to, 0), ids.length), 0, walletId);
+    return ids;
+  });
+}
+
+/**
+ * The slot a dragged item lands in: it takes a neighbour's place once it passes that neighbour's middle.
+ * `offset` is how far it moved from slot `from`, and each slot is `step` long.
+ */
+export function reorderSlot(from: number, offset: number, step: number, count: number): number {
+  'worklet';
+  return Math.min(Math.max(Math.round(from + offset / step), 0), count - 1);
 }
 
 /** The note under another currency's section. */

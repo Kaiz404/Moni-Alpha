@@ -1,6 +1,5 @@
 import { niceCeil } from '@/components/charts/pace-geometry';
 import type { BubbleTint } from '@/components/ui/nav-row';
-import { walletBubbleTint } from '@/constants/wallet-card-styles';
 import { scrubPoints, type ScrubPoints } from '@/components/charts/scrub';
 import type { AxisRow, TickMark } from '@/components/charts/zoom-axes';
 import {
@@ -15,6 +14,7 @@ import {
   monthOf,
   monthShort,
   shortDate,
+  walletTint,
 } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
@@ -55,7 +55,7 @@ export function walletLineStyles(
   const seen = new Map<BubbleTint, number>();
   return Object.fromEntries(
     wallets.map((wallet) => {
-      const tint = walletBubbleTint(wallet.cardStyleId, wallet.type);
+      const tint = walletTint(wallet.cardStyleId, wallet.type);
       const count = seen.get(tint) ?? 0;
       seen.set(tint, count + 1);
       return [

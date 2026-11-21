@@ -193,6 +193,7 @@ export const iconNames = [
   'store-edit-outline',
   'storefront-outline',
   'swap-horizontal',
+  'swap-vertical',
   'switch',
   'sync',
   'sync-alert',

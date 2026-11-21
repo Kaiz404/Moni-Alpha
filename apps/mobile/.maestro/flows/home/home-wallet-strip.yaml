@@ -1,0 +1,55 @@
+# W1 Home wallet strip (#120): a card per wallet under net worth, ringgit then US$ behind a divider, then
+# New wallet. A card opens its wallet. Reorder on Wallets moves Cash to the front, and the strip follows.
+# Holding a card to drag it on Home has no Maestro step (a hold that then moves); its jest
+# test (components/home/__tests__/wallet-strip.test.tsx) drives it.
+# Run: scripts/device/run-flows.sh .maestro/flows/home/home-wallet-strip.yaml
+appId: com.anonymous.moni.e2e
+name: W1 Home wallet strip
+tags:
+  - w1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- assertVisible:
+    id: 'home\.wallets\.card\..*'
+    index: 0
+- assertVisible: 'Maybank, RM2,281\.80'
+- takeScreenshot: w1-home-wallet-strip
+- tapOn: 'Maybank, RM2,281\.80'
+- extendedWaitUntil:
+    visible:
+      id: wallet.balance.edit
+    timeout: 10000
+- back
+- swipe:
+    from:
+      id: 'home\.wallets\.card\..*'
+      index: 0
+    direction: LEFT
+- assertVisible: 'Wise USD, US\$120\.00'
+- assertVisible:
+    id: home.wallets.new
+- takeScreenshot: w1-home-wallet-strip-end
+
+- tapOn:
+    id: home.net-worth
+- tapOn:
+    id: wallet.list.reorder
+- assertVisible:
+    id: wallet.list.reorder-done
+- takeScreenshot: w1-wallets-reorder
+- swipe:
+    from:
+      id: 'wallet\.list\.row\..*\.handle'
+      index: 2
+    direction: UP
+    duration: 1200
+- tapOn:
+    id: wallet.list.reorder-done
+- assertNotVisible:
+    id: wallet.list.reorder-done
+- back
+- assertVisible:
+    id: 'home\.wallets\.card\..*'
+    index: 0
+- takeScreenshot: w1-home-wallet-strip-reordered

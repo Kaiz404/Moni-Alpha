@@ -28,6 +28,7 @@ import { ReviewCard } from './review-card';
 import { useSetupChecklist } from './setup-card';
 import { NextDaysCard, PlacesCard, WalletsCard } from './side-cards';
 import { SpentCard, type SpentMode } from './spent-card';
+import { WalletStrip } from './wallet-strip';
 import './home.css';
 
 const LAYOUT_KEY = 'moni-home-layout';
@@ -187,6 +188,7 @@ export function HomeScreen() {
             {formatMoney(netWorth, ledger.currency)}
           </span>
         </a>
+        {ledger.loaded && !editing && <WalletStrip ledger={ledger} />}
         <div className="home-top">
           <div className="home-slot slot-spent" data-locked={editing || undefined}>
             {ledger.loaded ? <SpentCard month={ledger.month} mode={mode} onMode={setMode} firstRun={firstRun} /> : <LoadingCard title={`Spent in ${monthName(ledger.month.month)}`} chart />}

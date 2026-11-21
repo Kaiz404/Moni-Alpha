@@ -1,6 +1,6 @@
 'use client';
 
-import { balanceIndex, currencyName, formatMoney, keptApartLine, planWalletCreate, walletColour, walletGroups, walletListMeta } from '@repo/core';
+import { balanceIndex, currencyName, formatMoney, keptApartLine, nextWalletOrder, planWalletCreate, walletColour, walletGroups, walletListMeta } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -92,6 +92,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
           cardStyleId: colour.id,
         },
         planContext(userId),
+        nextWalletOrder(ledger.projection),
       ),
       `${draft.name.trim()} added`,
     );

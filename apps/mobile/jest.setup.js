@@ -26,7 +26,8 @@ jest.mock('react-native-mmkv', () => ({
   }),
 }));
 
-// Reanimated's mock leaves these out; Press reads useReducedMotion and InPlaceField renders the config.
+// Reanimated's mock leaves these out; Press reads useReducedMotion, InPlaceField renders the config, and
+// the wallet strip's edge scroll runs on a frame callback.
 jest.mock('react-native-worklets', () =>
   require('react-native-worklets/src/mock'),
 );
@@ -36,6 +37,7 @@ jest.mock('react-native-reanimated', () => ({
   useSharedValue: (init) =>
     require('react').useState(() => require('react-native-reanimated/mock').useSharedValue(init))[0],
   useReducedMotion: () => false,
+  useFrameCallback: () => ({ setActive: () => {}, isActive: false, callbackId: -1 }),
   LayoutAnimationConfig: ({ children }) => children,
 }));
 

@@ -295,7 +295,8 @@ v2 (N1). The values are in [`redesign/tokens.md`](redesign/tokens.md#navigation)
 
 Home begins with the user’s financial orientation, not an AI alert. v2 (`V2H-Home`), top to bottom:
 
-- **Net worth**: the sum of main-currency wallets only, amount hero 52. Tapping it opens Wallets. Other currencies never appear on Home.
+- **Net worth**: the sum of main-currency wallets only, amount hero 52. Tapping it opens Wallets. Other currencies never add into it.
+- **Wallet strip** (#120): one fixed-size card per wallet directly under net worth (7.4), main currency first, then each other currency behind a divider in its own money ("US$120.00"), then a New wallet tile. A card opens its wallet page.
 - **Spent in October** card: the Pace / Daily toggle over the shared chart (7.12), whose callout carries the numbers, then "RM443 left for 18 days, RM24 a day" under it. What's left subtracts bills still due and money owed to a person by month end (D1); the bills strip names it ("RM240.80 set aside for bills and RM40 to Mei"), or the left line does when there is no bill ("after RM40 to Mei").
 - The ask box opens Moni chat (D4); Home has no Moni header button.
 - The Lilac review block appears only while captures wait.
@@ -306,16 +307,9 @@ Do not force a converted aggregate across currencies. Wallets (`V2H-Wallets`) li
 
 ### 7.4 Wallet/account cards
 
-Use a horizontally scrollable, snap-aware strip only when it genuinely improves comparison. Otherwise use a short vertical wallet list.
+Home's strip (`components/home/wallet-strip.tsx`, `XW-WalletCardStyle-Final`) is the one place wallets show as cards; everywhere else a wallet is a row. `WalletCard` (`components/wallets/wallet-card.tsx`) is 148 by 96 in the wallet's solid colour with two soft blobs, a type badge (Paper tile in light, near-black in dark), the short name and the balance in Ink. Values are in `redesign/tokens.md` ("Wallet card" and "Reorder").
 
-Each wallet item includes:
-
-- account name and type (Cash, Bank, E-wallet)
-- native balance and ISO/symbol currency
-- restrained category/account accent
-- optional last-synced or manual indicator
-
-Treat each wallet as one borderless, squircle-edged balance island. Keep its metadata and any mini visual on the same surface; do not turn every internal grouping into a second card.
+The user orders wallets once for the strip and Wallets (`wallets.display_order`). On Home a card held 500 ms lifts and drags within its currency; on Wallets, Reorder in the header gives each row a drag handle and pins Done. Both run on `components/wallets/reorder.tsx` (`useReorder`, `ReorderItem`, `ReorderHandle`), save through `planWalletOrder` from `@repo/core`, and give TalkBack Move left and right (up and down on Wallets) actions. A new wallet goes last (`nextWalletOrder`).
 
 Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette as solid fills for wallet identity. Do not use gradients, grain masks, or payment-card-like textures. Ensure wallet labels and native balances use an accessible foreground chosen for the selected surface.
 

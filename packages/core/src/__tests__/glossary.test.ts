@@ -31,8 +31,13 @@ describe('formatMoney', () => {
     expect(formatMoney(rm(-45.9), 'MYR')).toBe('−RM45.90');
   });
 
-  it('keeps another currency in its own symbol', () => {
-    expect(formatMoney(rm(120), 'USD')).toBe('$120.00');
+  it('names the country of a dollar and keeps every other currency in its own symbol', () => {
+    expect(formatMoney(rm(120), 'USD')).toBe('US$120.00');
+    expect(formatMoney(rm(-120), 'AUD')).toBe('−A$120.00');
+    expect(formatMoney(rm(50), 'SGD')).toBe('S$50.00');
+    expect(formatMoney(rm(1200), 'HKD')).toBe('HK$1,200.00');
+    expect(formatMoney(rm(80), 'EUR')).toBe('€80.00');
+    expect(formatMoney(rm(80), 'IDR')).toBe('Rp80.00');
   });
 });
 

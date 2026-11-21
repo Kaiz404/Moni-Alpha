@@ -21,6 +21,8 @@ import { act, cleanup, fireEvent, renderRouter, screen } from 'expo-router/testi
 import type { MinorAmount } from '@repo/types';
 import { router } from 'expo-router';
 import { Share, StyleSheet } from 'react-native';
+import { State } from 'react-native-gesture-handler';
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import type { ReactTestInstance } from 'react-test-renderer';
 
 import { authMMKV } from '@/lib/mmkv/auth';
@@ -38,6 +40,7 @@ let mockOnline = true;
 // expo-router's testing library swaps in Reanimated's bare mock, which lacks these.
 Object.assign(jest.requireMock('react-native-reanimated'), {
   useReducedMotion: () => false,
+  useFrameCallback: () => ({ setActive: () => {}, isActive: false, callbackId: -1 }),
   LayoutAnimationConfig: ({ children }: { children: unknown }) => children,
   useAnimatedKeyboard: () => ({
     height: { get: () => 0, value: 0 },
@@ -759,6 +762,33 @@ describe('the debt page rows that act in place', () => {
     await mount(`/debt/${id('debt', 'aiman')}`, { profile: 'full', theme: 'light' });
     expect(screen.getByTestId(tid('debts', 'remind')).props.accessibilityHint).toBe('Opens the share sheet with a message');
     expect(chevrons(tid('debts', 'remind'))).toBe(0);
+  });
+});
+
+describe('one wallet order for Wallets and the Home strip', () => {
+  const order = (pattern: RegExp) => screen.getAllByTestId(pattern).map((node) => String(node.props.testID).split('.')[3]);
+  const [maybank, tng, cash, wise] = ['maybank', 'tng', 'cash', 'wise'].map((key) => id('wallet', key));
+
+  it('Reorder on Wallets drags Cash to the top of ringgit, and Home shows the same order', async () => {
+    await mount('/wallets', { profile: 'full', theme: 'light' });
+    fireEvent.press(screen.getByTestId(tid('wallet', 'list', 'reorder')));
+    await settle();
+    expect(screen.getByTestId(tid('wallet', 'list', 'reorder')).props.accessibilityState.selected).toBe(true);
+    act(() =>
+      fireGestureHandler(getByGestureTestId(tid('wallet', 'list', 'row', cash!, 'handle')), [
+        { state: State.BEGAN, translationY: 0, absoluteY: 400 },
+        { state: State.ACTIVE, translationY: 0, absoluteY: 400 },
+        { translationY: -140, absoluteY: 260 },
+        { state: State.END, translationY: -140, absoluteY: 260 },
+      ]),
+    );
+    fireEvent.press(screen.getByTestId(tid('wallet', 'list', 'reorder-done')));
+    await settle();
+    expect(order(/^wallet\.list\.row\.[^.]+$/)).toEqual([cash, maybank, tng, wise]);
+
+    act(() => router.dismissTo('/'));
+    await settle();
+    expect(order(/^home\.wallets\.card\./)).toEqual([cash, maybank, tng, wise]);
   });
 });
 

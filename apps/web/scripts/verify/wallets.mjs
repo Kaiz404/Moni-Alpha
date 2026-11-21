@@ -1,5 +1,5 @@
 // All wallets and a wallet's page in web-verify (`--only wallets`): Home's card opens them, every
-// wallet's balance against the e2e user's wallet_balances, net worth in the main currency, a wallet's
+// wallet's balance against the e2e user's wallet_balances, Home's wallet strip with a mouse drag undone by Ctrl Z, net worth in the main currency, a wallet's
 // page with its transactions, Edit amount saved then undone with Ctrl Z, and the New wallet and Edit
 // wallet panes closing on Esc, and deleting the default wallet then Ctrl Z. Each write is undone before the part ends.
 
@@ -58,6 +58,41 @@ export async function verifyWallets(t) {
   const ctx = await pinned({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const p = await ctx.newPage();
   await open(p, '/home');
+  const strip = p.locator('.wallet-strip');
+  await strip.locator('.wallet-card').first().waitFor({ timeout: 20_000 });
+  const cards = () =>
+    strip.locator('.wallet-card').evaluateAll((links) =>
+      links.map((link) => ({ id: link.dataset.wallet, label: link.getAttribute('aria-label'), x: link.getBoundingClientRect().left })).sort((a, b) => a.x - b.x),
+    );
+  const atRest = await cards();
+  const others = wallets.length - main.length;
+  check(
+    "Home's wallet strip has a card per wallet: the main currency's first, the others in their own money",
+    atRest.length === wallets.length &&
+      atRest.slice(0, main.length).every((card) => card.label?.includes('RM')) &&
+      atRest.slice(main.length).every((card) => !card.label?.includes('RM')) &&
+      (await strip.locator('.wallet-strip-divider').count()) === (others > 0 ? 1 : 0),
+    atRest,
+  );
+  await shot(p, 'home-wallet-strip-1440-light');
+  if (main.length > 1) {
+    const box = await strip.locator(`.wallet-card[data-wallet="${atRest[0].id}"]`).boundingBox();
+    await p.mouse.move(box.x + 40, box.y + 48);
+    await p.mouse.down();
+    await p.mouse.move(box.x + 210, box.y + 48, { steps: 12 });
+    await p.mouse.up();
+    await p.waitForTimeout(700);
+    const moved = await cards();
+    check(
+      'dragging a card past its neighbour with the mouse swaps them, and Home stays',
+      moved[0]?.id === atRest[1].id && moved[1]?.id === atRest[0].id && new URL(p.url()).pathname === '/home',
+      { moved, url: p.url() },
+    );
+    await p.keyboard.press('Control+z');
+    await p.waitForTimeout(700);
+    const back = await cards();
+    check('Ctrl Z puts the wallet order back', back.map((card) => card.id).join() === atRest.map((card) => card.id).join(), back);
+  }
   await p.locator('section[aria-label="Wallets"]').getByRole('link', { name: 'All wallets', exact: true }).click();
   await p.waitForURL(/\/home\/wallets$/);
   await p.locator('[data-screen="wallets"]').waitFor({ timeout: 20_000 });

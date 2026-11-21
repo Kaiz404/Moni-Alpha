@@ -24,9 +24,9 @@ describe('the main currency', () => {
   it('names each current currency in sentence case with its symbol, by name', () => {
     expect(currencyChoices(['USD', 'MYR', 'XAU', 'HKD', 'EUR'])).toEqual([
       { code: 'EUR', name: 'Euro', symbol: '€' },
-      { code: 'HKD', name: 'Hong Kong dollar', symbol: '$' },
+      { code: 'HKD', name: 'Hong Kong dollar', symbol: 'HK$' },
       { code: 'MYR', name: 'Malaysian ringgit', symbol: 'RM' },
-      { code: 'USD', name: 'US dollar', symbol: '$' },
+      { code: 'USD', name: 'US dollar', symbol: 'US$' },
     ]);
   });
 

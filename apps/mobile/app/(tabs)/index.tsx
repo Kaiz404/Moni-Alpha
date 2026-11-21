@@ -17,6 +17,7 @@ import {
   type SetupStep,
 } from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
+import { WalletStrip } from '@/components/home/wallet-strip';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -35,9 +36,10 @@ import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { reorderWallets } from '@/lib/supabase/wallets';
 import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@repo/core';
-import { compactWalletNames } from '@repo/core';
+import { compactWalletNames, walletGroups } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function timeAwareGreeting(now: Date): string {
@@ -106,14 +108,11 @@ export default function HomeScreen() {
   const initial = (name ?? user?.email ?? '?')
     .charAt(0)
     .toUpperCase();
-  const mainWallets = overview.wallets.filter(
-    (wallet) => wallet.currency === currency,
+  const groups = useMemo(
+    () => walletGroups(overview.wallets, overview.balancesByWallet, currency),
+    [overview.wallets, overview.balancesByWallet, currency],
   );
-  const netWorthMinor = mainWallets.reduce(
-    (sum, wallet) =>
-      sum + Number(overview.balancesByWallet[wallet.id] ?? 0),
-    0,
-  );
+  const netWorthMinor = groups.find((group) => group.main)?.totalMinor ?? 0;
   const firstRun =
     overview.wallets.length === 0 &&
     overview.transactions.length === 0;
@@ -210,6 +209,17 @@ export default function HomeScreen() {
             firstRun={firstRun}
             onPress={() => router.push('/wallets')}
           />
+          {groups.length > 0 ? (
+            <WalletStrip
+              groups={groups}
+              balances={overview.balancesByWallet}
+              onOpen={(id) =>
+                router.push({ pathname: '/wallet/[id]', params: { id } })
+              }
+              onAdd={() => router.push('/wallet/new')}
+              onReorder={reorderWallets}
+            />
+          ) : null}
           {showSetup ? <SetupTiles steps={steps} /> : null}
           <SpentCard
             month={month}

@@ -102,6 +102,9 @@ Brand (`XB-Brand9C`, Kit 1 and Kit 3 boards): Deep mint #236B47 icon tile, splas
 - Bar: Sand track, Ink 2 fill = spent ÷ budget. Over budget: 100% Coral fill and "RM20 over" 700 Over text. Never past the track, no pace tick, no split fill. 8 tall in rows, 4 in picker tiles, 12 for the category page hero. At ≥ 75% the label turns #6B5410.
 - Ring (Budget tab root only): 44 box, stroke 5, Sand track, Ink 2 fill from 12 o'clock, solid category bubble inside. Over: full Coral ring and "RM20 over".
 
+- Wallet card (Home strip, owner, 21 Nov 2026, `XW-WalletCardStyle-Final`): 148 by 96, radius 22, the wallet's solid colour (`lemon`, `lilac`, `mint`... by its colour's tint; dark uses the dark value) with two soft blobs, White at 42% top right and Black at 12% bottom right. Badge 26, radius 8, 12 in from the top left: Paper with an Ink glyph in light, near-black with a Cream glyph in dark (`primary-foreground` and `primary`), the wallet type's glyph at 16. Name 14/18 600 and balance 18/22 700, both Ink in both themes (`on-category`). Cards sit 10 apart, 20 in from the page edges, snapping to a card's start. A currency divider is a 1.5 Hairline line 76 tall with 2 either side; the New wallet tile is 96 square, a 1.5 dashed Strong border, a 32 Sand circle with a plus and "New wallet" 13/16 600.
+- Reorder (`XW-WalletCards-Reorder`): hold a card 500 ms (moving 8 first scrolls the strip); it lifts to 1.05 with the sheet shadow on `press`, the others fade to 60% over 180 ms. It follows the finger 1:1; past a neighbour's middle the neighbour slides into the gap on `sheet`. Within 56 of the strip's edge the strip scrolls under it, faster towards the edge, up to one card a second, and stops at its currency's divider. The drop settles on `sheet`, the scale and shadow fade over 180 ms, and the order saves at once. On Wallets, Reorder (44, `swap-vertical`, Ink while on) gives each row a 44 handle (`drag`) that moves the row at once; the lifted row scales 1.02 on a Paper surface, radius 18. Rows are 66 tall, groups are the currency sections, and Done is pinned at the bottom.
+
 ## Charts
 
 All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column 44 (labels right-aligned 12 Meta).
@@ -174,5 +177,8 @@ Springs (mass 1):
 | Segmented pill picked up for a glide | Drag_Start | light impact |
 | Glided pill reaches an option | Segment_Tick | selection |
 | Glided pill lands | Gesture_End | light impact |
+| Wallet card or row lifted to reorder | Confirm | medium impact |
+| Lifted wallet passes a neighbour | Segment_Tick | selection |
+| Lifted wallet dropped | Gesture_End | light impact |
 
 At most one haptic per user action; a glide is one action with a tick per option it crosses, like a picker. expo-haptics 57 has no Gesture_Threshold constants.

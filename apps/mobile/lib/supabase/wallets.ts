@@ -10,7 +10,7 @@ import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
 import type { CreateWallet, UpdateWallet, MinorAmount } from '@repo/types';
 import { decimalToMinor, minorToDecimal } from '@repo/types';
-import { planWalletCreate, planWalletDelete, toFinanceWallet } from '@repo/core';
+import { nextWalletOrder, planWalletCreate, planWalletDelete, planWalletOrder, toFinanceWallet } from '@repo/core';
 
 type WalletRow = StoredRow<'wallets'>;
 
@@ -63,7 +63,7 @@ export async function getWalletById(id: string) {
 }
 
 export async function createWallet(data: CreateWallet) {
-  const id = commit(planWalletCreate(data, await planContext()));
+  const id = commit(planWalletCreate(data, await planContext(), nextWalletOrder(ledgerView())));
 
   if (data.notificationPackage) recordSourceLinked(data.notificationPackage);
 
@@ -113,6 +113,11 @@ export async function updateWallet(id: string, data: UpdateWallet) {
 /** The user saw this wallet's balance and says it is still right. Undo passes back the earlier time. */
 export function confirmWalletBalance(id: string, at: string | null = new Date().toISOString()): void {
   patchRow(wallets$, id, { balance_confirmed_at: at, updated_at: new Date().toISOString() });
+}
+
+/** One order for Home's strip and Wallets: every wallet's id, main currency first. */
+export function reorderWallets(order: readonly string[]): void {
+  commit(planWalletOrder(order, ledgerView(), { now: new Date().toISOString() }));
 }
 
 export async function deleteWallet(id: string) {

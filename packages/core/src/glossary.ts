@@ -14,21 +14,28 @@ import {
 import type { ChartRange } from './chart-range';
 
 const MINUS = '−';
-const SYMBOLS: Record<string, string> = { MYR: 'RM' };
+/** Ringgit is RM, and a dollar always names its country (owner, 21 Nov 2026): US$120.00, never $120.00. */
+const SYMBOLS: Record<string, string> = { MYR: 'RM', USD: 'US$', SGD: 'S$', BND: 'B$' };
 
+function intlSymbol(code: string, display: 'symbol' | 'narrowSymbol'): string | undefined {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, currencyDisplay: display })
+    .formatToParts(0)
+    .find((p) => p.type === 'currency')?.value;
+}
+
+/**
+ * The symbol money prints with. Intl's own symbol tells most dollars and yen apart (A$, CA$, CN¥); where it
+ * only has the code, the narrow symbol stands in unless that is a bare "$".
+ */
 export function currencySymbol(currency: string): string {
   const code = currency.toUpperCase();
   const known = SYMBOLS[code];
   if (known) return known;
   try {
-    const part = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: code,
-      currencyDisplay: 'narrowSymbol',
-    })
-      .formatToParts(0)
-      .find((p) => p.type === 'currency');
-    return part?.value ?? code;
+    const symbol = intlSymbol(code, 'symbol');
+    if (symbol && symbol !== code) return symbol;
+    const narrow = intlSymbol(code, 'narrowSymbol');
+    return narrow && narrow !== '$' ? narrow : code;
   } catch {
     return code;
   }

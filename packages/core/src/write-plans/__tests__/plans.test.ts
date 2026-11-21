@@ -26,7 +26,7 @@ import {
   planTransfer,
 } from '../transactions';
 import type { LedgerView, PlanContext } from '../types';
-import { planWalletCreate, planWalletDelete, planWalletEdit } from '../wallets';
+import { nextWalletOrder, planWalletCreate, planWalletDelete, planWalletEdit, planWalletOrder } from '../wallets';
 
 const NOW = '2026-10-14T03:00:00.000Z';
 const minor = (value: number) => value as MinorAmount;
@@ -611,6 +611,31 @@ describe('planWalletEdit', () => {
 
   it('refuses a wallet that is gone', () => {
     expect(planWalletEdit('gone', edit, view(), context())).toEqual({ kind: 'error', message: 'Wallet not found' });
+  });
+});
+
+describe('planWalletOrder', () => {
+  const ordered = (id: string, displayOrder: number) => ({ ...wallet(id), displayOrder });
+  const walletsById = { maybank: ordered('maybank', 0), tng: ordered('tng', 1), cash: ordered('cash', 2) };
+
+  it('numbers the wallets in their new order and writes only those that moved', () => {
+    expect(planWalletOrder(['tng', 'maybank', 'cash', 'gone'], { walletsById }, context())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [
+          { table: 'wallets', id: 'tng', patch: { display_order: 0, updated_at: NOW } },
+          { table: 'wallets', id: 'maybank', patch: { display_order: 1, updated_at: NOW } },
+        ],
+        softDelete: [],
+      },
+      result: null,
+    });
+  });
+
+  it('puts a new wallet after the last one', () => {
+    expect(nextWalletOrder({ walletsById })).toBe(3);
+    expect(nextWalletOrder({ walletsById: {} })).toBe(0);
   });
 });
 

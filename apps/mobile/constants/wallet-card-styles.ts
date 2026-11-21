@@ -99,22 +99,6 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
 
 export const DEFAULT_WALLET_CARD_STYLE_ID = WALLET_CARD_STYLES[0].id;
 
-const TYPE_TINT: Record<string, BubbleTint> = {
-  bank: 'lemon',
-  cash: 'mint',
-  credit: 'peach',
-  debit: 'peach',
-  ewallet: 'lilac',
-  investment: 'sky',
-  other: 'sand',
-};
-
-/** A wallet's list bubble: its stored card style's pastel, else one picked by wallet type. */
-export function walletBubbleTint(cardStyleId: string | null, type: string): BubbleTint {
-  const style = WALLET_CARD_STYLES.find((item) => item.id === cardStyleId);
-  return style?.tint ?? TYPE_TINT[type] ?? 'sand';
-}
-
 /** Looks up a style by id, gracefully falling back if a preset is ever retired. */
 export function getWalletCardStyle(id: string | null | undefined): WalletCardStyle {
   return (
