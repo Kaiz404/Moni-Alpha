@@ -842,13 +842,7 @@ try {
     if (liveKopitiam.length === 0) break;
     await d.waitForTimeout(500);
   }
-  // Known bug #108: an Undo a second after Add can miss the server. Reported, not failed, until #108 is
-  // fixed; then make this a check again. The stray row is removed so later checks start clean.
-  if (liveKopitiam.length === 0) check("Ctrl Z's delete reaches the dev project", true);
-  else {
-    console.log(`KNOWN #108 Ctrl Z's delete did not reach the dev project: ${JSON.stringify(liveKopitiam)}`);
-    for (const { id } of liveKopitiam) await rest(`transactions?id=eq.${id}`, { method: 'PATCH', body: { deleted: true } });
-  }
+  check("Ctrl Z's delete reaches the dev project", liveKopitiam.length === 0, liveKopitiam);
 
   await d.route('**/v1/extract/text', (route) =>
     route.fulfill({
