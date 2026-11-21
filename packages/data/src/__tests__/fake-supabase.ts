@@ -21,6 +21,17 @@ export function fakeSupabase() {
     clashes: [] as string[],
     /** `table.column` a migration the server has not had yet would add. */
     missingColumns: new Set<string>(),
+    /**
+     * How long a request takes to reach the server, by its call (`insert transactions`). Unset, every
+     * request lands at once, in the order it was sent.
+     */
+    latency: null as ((call: string) => number) | null,
+    /** Set, the server stamps `created_at` and `updated_at` as Postgres's defaults and trigger do. */
+    clock: null as (() => string) | null,
+    /** How long a landed write takes to reach the realtime handlers; unset, it reaches them at once. */
+    realtimeLag: 0,
+    /** Realtime handlers by table; each landed write reaches them as Postgres's change feed would. */
+    realtime: new Map<string, ((payload: { eventType: string; new: Row; old: Row }) => void)[]>(),
   };
 
   const missing = (table: string): Result => ({
@@ -63,49 +74,72 @@ export function fakeSupabase() {
       maybeSingle: () => builder.single(),
       then: (resolve: (result: Result) => unknown, reject: (error: unknown) => unknown) => {
         const label = op === 'list' && limit !== null ? 'probe' : op;
-        server.calls.push(`${label} ${table}${window ? ` ${window.join('-')}` : ''}`);
+        const call = `${label} ${table}${window ? ` ${window.join('-')}` : ''}`;
+        server.calls.push(call);
         server.requests += 1;
-        let result: Result;
-        const rows = server.tables.get(table);
-        if (server.offline || server.failOnRequest === server.requests) result = offline;
-        else if (columns && server.missingColumns.has(`${table}.${columns}`))
-          result = { data: null, error: { code: '42703', message: `column ${table}.${columns} does not exist` } };
-        else if (!rows) result = missing(table);
-        else if (inserting && rows.some((row) => inserting.some((insert) => insert.id !== undefined && row.id === insert.id))) {
-          for (const insert of inserting) server.clashes.push(`${table} ${String(insert.id)}`);
-          result = { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
-        } else if (inserting) {
-          for (const insert of inserting) server.inserted.push(`${table} ${String(insert.id)}`);
-          rows.push(...inserting);
-          result = { data: inserting, error: null };
-        } else {
-          const all = run(rows.filter((row) => filters.every((keep) => keep(row))));
-          if (orderBy) {
-            const field = orderBy;
-            all.sort((a, b) => String(a[field]).localeCompare(String(b[field])));
-          }
-          const asked = window ? all.slice(window[0], window[1] + 1) : all;
-          result = { data: asked.slice(0, Math.min(server.maxRows, limit ?? Infinity)), error: null };
-        }
-        return Promise.resolve(result).then(resolve, reject);
+        const failed = server.offline || server.failOnRequest === server.requests;
+        // A request's body leaves the device when it is sent, so a later local change can't alter it.
+        const sent = inserting && structuredClone(inserting);
+        const land = () => (failed ? offline : arrive(sent));
+        const delay = server.latency?.(call) ?? 0;
+        const landed = delay > 0 ? new Promise<Result>((done) => setTimeout(() => done(land()), delay)) : Promise.resolve(land());
+        return landed.then(resolve, reject);
       },
     };
+    function arrive(sent: Row[] | undefined): Result {
+      const rows = server.tables.get(table);
+      if (columns && server.missingColumns.has(`${table}.${columns}`))
+        return { data: null, error: { code: '42703', message: `column ${table}.${columns} does not exist` } };
+      if (!rows) return missing(table);
+      if (sent && rows.some((row) => sent.some((insert) => insert.id !== undefined && row.id === insert.id))) {
+        for (const insert of sent) server.clashes.push(`${table} ${String(insert.id)}`);
+        return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
+      }
+      if (sent) {
+        const now = server.clock?.();
+        const added = sent.map((insert) => (now ? { ...insert, created_at: now, updated_at: now } : insert));
+        for (const insert of added) server.inserted.push(`${table} ${String(insert.id)}`);
+        rows.push(...added);
+        for (const insert of added) notify(table, 'INSERT', insert);
+        return { data: added.map((insert) => ({ ...insert })), error: null };
+      }
+      const all = run(rows.filter((row) => filters.every((keep) => keep(row))));
+      if (op === 'update') for (const changed of all) notify(table, 'UPDATE', changed);
+      if (orderBy) {
+        const field = orderBy;
+        all.sort((a, b) => String(a[field]).localeCompare(String(b[field])));
+      }
+      const asked = window ? all.slice(window[0], window[1] + 1) : all;
+      return { data: asked.slice(0, Math.min(server.maxRows, limit ?? Infinity)).map((row) => ({ ...row })), error: null };
+    }
     return builder;
+  }
+
+  function notify(table: string, eventType: string, row: Row) {
+    const payload = { eventType, new: { ...row }, old: {} };
+    const send = () => {
+      for (const handler of server.realtime.get(table) ?? []) handler(payload);
+    };
+    if (server.realtimeLag > 0) setTimeout(send, server.realtimeLag);
+    else send();
   }
 
   const client = {
     from: (table: string) => ({
       select: (columns?: string) => query(table, 'list', (rows) => [...rows], undefined, columns),
       insert: (row: Row | Row[]) => query(table, 'insert', () => [], Array.isArray(row) ? row : [row]),
-      update: (patch: Row) =>
-        query(table, 'update', (matched) =>
-          matched.map((row) => Object.assign(row, patch)),
-        ),
+      update: (patch: Row) => {
+        const sent = structuredClone(patch);
+        return query(table, 'update', (matched) =>
+          matched.map((row) => Object.assign(row, sent, server.clock ? { updated_at: server.clock() } : {})),
+        );
+      },
     }),
     channel: () => {
       const channel = {
-        on: (_event: string, filter: { table: string }) => {
+        on: (_event: string, filter: { table: string }, handler: (payload: { eventType: string; new: Row; old: Row }) => void) => {
           server.calls.push(`subscribe ${filter.table}`);
+          server.realtime.set(filter.table, [...(server.realtime.get(filter.table) ?? []), handler]);
           return channel;
         },
         subscribe: () => channel,
