@@ -70,9 +70,9 @@ The words the redesigned app uses, and the words it never uses. The design canva
 - No space after RM, thousands commas: `RM42`, `RM1,116.20`.
 - Forward-looking numbers (left, safe to spend a day, even pace, budgets, "RM20 over") are whole ringgit, rounded down. Money that exists (balances, transactions, spent) keeps 2 decimals.
 - Expenses use U+2212, never a hyphen or en dash: `−RM45.90`. Income `+RM4,200.00` in deep mint. Transfers have no sign, in Meta.
-- Other currencies keep their own symbol (`$120.00`) and never sum with ringgit or convert.
+- Other currencies show an unambiguous symbol (`US$120.00`, owner, 21 Nov 2026) and never sum with ringgit or convert.
 - Dates day first: `Wed 14 Oct`; September is `Sep`. Times lowercase with a space: `12:41 pm`. "Today" and "Yesterday" for the last two days.
 - Straight apostrophe: `Touch 'n Go`.
-- Meta lines join parts with ` · `.
+- Meta lines never join parts with ` · ` (owner, 20 Nov 2026, #76). Put the parts in two places, or set them apart with weight, colour or plain words.
 - Raw alert text is quoted exactly as the bank sent it.
 - Greetings follow the local time of day ("Morning, Kai", "Afternoon, Kai", "Evening, Kai").
