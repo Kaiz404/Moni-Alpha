@@ -3,6 +3,7 @@
 import { WALLET_COLOURS, WALLET_TYPES, walletColour, type FinanceWallet } from '@repo/core';
 import type { WalletType } from '@repo/types';
 import { useMemo } from 'react';
+import { Select } from '@/components/controls/select';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { currencyChoices, parseBalance } from '@/lib/setup';
 
@@ -98,17 +99,17 @@ export function WalletForm({
         <input value={draft.name} placeholder="e.g. Everyday bank" maxLength={100} autoFocus onChange={(event) => set({ name: event.target.value })} />
       </label>
       <div className="wallet-pair">
-        <label className="wallet-input wallet-select">
+        <Select
+          label="Type"
+          className="wallet-input wallet-select press"
+          value={draft.type}
+          options={WALLET_TYPES.map((option) => ({ value: option.value as WalletType, label: option.label, lead: <Glyph name={option.icon} size={18} /> }))}
+          onChange={(type) => set({ type })}
+        >
           <span className="label-text">Type</span>
-          <select value={draft.type} onChange={(event) => set({ type: event.target.value as WalletType })}>
-            {WALLET_TYPES.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <span className="select-value">{typeLabel}</span>
           <Glyph name="chevron-down" size={18} />
-        </label>
+        </Select>
         {editing ? (
           <span className="wallet-input wallet-locked" aria-label={`Currency, ${draft.currency}. A wallet keeps its currency.`}>
             <span className="label-text">Currency</span>
@@ -116,17 +117,21 @@ export function WalletForm({
             <Glyph name="lock-outline" size={16} />
           </span>
         ) : (
-          <label className="wallet-input wallet-select">
+          <Select
+            label="Currency"
+            className="wallet-input wallet-select press"
+            align="end"
+            value={draft.currency}
+            options={(choices.some((choice) => choice.code === draft.currency) ? choices : [{ code: draft.currency, name: draft.currency }, ...choices]).map((choice) => ({
+              value: choice.code,
+              label: choice.name === choice.code ? choice.code : `${choice.code} ${choice.name}`,
+            }))}
+            onChange={(currency) => set({ currency })}
+          >
             <span className="label-text">Currency</span>
-            <select value={draft.currency} onChange={(event) => set({ currency: event.target.value })}>
-              {(choices.some((choice) => choice.code === draft.currency) ? choices : [{ code: draft.currency, name: draft.currency }, ...choices]).map((choice) => (
-                <option key={choice.code} value={choice.code}>
-                  {choice.code} {choice.name === choice.code ? '' : choice.name}
-                </option>
-              ))}
-            </select>
+            <span className="select-value">{draft.currency}</span>
             <Glyph name="chevron-down" size={18} />
-          </label>
+          </Select>
         )}
       </div>
       {!editing && (

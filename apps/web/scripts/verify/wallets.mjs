@@ -77,6 +77,19 @@ export async function verifyWallets(t) {
   await p.getByRole('button', { name: 'New wallet' }).click();
   const form = p.getByRole('form', { name: 'New wallet' });
   await form.waitFor();
+  await form.getByRole('button', { name: /^Type: / }).click();
+  await p.getByRole('listbox', { name: 'Type' }).getByRole('option', { name: 'Cash' }).click();
+  const typeShown = await form.getByRole('button', { name: /^Type: / }).getAttribute('aria-label');
+  await form.getByRole('button', { name: /^Currency: / }).click();
+  const currencyList = p.getByRole('listbox', { name: 'Currency' });
+  const currencyRows = await currencyList.getByRole('option').count();
+  await p.keyboard.press('Escape');
+  const listClosed = await currencyList.waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
+  check(
+    "New wallet's Type and Currency open Moni's own lists, and Esc closes a list before the form",
+    typeShown === 'Type: Cash' && currencyRows > 1 && listClosed && (await form.isVisible()) && (await form.locator('select').count()) === 0,
+    { typeShown, currencyRows, listClosed },
+  );
   await p.keyboard.press('Escape');
   await form.waitFor({ state: 'detached' }).catch(() => {});
   check('New wallet opens in the pane and Esc closes it', !(await form.isVisible()) && !p.url().includes('new='), p.url());

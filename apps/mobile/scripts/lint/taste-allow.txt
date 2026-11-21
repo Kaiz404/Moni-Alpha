@@ -4,4 +4,3 @@ apps/mobile/app/bill/[seriesKey].tsx: sparkle icon
 apps/mobile/app/profile.tsx: sparkle icon
 apps/web/src/components/setup/setup-flow.tsx: sparkle icon
 apps/web/src/components/shell/panes.tsx: native control
-apps/web/src/components/wallets/wallet-form.tsx: native control
