@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native';
 
 import { PaceChart } from '@/components/charts/pace-chart';
 import { paceGeometry } from '@/components/charts/pace-geometry';
-import { chartStep } from '@/lib/haptics';
+import { finger } from './scrub-fixture';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
@@ -69,13 +69,11 @@ describe('PaceChart', () => {
     expect(screen.getByTestId('home.chart.even-pace')).toHaveTextContent(
       'RM58',
     );
-    expect(screen.getByTestId('home.chart.callout')).toHaveTextContent(
-      'RM13.20',
-    );
+    expect(screen.queryByTestId('home.chart.callout')).toBeNull();
     expect(screen.queryByTestId('home.chart.projection')).toBeNull();
   });
 
-  it('puts the budget on the top gridline and scrubs back one day with a tick', () => {
+  it('puts the budget on the top gridline and shows the callout only while a finger is down', async () => {
     render(
       <PaceChart
         screen="home"
@@ -88,19 +86,48 @@ describe('PaceChart', () => {
     expect(screen.getByTestId('home.chart.budget')).toHaveTextContent(
       'RM1,800',
     );
+    expect(screen.queryByTestId('home.chart.callout')).toBeNull();
+
+    const { points } = paceGeometry({
+      mode: 'pace',
+      width: 314,
+      series: { month: october, values: spend },
+      budget,
+      currency: 'MYR',
+    } as never);
+    const touch = finger('home.chart');
+    await touch.down(points[13]!.x);
     expect(screen.getByText('By today')).toBeTruthy();
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent(
       'RM1,116.20',
     );
-
-    fireEvent(screen.getByTestId('home.chart.plot'), 'accessibilityAction', {
-      nativeEvent: { actionName: 'decrement' },
-    });
+    await touch.drag(points[13]!.x);
+    await touch.move(points[12]!.x);
     expect(screen.getByText('By Tue 13 Oct')).toBeTruthy();
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent(
       'RM1,103.00',
     );
-    expect(chartStep).toHaveBeenCalledTimes(1);
+    await touch.up(points[12]!.x);
+    expect(screen.queryByTestId('home.chart.callout')).toBeNull();
+  });
+
+  it('moves only the spoken value for a screen reader', () => {
+    render(
+      <PaceChart
+        screen="home"
+        mode="pace"
+        series={{ month: october, values: spend }}
+        budget={budget}
+        currency="MYR"
+      />,
+    );
+    const plot = screen.getByTestId('home.chart.plot');
+    const before = plot.props.accessibilityValue.text;
+    fireEvent(plot, 'accessibilityAction', {
+      nativeEvent: { actionName: 'decrement' },
+    });
+    expect(screen.getByTestId('home.chart.plot').props.accessibilityValue.text).not.toBe(before);
+    expect(screen.queryByTestId('home.chart.callout')).toBeNull();
   });
 
   it('pins the month ends of a line chart to the plot edges and centres Today', () => {

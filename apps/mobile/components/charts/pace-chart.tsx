@@ -1,24 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-} from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedProps,
-  useAnimatedReaction,
   useReducedMotion,
   useSharedValue,
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { chartStep } from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { tid, type Screen } from '@/lib/test-ids';
 
@@ -27,14 +21,14 @@ import {
   AXIS_WIDTH,
   PLOT_HEIGHT,
   calloutLeft,
-  nearestIndex,
   paceGeometry,
   polylineLength,
   type DaySeries,
   type PaceChartMode,
   type PaceGeometry,
 } from './pace-geometry';
-import { DENSE_POINT_PX } from './scrub';
+import { scrubPoints, Tip, useChartScrub } from './scrub';
+import type { Frame } from './zoom';
 
 export type { DaySeries, PaceChartMode } from './pace-geometry';
 
@@ -45,6 +39,7 @@ const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const DEFAULT_WIDTH = 314;
 const BAR_STAGGER_MS = 14;
+const PIXELS: Frame = { left: 0, right: 1, top: 0, base: 0 };
 
 export type PaceChartProps = {
   screen: Screen;
@@ -64,7 +59,7 @@ export type PaceChartProps = {
 
 /**
  * The spent-vs-budget line and daily bars from tokens.md
- * Charts, with the day-snapping scrub and the one callout. Draws in once per
+ * Charts, with the day-snapping scrub and the one callout while a finger is down. Draws in once per
  * mode on first open; never on return.
  */
 export function PaceChart({
@@ -105,49 +100,36 @@ function Plot({
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const geometry = useMemo(() => geometryOf(width), [geometryOf, width]);
   const last = geometry.points.length - 1;
-  const [picked, setPicked] = useState<number | null>(null);
-  const selected = Math.min(picked ?? last, last);
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
 
   const drawn = useRef(new Set<PaceChartMode>());
   const animate = !reduceMotion && !drawn.current.has(mode);
   useEffect(() => {
     drawn.current.add(mode);
-    setPicked(null);
   }, [mode]);
 
-  const select = (index: number) => {
-    if (index === selectedRef.current || index < 0 || index > last) return;
-    const { points } = geometry;
-    chartStep(last > 0 && (points[last]!.x - points[0]!.x) / last < DENSE_POINT_PX);
-    setPicked(index);
-  };
-
-  const xs = useMemo(
-    () => geometry.points.map((point) => point.x),
+  // A finger's pick shows the callout until it lifts; a screen reader's only moves the spoken value.
+  const [pick, setPick] = useState<{ mode: PaceChartMode; index: number; by: 'finger' | 'reader' } | null>(null);
+  const current = pick?.mode === mode ? pick : null;
+  const selected = Math.min(current?.index ?? last, last);
+  const held = current?.by === 'finger';
+  const points = useMemo(
+    () => scrubPoints(geometry.points.map((point, index) => [point.x, index, true] as const)),
     [geometry.points],
   );
-  const target = useSharedValue(-1);
-  useAnimatedReaction(
-    () => target.get(),
-    (current, previous) => {
-      if (current >= 0 && current !== previous)
-        scheduleOnRN(select, current);
-    },
-  );
-  const gesture = useMemo(() => {
-    const pick = (x: number) => {
-      'worklet';
-      target.set(nearestIndex(xs, x));
-    };
-    const tap = Gesture.Tap().onEnd((event) => pick(event.x));
-    const pan = Gesture.Pan()
-      .activeOffsetX([-6, 6])
-      .failOffsetY([-12, 12])
-      .onUpdate((event) => pick(event.x));
-    return Gesture.Exclusive(pan, tap);
-  }, [xs, target]);
+  // The pace chart never zooms, so the scrub's viewport is the plot's own pixels.
+  const from = useSharedValue(0);
+  const to = useSharedValue(1);
+  const { gesture, shown } = useChartScrub({
+    testID: tid(screen, 'chart'),
+    points,
+    zoom: { from, to },
+    frame: PIXELS,
+    onPoint: (index) => setPick(index === null ? null : { mode, index, by: 'finger' }),
+  });
+  const nudge = (by: 1 | -1) => {
+    const index = selected + by;
+    if (index >= 0 && index <= last) setPick({ mode, index, by: 'reader' });
+  };
 
   const point = geometry.points[selected];
 
@@ -162,12 +144,13 @@ function Plot({
           setWidth(Math.round(event.nativeEvent.layout.width))
         }
       >
-        {mode === 'daily' && point ? (
-          <View
-            pointerEvents="none"
-            className="absolute rounded-lg bg-sand-light"
-            style={{ left: point.x - 15, top: 40, width: 30, height: 110 }}
-          />
+        {mode === 'daily' && point && held ? (
+          <Tip shown={shown}>
+            <View
+              className="absolute rounded-lg bg-sand-light"
+              style={{ left: point.x - 15, top: 40, width: 30, height: 110 }}
+            />
+          </Tip>
         ) : null}
         <Svg
           width={width}
@@ -219,13 +202,15 @@ function Plot({
             Budget
           </Text>
         ) : null}
-        {point ? (
-          <Selection
-            screen={screen}
-            geometry={geometry}
-            index={selected}
-            tokens={tokens}
-          />
+        {point && held ? (
+          <Tip shown={shown}>
+            <Selection
+              screen={screen}
+              geometry={geometry}
+              index={selected}
+              tokens={tokens}
+            />
+          </Tip>
         ) : null}
         <GestureDetector gesture={gesture}>
           <View
@@ -239,10 +224,7 @@ function Plot({
               { name: 'decrement' },
             ]}
             onAccessibilityAction={(event) =>
-              select(
-                selected +
-                  (event.nativeEvent.actionName === 'increment' ? 1 : -1),
-              )
+              nudge(event.nativeEvent.actionName === 'increment' ? 1 : -1)
             }
             className="absolute inset-0"
           />
@@ -267,10 +249,7 @@ function Selection({
   const at = points[index]!;
   const guideTop = 38;
   return (
-    <View
-      pointerEvents="none"
-      className="absolute inset-0"
-    >
+    <>
       <View
         className="absolute border-l-[1.5px] border-dashed border-foreground"
         style={{
@@ -318,7 +297,7 @@ function Selection({
           {at.value}
         </Text>
       </View>
-    </View>
+    </>
   );
 }
 

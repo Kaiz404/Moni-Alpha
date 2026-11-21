@@ -24,8 +24,6 @@ import { uAt, type Frame, type Zoom } from './zoom';
  */
 export type ScrubPoints = { at: Float64Array; ids: Float64Array; marks: Uint8Array };
 
-/** Points closer than this on screen play the frequent tick. */
-export const DENSE_POINT_PX = 8;
 const HOLD_MS = 200;
 /** A finger this far up or down is scrolling the page. */
 const SCROLL_PX = 12;
@@ -85,7 +83,7 @@ export function useChartScrub({
 }: {
   testID: string;
   points: ScrubPoints;
-  zoom: Zoom;
+  zoom: Pick<Zoom, 'from' | 'to'>;
   frame: Frame;
   onPoint: (id: number | null) => void;
 }): { gesture: ReturnType<typeof Gesture.Race>; point: SharedValue<number>; shown: SharedValue<number> } {

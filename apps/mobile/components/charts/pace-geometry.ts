@@ -257,16 +257,6 @@ export function paceGeometry({
   };
 }
 
-/** Index of the point nearest `x`, for taps and drags. */
-export function nearestIndex(xs: readonly number[], x: number): number {
-  'worklet';
-  let best = 0;
-  for (let index = 1; index < xs.length; index++) {
-    if (Math.abs(xs[index]! - x) < Math.abs(xs[best]! - x)) best = index;
-  }
-  return best;
-}
-
 /** Callout left edge: centred on `x`, kept inside the plot right of the axis. */
 export function calloutLeft(x: number, width: number): number {
   'worklet';

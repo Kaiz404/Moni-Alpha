@@ -98,8 +98,7 @@ function FlowChart({
 }) {
   const tokens = useThemeTokens();
   const [width, setWidth] = useState(318);
-  const [pressing, setPressing] = useState<number | null>(null);
-  const [pinnedKey, setPinnedKey] = useState<string | null>(null);
+  const [held, setHeld] = useState<number | null>(null);
   const geometry = useMemo(
     () => flowGeometry(series.buckets, width, currency),
     [series.buckets, width, currency],
@@ -113,8 +112,6 @@ function FlowChart({
     grownThisSession = true;
   }, []);
 
-  const pinned = series.buckets.findIndex((bucket) => bucket.key === pinnedKey);
-  const held = pressing ?? (pinned === -1 ? null : pinned);
   const heldSlot = held === null ? null : (geometry.slots[held] ?? null);
   const heldBucket = held === null ? null : (series.buckets[held] ?? null);
   const guideX = heldSlot ? heldSlot.spentX + geometry.bar : 0;
@@ -219,14 +216,11 @@ function FlowChart({
               accessibilityLabel={`${rangeLabel(bucket, now, deviceCalendar)}: spent ${formatMoney(bucket.spentMinor, currency)}, money in ${formatMoney(bucket.inMinor, currency)}`}
               pressedScale={1}
               unstable_pressDelay={60}
-              onPressIn={() => setPressing(index)}
-              onPressOut={() => setPressing(null)}
-              // A tap keeps the bar's figures up until the same bar is tapped again; a hold shows them while held.
-              onPress={() => {
+              onPressIn={() => {
                 scrubStep();
-                setPinnedKey((key) => (key === bucket.key ? null : bucket.key));
+                setHeld(index);
               }}
-              onLongPress={() => {}}
+              onPressOut={() => setHeld(null)}
               className="absolute"
               style={{
                 left: slot.x,
@@ -274,21 +268,19 @@ function FlowChart({
   );
 }
 
-function Total({ label, fill, value }: { label: string; fill: string; value: string }) {
+/** A total in its bars' colour, so the chart needs no legend. */
+function Total({ label, tone, value }: { label: string; tone: string; value: string }) {
   return (
     <View className="min-w-0 flex-1">
-      <View className="flex-row items-center gap-1.5">
-        <View className={`h-2 w-2 rounded-full ${fill}`} />
-        <Text
-          variant="meta"
-          className="text-muted"
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      </View>
       <Text
-        className="text-[18px] leading-[24px] font-display-bold text-foreground"
+        variant="meta"
+        className="text-muted"
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <Text
+        className={`text-[18px] leading-[24px] font-display-bold ${tone}`}
         style={{ fontVariant: ['tabular-nums'] }}
         numberOfLines={1}
         adjustsFontSizeToFit
@@ -319,12 +311,12 @@ export function FlowCard({
       <View className="flex-row gap-4">
         <Total
           label="Spent"
-          fill="bg-primary"
+          tone="text-primary"
           value={formatMoney(series.spentMinor, currency)}
         />
         <Total
           label="Money in"
-          fill="bg-deep-mint"
+          tone="text-deep-mint"
           value={formatMoney(series.inMinor, currency)}
         />
       </View>

@@ -330,16 +330,20 @@ describe('Activity chart', () => {
     expect(capsule()).toHaveTextContent('All time');
   });
 
-  it('keeps a tapped bar\'s figures up until it is tapped again, and leaves the list alone', () => {
+  it('leaves no figures up after a tap, and leaves the list alone', () => {
     render(<ActivityScreen />);
     const bar = screen.getByTestId('activity.chart.2026-09');
+    fireEvent(bar, 'pressIn');
+    fireEvent(bar, 'pressOut');
     fireEvent.press(bar);
-    expect(screen.getByText('Sep 2026')).toBeTruthy();
+    expect(screen.queryByText('Sep 2026')).toBeNull();
     expect(capsule()).toHaveTextContent('All time');
     expect(shown('r1')).toBe(true);
-    fireEvent.press(screen.getByTestId('activity.chart.2026-10'));
-    expect(screen.getByText('Spent RM140.00')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('activity.chart.2026-10'));
-    expect(screen.queryByText('Spent RM140.00')).toBeNull();
+  });
+
+  it('draws no legend: the totals carry the bars\' colours', () => {
+    render(<ActivityScreen />);
+    expect(screen.getByText('RM450.00')).toHaveProp('className', expect.stringContaining('text-primary'));
+    expect(screen.getByText('RM4,200.00')).toHaveProp('className', expect.stringContaining('text-deep-mint'));
   });
 });
