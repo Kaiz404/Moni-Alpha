@@ -141,7 +141,7 @@ export function CategoryPane({
 }) {
   const reviewRows = isCurrent ? toReview : [];
   const meta = payments.length
-    ? `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}${reviewRows.length ? ` · ${reviewRows.length} to review` : ''}`
+    ? `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}${reviewRows.length ? `, ${reviewRows.length} to review` : ''}`
     : 'No payments yet';
   return (
     <div className="detail-body" key={line.categoryId} data-category={line.categoryId}>
@@ -188,7 +188,7 @@ export function CategoryPane({
           </span>
         )}
         <div className="field-row">
-          <span className="label-text">Monthly budget · every month</span>
+          <span className="label-text">Monthly budget, every month</span>
           {editing && edit ? (
             <BudgetEditor name={`${line.name} budget`} draft={edit.draft} at={edit.at} onDraft={onDraft} onSave={onSave} onCancel={onCancel} wide />
           ) : line.budgetMinor !== null ? (
@@ -266,7 +266,7 @@ function PaneRows({
                 <b>{row.proposal.merchant ?? row.proposal.description ?? line.name}</b>
                 <span className="pane-row-meta">
                   <span className="review-count">To review</span>
-                  {dayLabel(calendar.dayKey(row.proposal.transactionDate ?? row.proposal.createdAt), today)} · {row.proposal.walletId ? (walletNames[row.proposal.walletId] ?? 'no wallet') : 'no wallet'}
+                  {dayLabel(calendar.dayKey(row.proposal.transactionDate ?? row.proposal.createdAt), today)}, {row.proposal.walletId ? (walletNames[row.proposal.walletId] ?? 'no wallet') : 'no wallet'}
                 </span>
               </span>
               <span className="num pane-row-amount tone-plain">{formatMoney(row.proposal.amountMinor ?? 0, currency)}</span>
@@ -277,7 +277,7 @@ function PaneRows({
               <span className="row-text">
                 <b>{row.payment.merchant ?? row.payment.description ?? line.name}</b>
                 <span>
-                  {dayLabel(calendar.dayKey(row.payment.transactionDate), today)} · {walletNames[row.payment.walletId] ?? 'Wallet'}
+                  {dayLabel(calendar.dayKey(row.payment.transactionDate), today)}, {walletNames[row.payment.walletId] ?? 'Wallet'}
                 </span>
               </span>
               <span className="num pane-row-amount">{formatSignedMoney('expense', row.payment.amountMinor, currency)}</span>

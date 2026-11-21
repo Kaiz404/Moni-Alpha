@@ -177,8 +177,8 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
               <span className="row-text">
                 <h2 className="wallet-hero-name">{wallet.name}</h2>
                 <span className="meta">
-                  {typeLabel} · {wallet.currency}
-                  {alertsFrom ? ` · alerts from ${alertsFrom}` : ''}
+                  {typeLabel}, {wallet.currency}
+                  {alertsFrom ? `, alerts from ${alertsFrom}` : ''}
                 </span>
               </span>
             </div>
@@ -257,7 +257,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
                   {shown.map((transaction) => {
                     const row = transactionRow({ ...transaction, merchant: merchantName(transaction.merchant, aliases) }, { categoriesById: projection.categoriesById, walletNames });
                     const day = rowDay(row.date, now, calendar);
-                    return <TxnRow key={row.id} row={row} href={`/activity/${row.id}`} meta={row.kind === 'transfer' ? <FromTo from={row.wallet} to={row.toWallet} /> : `${day} · ${row.category ?? 'No category'}`} />;
+                    return <TxnRow key={row.id} row={row} href={`/activity/${row.id}`} meta={row.kind === 'transfer' ? <FromTo from={row.wallet} to={row.toWallet} /> : `${day}, ${row.category ?? 'No category'}`} />;
                   })}
                 </div>
                 {pages > 1 && (

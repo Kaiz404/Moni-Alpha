@@ -469,7 +469,7 @@ function BillsCard({ data, ledger }: { data: BudgetData; ledger: Ledger }) {
                 <b>{bill.name}</b>
                 <span className="bill-meta">
                   <span data-tone={due.tone}>{due.text}</span>
-                  {look.wallet ? ` · ${look.wallet}` : ''}
+                  {look.wallet ? `, ${look.wallet}` : ''}
                 </span>
                 <span className="num bill-amount">{formatMoney(bill.amountMinor, bill.currency)}</span>
               </li>

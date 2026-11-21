@@ -271,7 +271,7 @@ export function ActivityScreen() {
   };
   const spent = all.filter((item) => item.kind === 'expense').reduce((sum, item) => sum + item.amountMinor, 0);
   const moneyIn = all.filter((item) => item.kind === 'income').reduce((sum, item) => sum + item.amountMinor, 0);
-  const totals = [spent ? `Spent ${formatMoney(spent, ledger.currency)}` : '', moneyIn ? `Money in +${formatMoney(moneyIn, ledger.currency)}` : ''].filter(Boolean).join(' · ');
+  const totals = [spent ? `Spent ${formatMoney(spent, ledger.currency)}` : '', moneyIn ? `Money in +${formatMoney(moneyIn, ledger.currency)}` : ''].filter(Boolean).join(', ');
   const pageIds = page.rows.map((item) => item.id);
   const ticked = pageIds.filter((id) => selected.has(id)).length;
   const categories = Object.values(ledger.projection.categoriesById)
@@ -635,7 +635,7 @@ export function ActivityScreen() {
                       <div className="day-head caps">
                         <span>{ledger.mounted ? dayHeading(group.day, today) : group.day}</span>
                         <span className="num">
-                          {[group.out ? `−${formatMoney(group.out, ledger.currency)}` : '', group.in ? `+${formatMoney(group.in, ledger.currency)}` : ''].filter(Boolean).join(' · ')}
+                          {[group.out ? `−${formatMoney(group.out, ledger.currency)}` : '', group.in ? `+${formatMoney(group.in, ledger.currency)}` : ''].filter(Boolean).join(', ')}
                         </span>
                       </div>
                       {group.rows.map((item) => (
@@ -731,7 +731,7 @@ export function ActivityScreen() {
                 <Icon name="close" size={20} />
               </button>
               <span className="bulk-count num">
-                {selected.size} selected{selectedOut ? ` · −${formatMoney(selectedOut, ledger.currency)}` : ''}
+                {selected.size} selected{selectedOut ? `, −${formatMoney(selectedOut, ledger.currency)}` : ''}
               </span>
               <span className="bulk-rule" aria-hidden="true" />
               <button ref={bulkCategory} type="button" className="bulk-btn press" aria-haspopup="listbox" aria-expanded={bulkOpen === 'category'} onClick={() => setBulkOpen(bulkOpen === 'category' ? null : 'category')}>

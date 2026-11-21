@@ -10,7 +10,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Moni chat | The pushed page where the user talks to Moni. It hides the tab bar. It is not a tab. |
 | Ask Moni | The label on the ways into Moni chat: the + chooser row and the ask box on Home. |
 | Review | The screen holding captures that wait for a decision. |
-| Approve · Not mine | The two actions on every capture: chat draft cards, the Review card, the notification. Approve is on the right. There is no Later. |
+| Approve, Not mine | The two actions on every capture: chat draft cards, the Review card, the notification. Approve is on the right. There is no Later. |
 | Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
@@ -23,7 +23,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | AI is off | What Moni did with an alert while Moni's AI was off for alerts: it keeps the alert and reads it once AI is on. The Capture log's action is "Turn on AI". |
 | Trying again, Couldn't reach Moni, Retry | A capture the backend could not read. Trying again: Moni keeps it and tries by itself. Couldn't reach Moni: it tried for 7 days and stopped. Retry is the control on both, and Capture sources counts them: "2 couldn't reach Moni". Never Ignored, which means not a payment. |
 | Keep it for Review, Kept for Review | The button on Say it and Scan's failed page, and its toast. Moni reads the capture once it is back, and it lands in Review. |
-| safe to spend a day | What's left ÷ days left in the month ("RM443 left for 18 days · RM24 a day"). |
+| safe to spend a day | What's left ÷ days left in the month ("RM443 left for 18 days, RM24 a day"). |
 | even pace | The month's budget ÷ days in the month ("Even pace RM58"). "a day" may follow only "even pace". |
 | bills | Recurring bills still due this month. Debts are not bills. |
 | bills and RM40 to Mei | The label when a total includes money owed to a person as well as bills. |
@@ -44,7 +44,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Location from notifications | On by default; per wallet, on Edit wallet. |
 | Location, Add place, Not saved, Been here? | The Location field on Type it and the capture check page. Add place: nothing to save yet. Not saved: the user chose No place. Been here?: a shop the user paid at near here, with a check that fills it in. |
 | Choose a place, Confirm, No place | The Location field's sheet, its primary action (saves the selected place), and the action that saves no place with the entry. |
-| Near you | The place sheet's list before the user types: their own places within about 500 m of the map's centre, with "120 m · 4 visits". |
+| Near you | The place sheet's list before the user types: their own places within about 500 m of the map's centre, with "120 m, 4 visits". |
 | Google Maps | The small attribution line under Google's places when the list shows them without the map. |
 
 ## Never use
@@ -73,6 +73,6 @@ The words the redesigned app uses, and the words it never uses. The design canva
 - Other currencies show an unambiguous symbol (`US$120.00`, owner, 21 Nov 2026) and never sum with ringgit or convert.
 - Dates day first: `Wed 14 Oct`; September is `Sep`. Times lowercase with a space: `12:41 pm`. "Today" and "Yesterday" for the last two days.
 - Straight apostrophe: `Touch 'n Go`.
-- Meta lines never join parts with ` · ` (owner, 20 Nov 2026, #76). Put the parts in two places, or set them apart with weight, colour or plain words.
+- No middle dot (·) between two pieces of text. Two attribute nouns take a comma ("Food & Dining, Maybank"), a day and a time take "at" ("Today at 12:41 pm"), a count goes in plain words ("3 to name") or on the right side, and a merchant and an amount read "−RM23.40 at GRAB*FOOD". `lint:copy` fails on the dot in any string, phone and web.
 - Raw alert text is quoted exactly as the bank sent it.
 - Greetings follow the local time of day ("Morning, Kai", "Afternoon, Kai", "Evening, Kai").
