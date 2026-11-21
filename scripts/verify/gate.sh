@@ -23,6 +23,8 @@ check() {
   fi
 }
 
+# A resolved conflict that left its markers behind type-checks fine in docs and YAML.
+check no-conflict-markers bash -c '! git grep -nE "^(<<<<<<<|>>>>>>>)( |$)|^=======$" -- . ":!*.lock"'
 check check-types pnpm turbo check-types --output-logs=errors-only
 check lint pnpm turbo lint --output-logs=errors-only
 for l in lint:tokens lint:copy lint:taste lint:test-ids lint:flow-ids lint:unreferenced; do
