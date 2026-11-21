@@ -42,12 +42,6 @@ export const LAYOUT_QUERIES: Record<LayoutKind, string> = {
   sidebar: `(min-width: ${RAIL_MAX_WIDTH}px) and ${TALL}`,
 };
 
-/** Narrower than this a docked pane opens over the page with a scrim (side-pane.css), not beside it. */
-export const PANE_DOCKS_MIN_WIDTH = 1240;
-
-/** The viewports where a docked pane covers the page: over it with a scrim, or the phone's pushed page. */
-export const PANE_COVERS_QUERY = `(max-width: ${below(PANE_DOCKS_MIN_WIDTH)}), (max-height: ${below(PHONE_MAX_HEIGHT)})`;
-
 /** Where the page's content starts from the left edge, in px, beside the sidebar or rail. */
 export const CONTENT_LEFT: Record<LayoutKind, number> = {
   phone: 0,

@@ -21,11 +21,11 @@ type SideProps = {
   categoryWords: string;
 };
 
-/** The places list beside the map, or the picked place's pane in its place (W2-Places). */
+/** The places list beside the map (W2-Places). A picked place opens in the slide-over (#106). */
 export function PlaceSide(props: SideProps) {
   return (
     <aside aria-label="Places" className="card places-side">
-      {props.data.selected ? <PlacePane {...props} place={props.data.selected} /> : <PlacesList {...props} />}
+      <PlacesList {...props} />
     </aside>
   );
 }
@@ -112,7 +112,8 @@ function PlacesList({ ledger, data, hoverId, onPick, onHover, onSort, categoryWo
   );
 }
 
-function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & { place: Place }) {
+/** A place in the slide-over: what it cost, by day, what you bought and each payment. */
+export function PlacePane({ ledger, data, place, categoryWords, onClose }: { ledger: Ledger; data: PlacesData; place: Place; categoryWords: string; onClose: () => void }) {
   const { places, days, range, query } = data;
   const { currency, calendar, now } = ledger;
   const index = places.indexOf(place);
@@ -125,30 +126,10 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
   const maps = `https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}${place.id.includes(',') ? '' : `&query_place_id=${encodeURIComponent(place.id)}`}`;
   return (
     <div className="place-pane" key={place.id}>
-      <div className="pane-nav">
-        <button type="button" className="pane-back press" onClick={() => onPick(null)}>
-          <Mdi name="chevron-left" size={20} />
-          All places
-          <span className="kbd" data-only="sidebar rail rail-one-column">
-            Esc
-          </span>
-        </button>
-        <span className="meta num pane-index">
-          {index + 1} of {places.length}
-        </span>
-        <button type="button" className="icon-round icon-round-key press" aria-label="Previous place (K)" disabled={index <= 0} onClick={() => onPick(places[index - 1]!.id)}>
-          <Mdi name="chevron-up" size={20} />
-          <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
-            K
-          </span>
-        </button>
-        <button type="button" className="icon-round icon-round-key press" aria-label="Next place (J)" disabled={index >= places.length - 1} onClick={() => onPick(places[index + 1]!.id)}>
-          <Mdi name="chevron-down" size={20} />
-          <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
-            J
-          </span>
-        </button>
-      </div>
+      <button type="button" className="pane-back press" data-only="phone" onClick={onClose}>
+        <Mdi name="chevron-left" size={20} />
+        Where you spend
+      </button>
       <div className="pane-title-row">
         <Bubble icon={lead?.icon} color={lead?.color ?? null} size={48} glyph={24} />
         <div className="pane-title-text">

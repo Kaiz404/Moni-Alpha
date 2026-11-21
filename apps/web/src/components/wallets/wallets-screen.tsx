@@ -5,8 +5,8 @@ import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { SidePane } from '@/components/ledger/side-pane';
-import { useQueryParams } from '@/components/ledger/use-query-param';
+import { SlideOver } from '@/components/ledger/slide-over';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
@@ -56,6 +56,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
   const { wallets, balances, currency, transactions, now, calendar, userId } = ledger;
   const [params, setParams] = useQueryParams();
   const adding = params.get('new') === 'wallet';
+  const close = useStepBack(adding, () => setParams({ new: null }));
   const [draft, setDraft] = useState<WalletDraft>(() => newWalletDraft(currency));
   const groups = useMemo(() => walletGroups(wallets, balances, currency), [wallets, balances, currency]);
   const main = groups.find((group) => group.main);
@@ -75,7 +76,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
 
   const startNew = () => {
     setDraft(newWalletDraft(currency));
-    setParams({ new: 'wallet' });
+    setParams({ new: 'wallet' }, 'push');
   };
   const save = () => {
     const colour = walletColour(draft.colourId);
@@ -94,12 +95,12 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
       ),
       `${draft.name.trim()} added`,
     );
-    if (created) setParams({ new: null });
+    if (created) close();
   };
 
   useScreenKeys((key) => {
     if (key === 'Escape' && adding) {
-      setParams({ new: null });
+      close();
       return true;
     }
     return false;
@@ -196,9 +197,9 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
             <Glyph name="chevron-right" size={20} />
           </button>
         </div>
-        <SidePane name="wallet" label="New wallet" open={adding} onClose={() => setParams({ new: null })}>
-          {adding && <WalletForm editing={false} draft={draft} onDraft={setDraft} onSave={save} onClose={() => setParams({ new: null })} />}
-        </SidePane>
+        <SlideOver name="wallet" label="New wallet" back="Wallets" open={adding} onClose={close}>
+          {adding && <WalletForm editing={false} draft={draft} onDraft={setDraft} onSave={save} onClose={close} />}
+        </SlideOver>
       </div>
     </Frame>
   );

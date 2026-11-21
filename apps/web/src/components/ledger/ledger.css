@@ -574,11 +574,33 @@ html:not([data-layout='phone']) .icon-round-key {
   }
 }
 
-/* The fields under a docked pane's title: Activity's transaction, a Debts person. */
+/* The fields under a slide-over's title: Activity's transaction, a Debts person. */
 .pane-fields {
   margin: 8px 0 0;
   display: flex;
   flex-direction: column;
+}
+
+/* In the slide-over they are its row of key facts, each label over its value at one width (#106, #100). */
+html:not([data-layout='phone']) .slide-over .pane-fields {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px 20px;
+}
+
+html:not([data-layout='phone']) .slide-over .pane-fields > :is(.pane-field, .field-row) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 0;
+}
+
+html:not([data-layout='phone']) .slide-over .pane-fields > * > :is(dd, .pill-field) {
+  width: 100%;
+  margin: 0;
 }
 
 /* ---------- checkboxes (Activity, Review) ---------- */

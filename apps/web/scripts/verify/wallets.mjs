@@ -92,7 +92,7 @@ export async function verifyWallets(t) {
   );
   await p.keyboard.press('Escape');
   await form.waitFor({ state: 'detached' }).catch(() => {});
-  check('New wallet opens in the pane and Esc closes it', !(await form.isVisible()) && !p.url().includes('new='), p.url());
+  check('New wallet opens in the slide-over and Esc closes it', !(await form.isVisible()) && !p.url().includes('new='), p.url());
 
   const first = p.locator('.wallet-line').first();
   const name = await first.locator('.row-title').textContent();

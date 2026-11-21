@@ -23,12 +23,12 @@ import { userPreferencesSchema, type MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
 import { MonthField } from '@/components/controls/date-picker';
-import { SidePane } from '@/components/ledger/side-pane';
+import { SlideOver } from '@/components/ledger/slide-over';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
-import { usePaneCovers } from '@/components/shell/use-layout';
+import { useLayout } from '@/components/shell/use-layout';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { useQueryParams } from '@/components/ledger/use-query-param';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { parseBudgetDraft, type BudgetLine } from '@/lib/budget-view';
 import { applyPlan, budgetRowsNow, commit, planContext } from '@/lib/ledger/commit';
@@ -84,7 +84,7 @@ async function saveMonthlyTotal(totalMinor: MinorAmount | null): Promise<boolean
 }
 
 function BudgetLoaded({ ledger }: { ledger: Ledger }) {
-  const covers = usePaneCovers();
+  const phone = useLayout() === 'phone';
   const [params, setParams] = useQueryParams();
   const [setup, setSetup] = useState(false);
   const data = useBudget(ledger, params.get('month'), setup);
@@ -103,8 +103,9 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
 
   const select = (categoryId: string | null) => {
     if (edit && edit.categoryId !== categoryId) setEdit(null);
-    setParams({ category: categoryId });
+    setParams({ category: categoryId }, categoryId && !selectedId ? 'push' : 'replace');
   };
+  const close = useStepBack(Boolean(selected), () => select(null));
   /** Picking the open category again closes its pane. */
   const pick = (categoryId: string) => select(categoryId === selectedId ? null : categoryId);
   const move = (by: 1 | -1) => {
@@ -115,9 +116,10 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const startEdit = (line: BudgetLine, at: BudgetEdit['at']) => {
     if (!editable) return;
     setTotalDraft(null);
-    // Where the pane opens over the table, the table under it can't be typed in; the pane edits instead.
-    setEdit({ categoryId: line.categoryId, at: covers ? 'pane' : at, draft: wholeText(line.budgetMinor) });
-    if (selectedId !== line.categoryId) setParams({ category: line.categoryId });
+    // The open slide-over covers the table, and the phone has none, so there the pane edits instead.
+    const where = phone || selectedId === line.categoryId ? 'pane' : at;
+    setEdit({ categoryId: line.categoryId, at: where, draft: wholeText(line.budgetMinor) });
+    if (where === 'pane' && selectedId !== line.categoryId) select(line.categoryId);
   };
 
   const writeBudgets = (inputs: BudgetInput[], text: string) => {
@@ -224,7 +226,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
       case 'Escape':
         if (totalDraft !== null) setTotalDraft(null);
         else if (edit) setEdit(null);
-        else if (selectedId) select(null);
+        else if (selectedId) close();
         else return false;
         return true;
       default:
@@ -270,7 +272,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
     </div>
   );
 
-  const paneEditing = Boolean(edit && selected && edit.categoryId === selected.categoryId && (edit.at === 'pane' || covers));
+  const paneEditing = Boolean(edit && selected && edit.categoryId === selected.categoryId && edit.at === 'pane');
   const payments = selected ? data.monthSpend(selected.categoryId) : [];
   const toReview = selected ? data.toReview.filter((proposal) => proposal.categoryId === selected.categoryId) : [];
 
@@ -352,12 +354,17 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label="Category" name="category" open={Boolean(selected)} onClose={() => select(null)}>
+        <SlideOver
+          label="Category"
+          name="category"
+          back="Budget"
+          steps={{ noun: 'category', position: `${index + 1} of ${lines.length}`, onMove: move, first: index === 0, last: index === lines.length - 1 }}
+          open={Boolean(selected)}
+          onClose={close}
+        >
           {selected && (
             <CategoryPane
               line={selected}
-              index={index}
-              count={lines.length}
               month={month}
               months={history.months}
               currency={currency}
@@ -373,11 +380,10 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
               onDraft={(draft) => setEdit((current) => current && { ...current, draft })}
               onSave={save}
               onCancel={() => setEdit(null)}
-              onMove={move}
-              onClose={() => select(null)}
+              onClose={close}
             />
           )}
-        </SidePane>
+        </SlideOver>
       </div>
       {suggesting && (
         <SuggestDialog ledger={ledger} categories={data.ledger.categories} onSet={setSuggested} onClose={() => setSuggesting(false)} />

@@ -11,7 +11,7 @@ export const PHONE_SIZES = [
 ];
 
 const GREETING = /^(Morning|Afternoon|Evening|Welcome to Moni), /;
-const LAYER = '.side-pane[data-open], .pane';
+const LAYER = '.slide-over[data-open], .pane';
 
 /**
  * Each screen: where it is (`path`, or `open` resolving it from the rows on screen), whether it is a
@@ -25,7 +25,7 @@ const SCREENS = [
     from: { path: '/activity', loaded: '.activity[data-loaded]', id: '.activity-days [data-row-id]', attr: 'data-row-id' },
     to: (id) => `/activity/${id}`,
     title: /^Transaction$/,
-    titleAt: '.side-pane[data-open] .pane-top-title',
+    titleAt: '.slide-over[data-open] .pane-top-title',
   },
   { name: 'budget', path: '/budget', root: true, title: /^Budget$/ },
   {
@@ -33,7 +33,7 @@ const SCREENS = [
     from: { path: '/budget', id: '[data-category]', attr: 'data-category' },
     to: (id) => `/budget?category=${id}`,
     title: /\S/,
-    titleAt: '.side-pane[data-open] .detail-name',
+    titleAt: '.slide-over[data-open] .detail-name',
   },
   { name: 'debts', path: '/debts', root: true, title: /^Debts$/ },
   {
@@ -41,10 +41,17 @@ const SCREENS = [
     from: { path: '/debts', id: '[data-debt]', attr: 'data-debt' },
     to: (id) => `/debts?person=${id}`,
     title: /\S/,
-    titleAt: '.side-pane[data-open] .detail-name',
+    titleAt: '.slide-over[data-open] .detail-name',
   },
   { name: 'places', path: '/home/places', title: /^Where you spend$/ },
-  { name: 'review', path: '/home?review=deck', title: /^Review$/, titleAt: '.side-pane[data-open] .drawer-title' },
+  {
+    name: 'places-place',
+    from: { path: '/home/places', id: '.place-row[data-place]', attr: 'data-place' },
+    to: (id) => `/home/places?place=${encodeURIComponent(id)}`,
+    title: /\S/,
+    titleAt: '.slide-over[data-open] .place-pane h2',
+  },
+  { name: 'review', path: '/home?review=deck', title: /^Review$/, titleAt: '.slide-over[data-open] .drawer-title' },
   { name: 'settings', path: '/settings', title: /^Settings$/ },
   { name: 'settings-profile', path: '/settings/profile', title: /^Profile$/ },
   { name: 'settings-ai', path: '/settings/ai', title: /^Moni's AI$/, loaded: 'section[aria-labelledby="ai-title"]:not([aria-busy])' },

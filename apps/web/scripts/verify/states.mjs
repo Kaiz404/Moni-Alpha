@@ -76,7 +76,7 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
     await ep.keyboard.press('Escape');
     await ep.goto(`${base}/debts`);
     await ep.getByText('No debts yet').waitFor({ timeout: 10_000 });
-    check('Debts with nobody: one Record a debt, and no empty pane beside it', (await ep.getByRole('button', { name: /Record a debt/ }).count()) === 1 && (await ep.locator('aside.side-pane').count()) === 0);
+    check('Debts with nobody: one Record a debt, and no empty pane beside it', (await ep.getByRole('button', { name: /Record a debt/ }).count()) === 1 && (await ep.locator('aside.slide-over').count()) === 0);
     await ep.keyboard.press('Control+k');
     await ep.keyboard.type('starbuks');
     const miss = await ep.getByText('No matches for “starbuks”').isVisible();

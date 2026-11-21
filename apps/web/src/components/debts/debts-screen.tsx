@@ -22,8 +22,8 @@ import { useState } from 'react';
 import { Cat } from '@/components/brand';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
-import { useQueryParams } from '@/components/ledger/use-query-param';
-import { SidePane } from '@/components/ledger/side-pane';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
+import { SlideOver } from '@/components/ledger/slide-over';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
 import { comingUpWords, netLabel, openLabel, personMeta, writeOffWords } from '@/lib/debts-view';
@@ -82,8 +82,9 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
 
   const select = (debtId: string | null) => {
     if (repay && repay.debtId !== debtId) setRepay(null);
-    setParams({ person: debtId, record: null });
+    setParams({ person: debtId, record: null }, debtId && !selectedId && !recording ? 'push' : 'replace');
   };
+  const close = useStepBack(Boolean(selectedId) || recording, () => setParams({ person: null, record: null }));
   /** Picking the open person again closes their pane. */
   const pick = (debtId: string) => select(debtId === selectedId ? null : debtId);
   const move = (by: 1 | -1) => {
@@ -94,7 +95,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const startRecord = (name = '', direction: Side = 'owed_to_me') => {
     setRepay(null);
     setDraft(emptyDraft(data.defaultWalletId, name, direction));
-    setParams({ record: 'debt', person: null });
+    setParams({ record: 'debt', person: null }, selectedId || recording ? 'replace' : 'push');
   };
   const startRepay = (line: DebtLine | null = selected) => {
     if (!line || line.state !== 'open') return;
@@ -103,7 +104,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
       amount: (line.balanceMinor / 100).toFixed(2),
       walletId: line.debt.currency === currency ? data.defaultWalletId : (data.wallets.find((wallet) => wallet.currency === line.debt.currency)?.id ?? null),
     });
-    if (selectedId !== line.debt.id) setParams({ person: line.debt.id, record: null });
+    if (selectedId !== line.debt.id) setParams({ person: line.debt.id, record: null }, selectedId || recording ? 'replace' : 'push');
   };
 
   const remind = async (line: DebtLine | null = selected) => {
@@ -213,8 +214,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
         return true;
       case 'Escape':
         if (repay) setRepay(null);
-        else if (recording) setParams({ record: null });
-        else if (selectedId) select(null);
+        else if (recording || selectedId) close();
         else return false;
         return true;
       default:
@@ -318,7 +318,21 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label={recording ? 'Record a debt' : 'Person'} name="person" open={Boolean(paneOpen)} onClose={() => (recording ? setParams({ record: null }) : select(null))}>
+        <SlideOver
+          label={recording ? 'Record a debt' : 'Person'}
+          name="person"
+          back="Debts"
+          steps={selected ? { noun: 'person', position: index >= 0 ? `${index + 1} of ${order.length}` : '', onMove: move, first: index <= 0, last: index === order.length - 1 } : undefined}
+          actions={
+            selected && !recording && selected.state === 'open' ? (
+              <button type="button" className="round-btn small pane-write-off" onClick={() => setWritingOffId(selected.debt.id)} aria-label={`Write off ${formatMoney(selected.balanceMinor, selected.debt.currency)}`}>
+                <Glyph name="text-box-remove-outline" />
+              </button>
+            ) : undefined
+          }
+          open={paneOpen}
+          onClose={close}
+        >
           {recording ? (
             <RecordDebt
               draft={draft}
@@ -327,13 +341,11 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               currency={currency}
               today={ledger.calendar.dayKey(ledger.now)}
               onSave={saveDebt}
-              onClose={() => setParams({ record: null })}
+              onClose={close}
             />
           ) : selected ? (
             <PersonPane
               line={selected}
-              index={index}
-              count={order.length}
               data={data}
               ledger={ledger}
               repay={repay?.debtId === selected.debt.id ? repay : null}
@@ -344,11 +356,10 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onRemind={() => void remind(selected)}
               onWriteOff={() => setWritingOffId(selected.debt.id)}
               onRecordAgain={() => startRecord(selected.debt.counterpartyName, selected.debt.direction)}
-              onMove={move}
-              onClose={() => select(null)}
+              onClose={close}
             />
           ) : null}
-        </SidePane>
+        </SlideOver>
       </div>
       {writingOff && (
         <ConfirmDialog

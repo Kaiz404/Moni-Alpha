@@ -53,7 +53,7 @@ export async function verifyReview(t) {
       await p.goto(`${base}/home`);
       await p.locator('.home[data-loaded]').waitFor({ timeout: 30_000 });
       const where = `Review at ${size.width} ${theme}`;
-      check(`${where}: Home has no Review drawer until the card opens it`, (await p.locator('aside.side-pane').count()) === 0);
+      check(`${where}: Home has no Review drawer until the card opens it`, (await p.locator('aside.slide-over').count()) === 0);
       await p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true }).click();
       await p.waitForURL(/review=deck/);
       await ready(p);
@@ -76,33 +76,24 @@ export async function verifyReview(t) {
       } else {
         const meta = await drawer(p).locator('.drawer-titles .meta').textContent();
         check(`${where}: the header says ${cents(waitingMinor)} not counted yet`, meta === `${cents(waitingMinor)} not counted yet`, meta);
-        check(`${where}: the drawer slides in on the right, top to bottom`, box !== null && box.y <= 14 && Math.round(box.x + box.width) >= size.width - 14 && box.width === 520, box);
-        if (size.layout === 'sidebar') {
-          const homeEnd = await p.locator('.home').evaluate((el) => el.getBoundingClientRect().right);
-          check(`${where}: Home makes room beside the drawer`, homeEnd <= box.x, { homeEnd, box });
-        } else {
-          check(`${where}: the drawer lies over Home with a scrim`, await visible(p.locator('.side-pane-scrim[data-open]')));
-        }
+        check(`${where}: the drawer slides over Home from the right, top to bottom, 960 wide or 240 short of the window`, box !== null && box.y <= 14 && Math.round(box.x + box.width) >= size.width - 14 && Math.round(box.width) === Math.min(960, size.width - 240), box);
+        check(`${where}: the drawer lies over Home with a scrim`, await visible(p.locator('.slide-over-scrim[data-open]')));
+        check(`${where}: its top left says ‹ Home`, await visible(drawer(p).getByRole('button', { name: 'Back to Home (Esc)' })));
         await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
         await p.waitForURL(/review=list/);
         const names = await p.locator('.inbox-row .inbox-name').allTextContents();
         check(`${where}: All ${pending.length} lists the waiting captures, oldest first`, names.join('|') === pending.map((row) => row.merchant).join('|'), names);
       }
       await shot(p, `review-${size.width}-${theme}`);
-      const covered = size.layout !== 'sidebar';
       const behind = await p.evaluate(() => ({
-        focus: document.activeElement?.closest('aside.side-pane') ? document.activeElement.tagName : (document.activeElement?.textContent ?? '').trim().slice(0, 20),
+        focus: document.activeElement?.closest('aside.slide-over') ? document.activeElement.tagName : (document.activeElement?.textContent ?? '').trim().slice(0, 20),
         home: Boolean(document.querySelector('.home')?.closest('[inert]')),
         nav: [...document.querySelectorAll('.shell > nav')].every((nav) => nav.inert),
       }));
-      if (covered) {
-        check(`${where}: the drawer covers Home, so Home and the nav are inert and focus is in the drawer`, behind.home && behind.nav, behind);
-      } else {
-        check(`${where}: docked beside Home, Home stays live`, !behind.home && !behind.nav, behind);
-      }
+      check(`${where}: the drawer covers Home, so Home and the nav are inert and focus is in the drawer`, behind.home && behind.nav, behind);
       if (size.layout === 'phone') check(`${where}: focus moves to the drawer's heading`, behind.focus === 'H2', behind);
       await p.keyboard.press('Escape');
-      const gone = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
+      const gone = await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
       check(`${where}: Esc slides the drawer out and Home stays`, gone && !p.url().includes('review='), p.url());
       const after = await p.evaluate(() => ({
         inert: document.querySelectorAll('[inert]').length,
@@ -217,7 +208,7 @@ export async function verifyReview(t) {
   await walletField.click();
   await walletList.getByRole('option').first().click();
   await p.keyboard.press('Escape');
-  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
   await p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true }).click();
   await ready(p);
   await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
@@ -285,12 +276,12 @@ export async function verifyReview(t) {
   await cardLink.click();
   await ready(p);
   await p.goBack();
-  const backShut = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 3000 }).then(() => true, () => false);
+  const backShut = await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 3000 }).then(() => true, () => false);
   check('browser Back closes the drawer opened from Home', backShut && p.url() === `${base}/home`, p.url());
   await cardLink.click();
   await ready(p);
-  await drawer(p).getByRole('button', { name: 'Close' }).click();
-  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  await drawer(p).getByRole('button', { name: 'Back to Home (Esc)' }).click();
+  await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
   const closedAt = p.url();
   await p.goBack();
   await p.waitForTimeout(500);
@@ -301,13 +292,24 @@ export async function verifyReview(t) {
   await ready(p);
   await drawer(p).getByRole('button', { name: 'Next capture (J)' }).focus();
   await p.keyboard.press('Escape');
-  await p.locator('aside.side-pane[data-closing]').waitFor({ state: 'attached', timeout: 2000 }).catch(() => {});
-  const sliding = await p.evaluate(() => {
-    const aside = document.querySelector('aside.side-pane');
-    return { inert: aside?.inert ?? null, hidden: aside?.getAttribute('aria-hidden') ?? null, inside: Boolean(aside?.contains(document.activeElement)) };
-  });
+  const sliding = await p
+    .waitForFunction(
+      () => {
+        const aside = document.querySelector('aside.slide-over[data-closing]');
+        return aside && !aside.contains(document.activeElement) && { inert: aside.inert, hidden: aside.getAttribute('aria-hidden'), inside: false };
+      },
+      null,
+      { polling: 'raf', timeout: 2000 },
+    )
+    .then(
+      (handle) => handle.jsonValue(),
+      () => p.evaluate(() => {
+        const aside = document.querySelector('aside.slide-over');
+        return { inert: aside?.inert ?? null, hidden: aside?.getAttribute('aria-hidden') ?? null, inside: Boolean(aside?.contains(document.activeElement)) };
+      }),
+    );
   await p.keyboard.press('x');
-  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
   const untouched = query('proposals').some((row) => row.id === first.id && row.status === 'pending');
   check('closing moves the focus out, the sliding pane is inert, and X while it slides marks nothing', sliding.inert === true && sliding.hidden === null && !sliding.inside && untouched, sliding);
 
@@ -355,7 +357,7 @@ export async function verifyReview(t) {
     const m = await mctx.newPage();
     await m.goto(`${base}/home?review=deck&capture=${first.id}`);
     await ready(m);
-    const name = await m.locator('aside.side-pane').evaluate((el) => getComputedStyle(el).animationName);
+    const name = await m.locator('aside.slide-over').evaluate((el) => getComputedStyle(el).animationName);
     const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
     check(`the drawer opens over Home with ${expected} when motion is ${reducedMotion}`, name === expected, name);
     await mctx.close();

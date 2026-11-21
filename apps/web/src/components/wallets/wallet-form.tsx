@@ -31,7 +31,7 @@ export function typeIcon(type: string): string {
 }
 
 /**
- * V2H-WalletForm in the docked pane: name, type, currency (locked once made), starting balance on a new
+ * V2H-WalletForm in the slide-over: name, type, currency (locked once made), starting balance on a new
  * wallet, and colour. Edit wallet shows which banking app's alerts land here; linking one happens on the phone.
  */
 export function WalletForm({
@@ -80,9 +80,6 @@ export function WalletForm({
         <h2 className="detail-name" style={{ flex: '1 1 auto', fontSize: 22 }}>
           {editing ? 'Edit wallet' : 'New wallet'}
         </h2>
-        <button type="button" className="round-btn small desk-nav" onClick={onClose} aria-label="Close (Esc)">
-          <Glyph name="close" />
-        </button>
       </div>
       <div className="wallet-preview">
         <Bubble icon={typeIcon(draft.type)} color={colour.hex} size={52} glyph={24} />

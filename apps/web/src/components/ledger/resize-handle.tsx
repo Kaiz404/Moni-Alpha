@@ -36,7 +36,7 @@ export function useStoredSize(name: string, span: Span): [number, (next: number 
   return [size, set];
 }
 
-/** Puts a docked pane's width on the root while it shows, where the page beside it reads it to make room. */
+/** Puts a pane's width on the root while it shows, where its CSS and its seam read it. */
 export function useRootWidth(variable: `--${string}`, width: number, shown: boolean) {
   useLayoutEffect(() => {
     if (!shown) return;

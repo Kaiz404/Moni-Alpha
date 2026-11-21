@@ -52,8 +52,8 @@ export async function verifyBudgetDebts(t) {
         const state = await p.evaluate(() => ({
           layout: document.documentElement.dataset.layout,
           bg: getComputedStyle(document.body).backgroundColor,
-          docked: (() => {
-            const pane = document.querySelector('aside.side-pane');
+          paneShown: (() => {
+            const pane = document.querySelector('aside.slide-over');
             return pane ? getComputedStyle(pane).display !== 'none' : null;
           })(),
         }));
@@ -64,7 +64,7 @@ export async function verifyBudgetDebts(t) {
             : await p.locator(size.layout === 'phone' ? 'section.rings' : '.budgets-card').isVisible();
         check(
           `${where}: ${size.layout} with its nav, ${theme} ground, no pane until a row is picked, no sideways scroll`,
-          state.layout === size.layout && nav && state.bg === background[theme] && state.docked === null && !(await scrolls(p)) && tableShown,
+          state.layout === size.layout && nav && state.bg === background[theme] && state.paneShown === null && !(await scrolls(p)) && tableShown,
           { ...state, nav, tableShown },
         );
         if (screen === 'budget') {
@@ -77,21 +77,21 @@ export async function verifyBudgetDebts(t) {
           await firstRow.click();
           await p.waitForURL(screen === 'budget' ? /category=/ : /person=/);
           await settle(p);
-          const box = await p.locator('aside.side-pane').boundingBox();
+          const box = await p.locator('aside.slide-over').boundingBox();
           const tabbar = await p.locator('nav.tabbar').isVisible();
-          const back = await p.locator('aside.side-pane .phone-back').isVisible();
+          const back = await p.locator('aside.slide-over .phone-back').isVisible();
           const fills =
             size.layout === 'phone'
               ? box?.x === 0 && box?.width === size.width && !tabbar && back
-              : box !== null && box.width === 408 && !back;
+              : box !== null && Math.round(box.width) === Math.min(960, size.width - 240) && !back && (await p.locator('.slide-over-scrim[data-open]').isVisible()) && (await p.getByRole('button', { name: `Back to ${screen === 'budget' ? 'Budget' : 'Debts'} (Esc)` }).isVisible());
           check(
-            `${where}: a picked row opens its pane ${size.layout === 'phone' ? 'as the full-screen page with Back and no tab bar' : 'on the right, with its own up, down and close'}`,
+            `${where}: a picked row opens its pane ${size.layout === 'phone' ? 'as the full-screen page with Back and no tab bar' : 'in the slide-over over the dimmed page, with ‹ back, up and down'}`,
             fills,
             { box, tabbar, back },
           );
           if (size.layout === 'sidebar') {
-            const keyOn = (name) => p.locator(`aside.side-pane button[aria-label$="(${name})"] .kbd`).first().textContent().catch(() => null);
-            const keys = { K: await keyOn('K'), J: await keyOn('J'), [screen === 'budget' ? 'E' : 'R']: await (screen === 'budget' ? p.locator('aside.side-pane :is(.pill-field, .set-btn) .kbd').first().textContent().catch(() => null) : p.locator('aside.side-pane button', { hasText: 'Record a repayment' }).locator('.kbd').textContent().catch(() => null)) };
+            const keyOn = (name) => p.locator(`aside.slide-over button[aria-label$="(${name})"] .kbd`).first().textContent().catch(() => null);
+            const keys = { K: await keyOn('K'), J: await keyOn('J'), [screen === 'budget' ? 'E' : 'R']: await (screen === 'budget' ? p.locator('aside.slide-over :is(.pill-field, .set-btn) .kbd').first().textContent().catch(() => null) : p.locator('aside.slide-over button', { hasText: 'Record a repayment' }).locator('.kbd').textContent().catch(() => null)) };
             check(
               `${where}: K and J sit on the pane's chevrons and ${screen === 'budget' ? 'E on its budget' : 'R on Record a repayment'}, with no hints off to one side`,
               Object.entries(keys).every(([key, text]) => key === text) && (await p.locator('.hint-keys').count()) === 0,
@@ -101,15 +101,15 @@ export async function verifyBudgetDebts(t) {
           await shot(p, `${screen}-${size.width}-${theme}-pane`);
           await p.keyboard.press('Escape');
           await p.waitForURL((url) => !/category=|person=/.test(url.search)).catch(() => {});
-          const gone = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
+          const gone = await p.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
           check(`${where}: Esc slides the pane out`, !/category=|person=/.test(p.url()) && gone, p.url());
           if (size.layout === 'sidebar') {
             await firstRow.click();
             await p.waitForURL(screen === 'budget' ? /category=/ : /person=/);
             await settle(p);
-            await firstRow.click();
+            await p.locator('.slide-over-scrim[data-open]').click({ position: { x: 300, y: 400 } });
             await p.waitForURL((url) => !/category=|person=/.test(url.search)).catch(() => {});
-            check(`${where}: picking the open row again closes its pane`, !/category=|person=/.test(p.url()), p.url());
+            check(`${where}: a click on the dimmed page closes the slide-over`, !/category=|person=/.test(p.url()), p.url());
           }
         }
       }
@@ -194,8 +194,8 @@ export async function verifyBudgetDebts(t) {
   const firstName = await first.locator('.row-name b').textContent();
   await first.locator('.row-name').click();
   await p.waitForURL(new RegExp(`category=${firstId}`));
-  check('picking a row opens its category pane with its name', (await p.locator('aside.side-pane h2').textContent()) === firstName);
-  const history = p.locator('aside.side-pane .history-plot');
+  check('picking a row opens its category pane with its name', (await p.locator('aside.slide-over h2').textContent()) === firstName);
+  const history = p.locator('aside.slide-over .history-plot');
   const restText = await history.evaluate((el) => [...el.querySelectorAll('span')].map((span) => span.textContent).join('|'));
   const historyBox = await history.boundingBox();
   await p.mouse.move(historyBox.x + historyBox.width - 12, historyBox.y + historyBox.height - 12);
@@ -207,13 +207,13 @@ export async function verifyBudgetDebts(t) {
     { restText, tipValue, rowSpent },
   );
   await p.mouse.move(0, 0);
-  const paneHrefs = await p.locator('aside.side-pane a[href]').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
-  const pager = p.locator('aside.side-pane nav[aria-label="Pages"]');
+  const paneHrefs = await p.locator('aside.slide-over a[href]').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+  const pager = p.locator('aside.slide-over nav[aria-label="Pages"]');
   let paged = { pages: 0 };
   if (await pager.isVisible()) {
-    const before = await p.locator('aside.side-pane .pane-row').first().getAttribute('href');
+    const before = await p.locator('aside.slide-over .pane-row').first().getAttribute('href');
     await pager.getByRole('button', { name: 'Next page' }).click();
-    paged = { pages: (await pager.textContent()).trim(), before, after: await p.locator('aside.side-pane .pane-row').first().getAttribute('href'), path: new URL(p.url()).pathname };
+    paged = { pages: (await pager.textContent()).trim(), before, after: await p.locator('aside.slide-over .pane-row').first().getAttribute('href'), path: new URL(p.url()).pathname };
   }
   check(
     "the category pane links nowhere in Activity's list and pages its payments in place",
@@ -226,12 +226,20 @@ export async function verifyBudgetDebts(t) {
   await p.keyboard.press('k');
   await p.waitForURL(new RegExp(`category=${firstId}`)).catch(() => {});
   check('K moves back', p.url().includes(`category=${firstId}`), p.url());
+  await p.keyboard.press('e');
+  const paneCell = p.locator('aside.slide-over input[aria-label$="budget in ringgit, editing"]');
+  await paneCell.waitFor({ timeout: 5000 }).catch(() => {});
+  check('with the slide-over open, E edits its budget there', await paneCell.isVisible());
+  await p.keyboard.press('Escape');
+  await p.keyboard.press('Escape');
+  await p.waitForURL((url) => !url.search.includes('category=')).catch(() => {});
+  check('Esc cancels that edit, and a second Esc closes the slide-over', (await paneCell.count()) === 0 && !p.url().includes('category='), p.url());
 
   await p.keyboard.press('e');
   const cell = p.locator('.budget-cell input');
   await cell.waitFor({ timeout: 5000 }).catch(() => {});
   const old = Math.floor(originalBudgets[firstName]);
-  check('E edits the selected budget in its cell, starting from what is saved', (await cell.inputValue().catch(() => '')) === String(old));
+  check('with nothing open, E edits the first budget in its cell, starting from what is saved', (await cell.inputValue().catch(() => '')) === String(old));
   await shot(p, 'budget-1440-light-editing');
   await cell.fill(String(old + 7));
   await p.keyboard.press('Enter');
@@ -261,10 +269,7 @@ export async function verifyBudgetDebts(t) {
   await cell.waitFor({ timeout: 5000 }).catch(() => {});
   await cell.fill('99');
   await p.keyboard.press('Escape');
-  check('Esc in the cell cancels the edit and keeps the pane open', (await cell.count()) === 0 && p.url().includes(`category=${firstId}`) && (await first.locator('[data-col="budget"]').textContent()) === whole(old));
-  await p.keyboard.press('Escape');
-  await p.waitForURL((url) => !url.search.includes('category=')).catch(() => {});
-  check('a second Esc closes the pane', !p.url().includes('category='), p.url());
+  check('Esc in the cell cancels the edit, with no slide-over opened', (await cell.count()) === 0 && !p.url().includes('category=') && (await first.locator('[data-col="budget"]').textContent()) === whole(old));
 
   const copy = p.getByRole('button', { name: /^Copy [A-Z][a-z]+'s spending$/ });
   if (await copy.isVisible()) {
@@ -349,7 +354,7 @@ export async function verifyBudgetDebts(t) {
     const gone = await until('debt-activities', (rows) => rows.length === activities);
     check('Ctrl Z removes the repayment, on screen and in the dev project', gone.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before), gone.rows.length);
 
-    const writeOffButton = d.locator('.pane-write-off');
+    const writeOffButton = d.locator('.slide-over-head .pane-write-off');
     const asks = d.getByRole('alertdialog', { name: /^Write off RM[\d,.]+\?$/ });
     await writeOffButton.click();
     await asks.waitFor({ timeout: 5000 }).catch(() => {});
@@ -391,7 +396,7 @@ export async function verifyBudgetDebts(t) {
   await d.keyboard.press('Enter');
   const made = d.getByRole('status').filter({ hasText: 'Recorded a debt with E2E Verify' });
   await made.waitFor({ timeout: 5000 }).catch(() => {});
-  const opened = await d.locator('aside.side-pane h2', { hasText: /^E2E Verify$/ }).waitFor({ timeout: 5000 }).then(() => true, () => false);
+  const opened = await d.locator('aside.slide-over h2', { hasText: /^E2E Verify$/ }).waitFor({ timeout: 5000 }).then(() => true, () => false);
   check('Enter records the debt and opens its person', (await made.isVisible()) && opened && /person=/.test(d.url()) && !d.url().includes('record='), d.url());
   await made.hover().catch(() => {});
   const inDb = await until('debts', (rows) => rows.some((row) => row.counterparty_name === 'E2E Verify'));
@@ -412,8 +417,8 @@ export async function verifyBudgetDebts(t) {
     await open(m, '/debts');
     await ready(m);
     await m.locator('.people-row[data-debt]').first().click();
-    await m.locator('aside.side-pane[data-open]').waitFor();
-    const name = await m.locator('aside.side-pane').evaluate((el) => getComputedStyle(el).animationName);
+    await m.locator('aside.slide-over[data-open]').waitFor();
+    const name = await m.locator('aside.slide-over').evaluate((el) => getComputedStyle(el).animationName);
     const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
     check(`the person pane opens with ${expected} when motion is ${reducedMotion}`, name === expected, name);
     await mctx.close();
@@ -426,14 +431,17 @@ export async function verifyBudgetDebts(t) {
   await ready(r);
   const row = r.locator('.budget-row[data-budgeted="true"]').first();
   const rowId = await row.getAttribute('data-category');
-  await row.locator('.row-name').click();
-  await r.waitForURL(/category=/);
-  await r.keyboard.press('Escape');
-  await r.waitForURL((url) => !url.search.includes('category='));
   await row.locator('.bcell').click();
+  check(
+    'at 820 a budget cell edits in the table and opens no slide-over',
+    (await r.locator('.budget-cell input').count()) === 1 && (await r.locator('aside.slide-over').count()) === 0 && !r.url().includes('category='),
+  );
+  await r.keyboard.press('Escape');
+  await row.locator('.row-name').click();
   await r.waitForURL(new RegExp(`category=${rowId}`));
-  const half = r.locator('aside.side-pane input[aria-label$="budget in ringgit, editing"]');
-  check('at 820 the pane covers the table, so a budget cell opens its editor in the pane', (await r.locator('.budget-cell input').count()) === 0 && (await half.isVisible()));
+  await r.locator('aside.slide-over').getByRole('button', { name: /monthly budget, .*, edit \(E\)$/ }).click();
+  const half = r.locator('aside.slide-over input[aria-label$="budget in ringgit, editing"]');
+  check('the slide-over edits its own budget', await half.isVisible());
   await half.fill('12');
   await half.evaluate((el) => {
     el.dataset.marker = 'kept';

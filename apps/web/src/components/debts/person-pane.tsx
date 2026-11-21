@@ -29,8 +29,6 @@ function stopKeys(onEnter: () => void, onEscape: () => void) {
 
 export function PersonPane({
   line,
-  index,
-  count,
   data,
   ledger,
   repay,
@@ -41,12 +39,9 @@ export function PersonPane({
   onRemind,
   onWriteOff,
   onRecordAgain,
-  onMove,
   onClose,
 }: {
   line: DebtLine;
-  index: number;
-  count: number;
   data: DebtsData;
   ledger: Ledger;
   repay: RepayDraft | null;
@@ -57,7 +52,6 @@ export function PersonPane({
   onRemind: () => void;
   onWriteOff: () => void;
   onRecordAgain: () => void;
-  onMove: (by: 1 | -1) => void;
   onClose: () => void;
 }) {
   const { debt } = line;
@@ -88,29 +82,16 @@ export function PersonPane({
 
   return (
     <div className="detail-body" key={debt.id} data-debt={debt.id}>
-      <div className="detail-top">
+      <div className="detail-top" data-only="phone">
         <button type="button" className="round-btn small phone-back" aria-label="Back" onClick={onClose}>
           <Glyph name="chevron-left" />
         </button>
-        <span className="desk-nav desk-nav-group">
-          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(-1)} aria-label="Previous person (K)" disabled={index <= 0}>
-            <Glyph name="chevron-up" />
-            <span className="kbd kbd-inline">K</span>
-          </button>
-          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(1)} aria-label="Next person (J)" disabled={index === count - 1}>
-            <Glyph name="chevron-down" />
-            <span className="kbd kbd-inline">J</span>
-          </button>
-        </span>
-        <span className="count num">{index >= 0 && <span className="desk-nav">{index + 1} of {count}</span>}</span>
+        <span className="count" />
         {open && (
           <button type="button" className="round-btn small pane-write-off" onClick={onWriteOff} aria-label={`Write off ${money(line.balanceMinor)}`}>
             <Glyph name="text-box-remove-outline" />
           </button>
         )}
-        <button type="button" className="round-btn small desk-nav" onClick={onClose} aria-label="Close (Esc)">
-          <Glyph name="close" />
-        </button>
       </div>
       <div className="detail-head">
         <PersonTile name={debt.counterpartyName} owedToMe={mine} size={52} />

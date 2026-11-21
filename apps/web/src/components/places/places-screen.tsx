@@ -4,7 +4,8 @@ import { formatMoney, placeRanges, type PlaceRangeKey } from '@repo/core';
 import { useState, type ReactNode } from 'react';
 import { Select } from '@/components/controls/select';
 import { Bubble } from '@/components/ledger/glyph';
-import { useQueryParams } from '@/components/ledger/use-query-param';
+import { SlideOver } from '@/components/ledger/slide-over';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
 import { useLayout } from '@/components/shell/use-layout';
 import { useScreenKeys } from '@/lib/screen-keys';
@@ -13,7 +14,7 @@ import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { DayGrid } from './day-grid';
 import { Mdi } from './mdi';
 import { PlaceMap } from './place-map';
-import { PlaceSide } from './place-side';
+import { PlacePane, PlaceSide } from './place-side';
 import { usePlaces, type FilterOption } from './use-places';
 import { WithoutPlace } from './without-place';
 import '@/components/ledger/ledger.css';
@@ -94,7 +95,9 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
   const categoryWords = categoryName ? ` on ${categoryName}` : '';
   const emptyLine = `Nothing${categoryWords} with a place ${range.words}`;
 
-  const pick = (id: string | null) => setParams({ place: id });
+  const pick = (id: string | null) => setParams({ place: id }, id && !selected ? 'push' : 'replace');
+  const close = useStepBack(Boolean(selected), () => pick(null));
+  const selectedIndex = selected ? places.indexOf(selected) : -1;
   const step = (by: number) => {
     if (!places.length) return;
     const at = selected ? places.indexOf(selected) : -1;
@@ -105,7 +108,7 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
   useScreenKeys((key) => {
     if (key === 'Escape') {
       if (choosing) setChoosing(false);
-      else if (selected) pick(null);
+      else if (selected) close();
       else if (picked.length) setPicked([]);
       else return false;
       return true;
@@ -195,6 +198,16 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
         choosing={choosing}
         onChoosing={setChoosing}
       />
+      <SlideOver
+        label="Place"
+        name="place"
+        back="Where you spend"
+        steps={selectedIndex >= 0 ? { noun: 'place', position: `${selectedIndex + 1} of ${places.length}`, onMove: step, first: selectedIndex === 0, last: selectedIndex === places.length - 1 } : undefined}
+        open={Boolean(selected)}
+        onClose={close}
+      >
+        {selected && <PlacePane ledger={ledger} data={data} place={selected} categoryWords={categoryWords} onClose={close} />}
+      </SlideOver>
     </div>
   );
 }

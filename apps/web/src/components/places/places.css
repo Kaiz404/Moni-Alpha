@@ -617,8 +617,7 @@ html[data-layout='phone'] .places-side {
   margin: 0 var(--spacing-screen);
 }
 
-.side-list,
-.place-pane {
+.side-list {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -774,19 +773,7 @@ html[data-layout='phone'] .places-side {
   font-weight: 600;
 }
 
-.place-pane {
-  padding: 0 22px;
-  animation:
-    slide-in-right var(--duration-sheet) var(--ease-sheet) both,
-    fade-in 180ms ease both;
-}
 
-.pane-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-}
 
 .pane-back {
   height: 36px;
@@ -803,11 +790,6 @@ html[data-layout='phone'] .places-side {
   background: var(--color-sand-light);
 }
 
-.pane-index {
-  flex: 1 1 auto;
-  text-align: right;
-  padding-right: 4px;
-}
 
 .pane-title-row {
   display: flex;
@@ -1004,6 +986,11 @@ html[data-layout='phone'] .places-side {
 
 .pay-row:hover {
   background: var(--color-sand-light);
+}
+
+/* A place is the pushed page on the phone layout, where every control takes a 44 finger. */
+html[data-layout='phone'] :is(.pay-row, .place-pane .pane-back) {
+  height: 44px;
 }
 
 .pay-name {
@@ -1442,10 +1429,6 @@ html[data-layout='phone'] :is(.pseg button, .map-pin-big)::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .place-pane {
-    animation: fade-in 180ms ease both;
-  }
-
   .map-pin-big,
   .heat-blob,
   .place-bar > span,

@@ -97,7 +97,7 @@ html[data-layout='rail-one-column'] .slot-spent {
   height: 380px;
 }
 
-/* A docked pane (the Review drawer, #104) narrows Home on the desktop, and the cards reflow as the
+/* Moni chat, docked, narrows Home on the desktop, and the cards reflow as the
    narrower layouts lay them out instead of squeezing. */
 .home {
   container: home / inline-size;

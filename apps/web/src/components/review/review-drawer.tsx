@@ -15,11 +15,10 @@ import {
   type ReviewEdits,
   type StoredRow,
 } from '@repo/core';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
-import { SidePane } from '@/components/ledger/side-pane';
-import { useQueryParams } from '@/components/ledger/use-query-param';
+import { SlideOver } from '@/components/ledger/slide-over';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { showToast } from '@/components/shell/shell-store';
 import { applyPlan, commit, reviewContext, reviewView } from '@/lib/ledger/commit';
 import { captureSource, clockTime } from '@/lib/ledger/format';
@@ -46,8 +45,7 @@ function isLive(id: string): boolean {
 }
 
 /**
- * Review on the web (W2-Review on W2-Home, #104): the drawer Home's review card opens from the right, as
- * the docked pane every screen shares. `?review=` says what it shows, so the palette, G R, chat and
+ * Review on the web (W2-Review on W2-Home, #104): Home's review card opens it in the slide-over (#106). `?review=` says what it shows, so the palette, G R, chat and
  * Budget's rows land on it. On the phone layout it is the pushed Review page, one capture at a time.
  */
 export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
@@ -56,22 +54,16 @@ export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
   // Kept here, not in the body, so closing the drawer and opening it again keeps what was picked.
   const [drafts, setDrafts] = useState<Record<string, ReviewEdits>>({});
   const [similar, setSimilar] = useState<Record<string, boolean>>({});
-  // A link or a key pushed the drawer onto the history, so closing steps back and Back after it leaves Home.
-  const router = useRouter();
-  const shown = view !== null;
-  const was = useRef(shown);
-  const pushed = useRef(false);
-  useEffect(() => {
-    if (shown !== was.current) pushed.current = shown;
-    was.current = shown;
-  }, [shown]);
-  const close = () => {
-    if (!pushed.current) return setParams({ review: null, capture: null });
-    pushed.current = false;
-    router.back();
-  };
+  const close = useStepBack(view !== null, () => setParams({ review: null, capture: null }));
   return (
-    <SidePane label="Review" name="review" open={view !== null && ledger.loaded} onClose={close}>
+    <SlideOver
+      label="Review"
+      name="review"
+      back={view === 'recent' ? 'Review' : 'Home'}
+      onBack={view === 'recent' ? () => setParams({ review: 'deck' }) : close}
+      open={view !== null && ledger.loaded}
+      onClose={close}
+    >
       {view && ledger.loaded && (
         <ReviewBody
           ledger={ledger}
@@ -85,7 +77,7 @@ export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
           setSimilar={setSimilar}
         />
       )}
-    </SidePane>
+    </SlideOver>
   );
 }
 
@@ -253,11 +245,6 @@ function ReviewBody({
         <button type="button" className="icon-round icon-round-line press" data-only="phone" aria-label="Back" onClick={recent && !empty ? () => setParams({ review: 'deck' }) : onClose}>
           <Glyph name="chevron-left" size={20} />
         </button>
-        {recent && (
-          <button type="button" className="icon-round icon-round-line press" data-only="sidebar rail rail-one-column" aria-label="Back to Review (Esc)" onClick={() => setParams({ review: 'deck' })}>
-            <Glyph name="chevron-left" size={20} />
-          </button>
-        )}
         <div className="drawer-titles">
           <h2 className="drawer-title">{recent ? 'Recently reviewed' : 'Review'}</h2>
           <span className="meta num">{recent ? 'Last 30 days' : waitingLine(queue, currency)}</span>
@@ -271,9 +258,6 @@ function ReviewBody({
             ))}
           </div>
         )}
-        <button type="button" className="icon-round icon-round-line press" data-only="sidebar rail rail-one-column" aria-label="Close" onClick={onClose}>
-          <Glyph name="close" size={20} />
-        </button>
       </header>
 
       {recent ? (

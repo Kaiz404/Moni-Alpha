@@ -598,26 +598,22 @@
 
 html[data-layout='sidebar'] .activity[data-show='list'] .activity-days,
 html[data-layout='rail'] .activity[data-show='list'] .activity-days,
-html[data-layout='rail'] .activity[data-pane-open] .activity-days,
 html[data-layout='rail'] .shell[data-pane='chat'] .activity-days {
   display: block !important;
 }
 
-/* A docked pane, the row's or Moni chat's, leaves the rail too narrow for the table and the sidebar
+/* Moni chat, docked, leaves the rail too narrow for the table and the sidebar
    without room for Source. */
-html[data-layout='rail'] .activity[data-pane-open] .activity-table,
 html[data-layout='rail'] .shell[data-pane='chat'] .activity-table,
 html[data-layout='rail'] .shell[data-pane='chat'] .toggle-lg {
   display: none !important;
 }
 
-html[data-layout='sidebar'] .activity[data-pane-open] .activity-table,
 html[data-layout='sidebar'] .shell[data-pane='chat'] .activity-table {
   --cols: 40px min(var(--col-date, 84px), 14%) minmax(0, 1fr) min(var(--col-category, 140px), 24%) min(var(--col-wallet, 108px), 20%)
     min(var(--col-amount, 96px), 16%) 34px;
 }
 
-html[data-layout='sidebar'] .activity[data-pane-open] .tr > :nth-child(6),
 html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
   display: none;
 }
@@ -692,17 +688,7 @@ html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
   min-height: 44px;
 }
 
-.pane-nav {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.pane-position {
-  flex: 1 1 auto;
-  padding-left: 4px;
-}
 
 .pane-top-title {
   flex: 1 1 auto;

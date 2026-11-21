@@ -97,8 +97,6 @@ function HistoryChart({ line, months, currency }: { line: BudgetLine; months: re
 
 export function CategoryPane({
   line,
-  index,
-  count,
   month,
   months,
   currency,
@@ -114,12 +112,9 @@ export function CategoryPane({
   onDraft,
   onSave,
   onCancel,
-  onMove,
   onClose,
 }: {
   line: BudgetLine;
-  index: number;
-  count: number;
   month: string;
   months: readonly string[];
   currency: string;
@@ -136,7 +131,6 @@ export function CategoryPane({
   onDraft: (draft: string) => void;
   onSave: () => void;
   onCancel: () => void;
-  onMove: (by: 1 | -1) => void;
   onClose: () => void;
 }) {
   const reviewRows = isCurrent ? toReview : [];
@@ -145,28 +139,10 @@ export function CategoryPane({
     : 'No payments yet';
   return (
     <div className="detail-body" key={line.categoryId} data-category={line.categoryId}>
-      <div className="detail-top">
+      <div className="detail-top" data-only="phone">
         <Link href="/budget" className="round-btn small phone-back" aria-label="Back" onClick={(event) => { event.preventDefault(); onClose(); }}>
           <Glyph name="chevron-left" />
         </Link>
-        <span className="desk-nav desk-nav-group">
-          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(-1)} aria-label="Previous category (K)" disabled={index === 0}>
-            <Glyph name="chevron-up" />
-            <span className="kbd kbd-inline">K</span>
-          </button>
-          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(1)} aria-label="Next category (J)" disabled={index === count - 1}>
-            <Glyph name="chevron-down" />
-            <span className="kbd kbd-inline">J</span>
-          </button>
-        </span>
-        <span className="count num">
-          <span className="desk-nav">
-            {index + 1} of {count}
-          </span>
-        </span>
-        <button type="button" className="round-btn small desk-nav" onClick={onClose} aria-label="Close (Esc)">
-          <Glyph name="close" />
-        </button>
       </div>
       <div className="detail-head">
         <Bubble icon={line.icon} color={line.color} size={48} glyph={26} />

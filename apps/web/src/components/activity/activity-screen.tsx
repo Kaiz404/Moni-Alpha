@@ -44,7 +44,8 @@ import { useLedger } from '@/lib/ledger/use-ledger';
 import { reviewHref } from '@/lib/review-view';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { ResizeHandle } from '@/components/ledger/resize-handle';
-import { SidePane } from '@/components/ledger/side-pane';
+import { SlideOver } from '@/components/ledger/slide-over';
+import { useStepBack } from '@/components/ledger/use-query-param';
 import { FromTo } from '@/components/ledger/from-to';
 import { COLUMN_SPANS, parseColumnWidths, type ColumnWidths, type ResizableColumn } from '@/lib/sizes';
 import { ConfirmDelete } from './confirm-delete';
@@ -115,7 +116,7 @@ function writeViews(views: SavedView[]) {
 /**
  * W2-Activity: the running chart, saved views, filters, the table (or the grouped list) with sortable
  * columns, ticks and the Ink bulk bar, a category edited in its cell, menus on right-click and ⋯, 25 rows
- * a page and the docked detail pane. The view lives in the URL; the open row is the path (/activity/<id>).
+ * a page and the transaction in the slide-over. The view lives in the URL; the open row is the path (/activity/<id>).
  */
 export function ActivityScreen() {
   const ledger = useLedger();
@@ -169,14 +170,15 @@ export function ActivityScreen() {
   const openRow = (id: string | null) => {
     setMenu(null);
     const path = id ? `/activity/${id}` : '/activity';
-    if (path !== pathname) router.replace(`${path}${activityQueryString(query, new URLSearchParams(params.toString()))}`, { scroll: false });
+    if (path !== pathname) router[id && !openId ? 'push' : 'replace'](`${path}${activityQueryString(query, new URLSearchParams(params.toString()))}`, { scroll: false });
   };
+  const close = useStepBack(Boolean(openId), () => openRow(null));
   const move = (step: 1 | -1) => {
     const index = openIndex === -1 ? (step === 1 ? 0 : all.length - 1) : openIndex + step;
     const next = all[Math.max(0, Math.min(all.length - 1, index))];
     if (!next) return;
     const nextPage = Math.floor(all.indexOf(next) / 25) + 1;
-    router.replace(`/activity/${next.id}${activityQueryString({ ...query, page: nextPage }, new URLSearchParams(params.toString()))}`, { scroll: false });
+    router[openId ? 'replace' : 'push'](`/activity/${next.id}${activityQueryString({ ...query, page: nextPage }, new URLSearchParams(params.toString()))}`, { scroll: false });
     requestAnimationFrame(() => document.querySelector(`[data-row-id="${next.id}"]`)?.scrollIntoView({ block: 'nearest' }));
   };
   const toggle = (id: string) =>
@@ -201,7 +203,7 @@ export function ActivityScreen() {
     setConfirming(null);
     if (commit(planTransactionsDelete(ids, { now: new Date().toISOString() }), label) === null) return;
     setSelected(new Set());
-    if (openId && ids.includes(openId)) openRow(null);
+    if (openId && ids.includes(openId)) close();
   };
   const editRows = (ids: readonly string[], data: { categoryId?: string; walletId?: string }, label: string) => {
     setBulkOpen(null);
@@ -231,7 +233,7 @@ export function ActivityScreen() {
           setCell(null);
           setNaming(null);
         } else if (selected.size) setSelected(new Set());
-        else if (openId) openRow(null);
+        else if (openId) close();
         else return false;
         return true;
       case 'j':
@@ -433,7 +435,7 @@ export function ActivityScreen() {
         </span>
       }
     >
-      <div className="activity" data-show={query.show} data-pane-open={(open && !pane) || undefined} data-loaded={ledger.loaded || undefined}>
+      <div className="activity" data-show={query.show} data-loaded={ledger.loaded || undefined}>
         <div className="phone-tools" data-only="phone">
           {ledger.waiting.length > 0 && (
             <Link href={reviewHref()} className="to-review press">
@@ -781,18 +783,31 @@ export function ActivityScreen() {
           </div>
         )}
       </div>
-      <SidePane label="Transaction" name="transaction" open={Boolean(open) && !pane} onClose={() => openRow(null)}>
+      <SlideOver
+        label="Transaction"
+        name="transaction"
+        back="Activity"
+        steps={{ noun: 'transaction', position: openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`, onMove: move, first: openIndex === 0, last: openIndex === all.length - 1 }}
+        actions={
+          open && open.debtActivityId === null ? (
+            <button type="button" className="icon-round icon-round-line icon-round-key slide-over-step press" aria-label="Delete transaction (Del)" onClick={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}>
+              <Icon name="delete-outline" size={20} />
+              <span className="kbd kbd-inline">Del</span>
+            </button>
+          ) : undefined
+        }
+        open={Boolean(open) && !pane}
+        onClose={close}
+      >
         {open && (
           <DetailPane
             ledger={ledger}
             transaction={open}
-            position={openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`}
-            onMove={move}
-            onClose={() => openRow(null)}
+            onClose={close}
             onDelete={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}
           />
         )}
-      </SidePane>
+      </SlideOver>
       {confirming && (
         <ConfirmDelete
           items={confirming.ids.map((id) => items.find((item) => item.id === id)).filter((item): item is Shown => Boolean(item))}

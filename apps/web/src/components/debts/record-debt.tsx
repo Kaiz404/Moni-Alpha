@@ -84,9 +84,6 @@ export function RecordDebt({
         <h2 className="detail-name" style={{ flex: '1 1 auto', fontSize: 22 }}>
           Record a debt
         </h2>
-        <button type="button" className="round-btn small desk-nav" onClick={onClose} aria-label="Close (Esc)">
-          <Glyph name="close" />
-        </button>
       </div>
       <div className="seg-tabs who-owes" role="radiogroup" aria-label="Who owes who">
         {(

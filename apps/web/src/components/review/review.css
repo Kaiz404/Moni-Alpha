@@ -1,5 +1,5 @@
-/* Review (W2-Review on W2-Home, W2-Empty, #104): the drawer Home's review card opens, inside the shared
-   docked pane (side-pane.tsx). One capture at a time or every waiting capture as a list, Recently
+/* Review (W2-Review on W2-Home, W2-Empty, #104): what Home's review card opens in the slide-over
+   (slide-over.tsx, #106). One capture at a time or every waiting capture as a list, Recently
    reviewed one step in. On the phone layout the pane is the pushed Review page. Every value comes from
    @repo/design's tokens.css. */
 

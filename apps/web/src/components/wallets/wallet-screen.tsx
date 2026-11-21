@@ -22,10 +22,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { SidePane } from '@/components/ledger/side-pane';
+import { SlideOver } from '@/components/ledger/slide-over';
 import { FromTo } from '@/components/ledger/from-to';
 import { TxnRow } from '@/components/ledger/txn-row';
-import { useQueryParams } from '@/components/ledger/use-query-param';
+import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { rowDay } from '@/lib/ledger/format';
@@ -88,6 +88,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
   const router = useRouter();
   const [params, setParams] = useQueryParams();
   const editing = params.get('edit') === 'wallet';
+  const close = useStepBack(editing, () => setParams({ edit: null }));
   const [draft, setDraft] = useState<WalletDraft>(() => editWalletDraft(wallet));
   const [amount, setAmount] = useState<string | null>(params.get('edit') === 'balance' ? '' : null);
   const [confirming, setConfirming] = useState(false);
@@ -120,12 +121,12 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
     );
     if (saved) {
       setAmount(null);
-      if (params.get('edit')) setParams({ edit: null });
+      if (params.get('edit')) close();
     }
   };
   const startEdit = () => {
     setDraft(editWalletDraft(wallet));
-    setParams({ edit: 'wallet' });
+    setParams({ edit: 'wallet' }, 'push');
   };
   const saveEdit = () => {
     const colour = walletColour(draft.colourId);
@@ -133,7 +134,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
       planWalletEdit(wallet.id, { name: draft.name.trim(), type: draft.type, color: colour.hex, icon: typeIcon(draft.type), cardStyleId: colour.id }, projection, planContext(userId)),
       'Wallet saved',
     );
-    if (saved) setParams({ edit: null });
+    if (saved) close();
   };
   const remove = () => {
     setConfirming(false);
@@ -149,7 +150,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
   useScreenKeys((key) => {
     if (key !== 'Escape') return false;
     if (confirming) setConfirming(false);
-    else if (editing) setParams({ edit: null });
+    else if (editing) close();
     else if (amount !== null) setAmount(null);
     else return false;
     return true;
@@ -279,9 +280,9 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
             )}
           </section>
         </div>
-        <SidePane name="wallet" label="Edit wallet" open={editing} onClose={() => setParams({ edit: null })}>
-          {editing && <WalletForm editing draft={draft} onDraft={setDraft} onSave={saveEdit} onClose={() => setParams({ edit: null })} alertsFrom={alertsFrom} />}
-        </SidePane>
+        <SlideOver name="wallet" label="Edit wallet" back={wallet.name} open={editing} onClose={close}>
+          {editing && <WalletForm editing draft={draft} onDraft={setDraft} onSave={saveEdit} onClose={close} alertsFrom={alertsFrom} />}
+        </SlideOver>
       </div>
       {confirming && <ConfirmDeleteWallet name={wallet.name} count={deleteCount} onCancel={() => setConfirming(false)} onDelete={remove} />}
     </Frame>

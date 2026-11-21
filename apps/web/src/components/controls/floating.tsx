@@ -52,7 +52,7 @@ export function Floating({
   anchor: { readonly current: HTMLElement | null };
   /** A click in viewport pixels, for a menu that opens where the pointer is. */
   point?: { x: number; y: number };
-  /** The popover stays between this element's left and right edges too, as the row menu stays off the docked pane. */
+  /** The popover stays between this element's left and right edges too, as a row menu stays inside its table. */
   boundary?: { readonly current: HTMLElement | null };
   side?: Side;
   align?: Align;

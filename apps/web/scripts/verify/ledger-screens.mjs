@@ -227,7 +227,7 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('j');
   await a.waitForURL(/\/activity\/[0-9a-f-]{36}/).catch(() => {});
   const firstOpen = a.url();
-  check('J opens the first row in the docked pane, and the row is the path', /\/activity\/[0-9a-f-]{36}/.test(firstOpen) && (await a.getByRole('complementary', { name: 'Transaction' }).isVisible()), firstOpen);
+  check('J opens the first row in the slide-over, and the row is the path', /\/activity\/[0-9a-f-]{36}/.test(firstOpen) && (await a.getByRole('complementary', { name: 'Transaction' }).isVisible()), firstOpen);
   await a.keyboard.press('j');
   await a.waitForTimeout(300);
   check('J moves to the next row', a.url() !== firstOpen, a.url());
@@ -247,16 +247,16 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('ArrowLeft');
   await a.waitForTimeout(500);
   const paneWider = await paneBox();
-  const tableEnd = await a.locator('.activity-table').evaluate((table) => table.getBoundingClientRect().right);
   check(
-    'the pane\'s left edge takes the arrows: two presses make it 32 wider and the table reflows beside it',
-    Math.round(paneWider.width - paneBefore.width) === 32 && tableEnd <= paneWider.x,
-    { paneBefore, paneWider, tableEnd },
+    'the slide-over opens 960 wide over the page with a scrim, and its left edge takes the arrows: two presses make it 32 wider',
+    Math.round(paneBefore.width) === 960 && Math.round(paneWider.width - paneBefore.width) === 32 && (await a.locator('.slide-over-scrim[data-open]').isVisible()),
+    { paneBefore, paneWider },
   );
+  check('its top left says ‹ Activity', await a.getByRole('button', { name: 'Back to Activity (Esc)' }).isVisible());
   await paneSeam.press('Enter');
   await a.waitForTimeout(500);
-  check('Enter on the edge puts the pane back to 380', Math.round((await paneBox()).width) === 380, await paneBox());
-  // Stored wider than half the window: the edge reads and drags from the width that shows.
+  check('Enter on the edge puts the slide-over back to 960', Math.round((await paneBox()).width) === 960, await paneBox());
+  // Stored wider than the window allows: the edge reads and drags from the width that shows.
   await paneSeam.press('End');
   await a.setViewportSize({ width: 1380, height: 900 });
   await a.waitForTimeout(500);
@@ -269,7 +269,7 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.mouse.up();
   await a.waitForTimeout(500);
   const narrower = Math.round((await paneBox()).width);
-  check('a pane stored past half the window reads the width that shows and the first 20 px of drag narrow it', capped === 690 && now === 690 && narrower === 670, { capped, now, narrower });
+  check('a slide-over stored past 240 short of the window reads the width that shows and the first 20 px of drag narrow it', capped === 1140 && now === 1140 && narrower === 1120, { capped, now, narrower });
   await paneSeam.press('Enter');
   await a.setViewportSize({ width: 1440, height: 900 });
   await a.waitForTimeout(500);
@@ -295,39 +295,53 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('Control+z');
   await a.waitForFunction((was) => document.querySelector('aside .pane-field .field-chip')?.textContent?.trim() === was, categoryBefore, { timeout: 5000 }).catch(() => {});
   check('Ctrl Z puts the pane\'s category back', ((await categoryChip.textContent()) ?? '').trim() === categoryBefore, { categoryBefore });
+  await a.evaluate(() => document.activeElement?.blur?.());
+  await a.keyboard.press('x');
+  const bulk = a.getByRole('toolbar', { name: 'Selected rows' });
+  const ticked = a.url();
+  await a.keyboard.press('j');
+  await a.waitForURL((url) => url.href !== ticked).catch(() => {});
+  await a.keyboard.press('x');
+  await a.waitForTimeout(300);
+  const bulkUnder = await a.evaluate(() => {
+    const bar = document.querySelector('.bulk-slot [role="toolbar"]');
+    if (!bar) return null;
+    const box = bar.getBoundingClientRect();
+    return !bar.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+  });
+  check('X ticks the open row and J moves on, two counted, with the Ink bulk bar waiting under the scrim', /^2 selected/.test((await a.locator('.bulk-slot .bulk-count').textContent()) ?? '') && bulkUnder === true, bulkUnder);
+  await a.keyboard.press('Escape');
+  check('Esc clears the ticks first', (await a.locator('.bulk-slot .bulk-count').count()) === 0);
+  await a.keyboard.press('Escape');
+  await a.waitForURL((url) => url.pathname === '/activity').catch(() => {});
+  check('then Esc closes the slide-over, back on the page as it was', new URL(a.url()).pathname === '/activity', a.url());
+  await a.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+
   const placed = (menu) =>
     menu.evaluate((el) => {
       const box = el.getBoundingClientRect();
-      const side = document.querySelector('aside')?.getBoundingClientRect();
-      return { onScreen: box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight, offPane: !side || box.right <= side.left + 1 };
+      return { onScreen: box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight };
     });
   const edgeRow = a.locator('.activity-table [role="row"][data-row-id]').nth(1);
   const edgeBox = await edgeRow.boundingBox();
   await edgeRow.click({ button: 'right', position: { x: edgeBox.width - 6, y: edgeBox.height / 2 } });
   const edgeFit = await placed(a.getByRole('menu'));
-  await settle(a);
-  await shot(a, 'activity-1440-menu-beside-pane');
-  check('beside the open pane the row menu flips left, all on screen and off the pane', edgeFit.onScreen && edgeFit.offPane, edgeFit);
+  check("at the table's right edge the row menu flips left, all on screen", edgeFit.onScreen, edgeFit);
   await a.keyboard.press('Escape');
   const lastRow = a.locator('.activity-table [role="row"][data-row-id]').last();
   await lastRow.scrollIntoViewIfNeeded();
   const lastBox = await lastRow.boundingBox();
   await a.mouse.click(lastBox.x + 40, lastBox.y + lastBox.height / 2, { button: 'right' });
   const lastFit = await placed(a.getByRole('menu'));
-  check("the last row's menu stays on screen", lastFit.onScreen && lastFit.offPane, lastFit);
+  check("the last row's menu stays on screen", lastFit.onScreen, lastFit);
   await a.keyboard.press('Escape');
-  await a.keyboard.press('x');
-  const bulk = a.getByRole('toolbar', { name: 'Selected rows' });
-  check('X ticks the open row and the Ink bulk bar appears', (await bulk.isVisible()) && /^1 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
+  await a.locator('.activity-table [role="row"][data-row-id]').nth(1).getByRole('checkbox').click();
   await a.locator('.activity-table [role="row"][data-row-id]').nth(2).getByRole('checkbox').click();
-  check('a second tick counts 2', /^2 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
+  check('ticking two rows shows the Ink bulk bar with 2', /^2 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
   await settle(a);
   await shot(a, 'activity-1440-bulk');
   await a.keyboard.press('Escape');
-  check('Esc clears the ticks first', !(await bulk.isVisible()));
-  await a.keyboard.press('Escape');
-  await a.waitForURL(`${base}/activity`).catch(() => {});
-  check('then Esc closes the pane', a.url() === `${base}/activity`, a.url());
+  check('Esc clears the ticks', !(await bulk.isVisible()));
 
   const third = a.locator('.activity-table [role="row"][data-row-id]').nth(3);
   await third.click({ button: 'right' });
@@ -351,7 +365,7 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await third.locator('.more').click();
   const openedBy = await menu.isVisible();
   await third.locator('.more').click();
-  check('a second click on ⋯ closes its menu and leaves the pane shut', openedBy && !(await menu.isVisible()) && a.url() === `${base}/activity`, a.url());
+  check('a second click on ⋯ closes its menu and leaves the pane shut', openedBy && !(await menu.isVisible()) && new URL(a.url()).pathname === '/activity', a.url());
 
   await a.locator('.filter-chip').filter({ hasText: 'Type' }).click();
   const typePop = a.getByRole('dialog', { name: 'Type' });

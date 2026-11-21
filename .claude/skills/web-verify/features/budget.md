@@ -19,4 +19,4 @@ The Budget tab, or G then B. Pick a row or a ring slice for its pane.
 
 - Writes reach the dev project a moment later: poll the query, and hover the toast meanwhile so Ctrl Z still has it (it closes after 4 s).
 - A cleared budget is soft-deleted and setting it again revives the same row, so the table never trips its key on user, category and currency.
-- The pane docks only on the sidebar layout and the rail from 1240 wide; at 1024 it opens over the page.
+- The category opens in the slide-over over the page at every desktop width; a cell edit stays in the table and opens nothing.

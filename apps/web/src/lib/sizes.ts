@@ -1,15 +1,19 @@
 /**
- * The seams a viewer can drag (#95): each docked pane's width and the Activity table's columns. A size is
- * kept per browser, clamped to its span, and the default comes back on a double click.
+ * The seams a viewer can drag (#95): each pane's width and the Activity table's columns. A size is
+ * kept per browser, clamped to its span, and the default comes back on a double click. A slide-over
+ * opens at about two thirds of a 1440 window (#106); its CSS keeps 240 of the page in view on narrower ones.
  */
 export type Span = { initial: number; min: number; max: number };
 
+const DETAIL: Span = { initial: 960, min: 560, max: 1600 };
+
 export const PANE_SPANS = {
-  transaction: { initial: 380, min: 340, max: 720 },
-  category: { initial: 408, min: 340, max: 720 },
-  person: { initial: 408, min: 340, max: 720 },
-  wallet: { initial: 408, min: 340, max: 720 },
-  review: { initial: 520, min: 400, max: 820 },
+  transaction: DETAIL,
+  category: DETAIL,
+  person: DETAIL,
+  place: DETAIL,
+  review: DETAIL,
+  wallet: { initial: 560, min: 440, max: 1600 },
   chat: { initial: 420, min: 360, max: 720 },
 } as const satisfies Record<string, Span>;
 

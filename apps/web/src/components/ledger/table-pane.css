@@ -1,5 +1,5 @@
 /* Budget and Debts (W2-Budget, W2-Debts): the tables and the detail pane's forms, on top of ledger.css's
-   cards and rows. The pane itself is side-pane.tsx. */
+   cards and rows. The pane itself is slide-over.tsx. */
 
 .ledger {
   flex: 1 1 auto;
@@ -61,12 +61,6 @@ html[data-layout='phone'] .ledger-main {
 .round-btn.small {
   width: 36px;
   height: 36px;
-}
-
-.round-btn.round-btn-key {
-  width: auto;
-  padding: 0 8px 0 6px;
-  gap: 4px;
 }
 
 .chip {
@@ -282,7 +276,7 @@ html[data-layout='phone'] .ledger-main {
   text-overflow: ellipsis;
 }
 
-/* ---------- the detail pane's parts (side-pane.tsx is the pane) ---------- */
+/* ---------- the detail pane's parts (slide-over.tsx is the pane) ---------- */
 
 .detail-body {
   display: flex;
@@ -533,9 +527,6 @@ html[data-layout='phone'] .edit-hint {
   line-height: 20px;
 }
 
-.desk-nav-group {
-  display: contents;
-}
 
 .phone-back {
   display: none;
@@ -569,12 +560,13 @@ html[data-layout='phone'] :is(.chip, .seg-tabs button, .ledger .btn, .detail-bod
   transform: translate(-50%, -50%);
 }
 
-html[data-layout='phone'] .desk-nav {
-  display: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .meter > span {
     transition: none;
   }
+}
+
+html[data-layout='phone'] .desk-nav {
+  display: none;
 }

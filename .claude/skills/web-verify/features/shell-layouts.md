@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-Ink sidebar (1360 wide and up), labelled rail (1024 to 1359), rail with one column (700 to 1023, panes overlay with a scrim), phone layout (under 700 wide or under 500 tall: floating Ink tab bar, phone headers, panes full screen, no tab bar on pushed pages). Light, dark and System themes. Moni chat docked (`?pane=chat`) and Add (`?pane=add`). Each section's title and W2-Empty empty state.
+Ink sidebar (1360 wide and up), labelled rail (1024 to 1359), rail with one column (700 to 1023), phone layout (under 700 wide or under 500 tall: floating Ink tab bar, phone headers, panes full screen, no tab bar on pushed pages). Light, dark and System themes. Moni chat docked (`?pane=chat`) and Add (`?pane=add`). Each section's title and W2-Empty empty state.
 
 ## How to get to it (user POV)
 

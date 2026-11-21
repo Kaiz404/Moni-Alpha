@@ -103,8 +103,8 @@ export async function verifyPlaces(t) {
       await first.click();
       await p.waitForURL(/place=/);
       await settle(p);
-      const pane = await p.locator('.place-pane h2').textContent();
-      check(`${where}: a picked row swaps the list for its place`, pane === name, { pane, name });
+      const pane = await p.locator('aside.slide-over .place-pane h2').textContent();
+      check(`${where}: a picked row opens its place in the slide-over${phone ? ', the pushed page' : ' with ‹ Where you spend'}`, pane === name && (phone || (await p.getByRole('button', { name: 'Back to Where you spend (Esc)' }).isVisible())), { pane, name });
       await shot(p, `places-${size.width}-${theme}-pane`);
       if (!phone) {
         await p.locator('section[aria-label="Day by day"]').scrollIntoViewIfNeeded();
@@ -183,7 +183,7 @@ export async function verifyPlaces(t) {
   await p.keyboard.press('j');
   await p.waitForURL((url) => url.searchParams.get('place') === order[1]).catch(() => {});
   check('J moves to the next place', new URL(p.url()).searchParams.get('place') === order[1], p.url());
-  check('the pane counts where it is', (await p.locator('.pane-index').textContent()) === `2 of ${order.length}`);
+  check('the slide-over counts where it is', (await p.locator('.slide-over-steps .meta').textContent()) === `2 of ${order.length}`);
   check(
     'K sits on the up chevron and J on the down chevron, and the list has no loose J K',
     (await p.getByRole('button', { name: 'Previous place (K)' }).locator('.kbd').textContent()) === 'K' &&
@@ -339,9 +339,9 @@ export async function verifyPlaces(t) {
     await open(m, '/home/places');
     await ready(m);
     await m.locator('.place-row').first().click();
-    const names = await m.locator('.place-pane').evaluate((el) => getComputedStyle(el).animationName);
+    const names = await m.locator('aside.slide-over').evaluate((el) => getComputedStyle(el).animationName);
     const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
-    check(`the place pane ${reducedMotion === 'reduce' ? 'fades under reduced motion' : 'slides in'}`, names.split(',')[0].trim() === expected, names);
+    check(`the place's slide-over ${reducedMotion === 'reduce' ? 'fades under reduced motion' : 'slides in'}`, names.split(',')[0].trim() === expected, names);
     await mctx.close();
   }
 }

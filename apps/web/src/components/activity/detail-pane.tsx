@@ -19,21 +19,17 @@ import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/l
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
 /**
- * The docked detail pane (W2-Activity): J and K move, each value is a chip with its popover, merchant
+ * A transaction in the slide-over (W2-Activity, #106): J and K move, each value is a chip with its popover, merchant
  * and amount edit in place, Delete is the trash at the top right. In the phone layout it is the pushed Transaction page.
  */
 export function DetailPane({
   ledger,
   transaction,
-  position,
-  onMove,
   onClose,
   onDelete,
 }: {
   ledger: Ledger;
   transaction: FinanceTransaction;
-  position: string;
-  onMove: (step: 1 | -1) => void;
   onClose: () => void;
   /** Asks to confirm, then deletes (W2-Parts). */
   onDelete: () => void;
@@ -94,7 +90,7 @@ export function DetailPane({
 
   return (
     <>
-      <div className="pane-top">
+      <div className="pane-top" data-only="phone">
         <button type="button" className="icon-round icon-round-line press" aria-label="Back" data-only="phone" onClick={onClose}>
           <Icon name="chevron-left" size={22} />
         </button>
@@ -106,26 +102,6 @@ export function DetailPane({
             <Icon name="delete-outline" size={22} />
           </button>
         )}
-        <span data-only="sidebar rail rail-one-column" className="pane-nav">
-          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Previous transaction (K)" onClick={() => onMove(-1)}>
-            <Glyph name="chevron-up" size={20} />
-            <span className="kbd kbd-inline">K</span>
-          </button>
-          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Next transaction (J)" onClick={() => onMove(1)}>
-            <Icon name="chevron-down" size={20} />
-            <span className="kbd kbd-inline">J</span>
-          </button>
-          <span className="meta num pane-position">{position}</span>
-          {linked ? null : (
-            <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Delete transaction (Del)" onClick={onDelete}>
-              <Icon name="delete-outline" size={20} />
-              <span className="kbd kbd-inline">Del</span>
-            </button>
-          )}
-          <button type="button" className="icon-round icon-round-line press" aria-label="Close (Esc)" onClick={onClose}>
-            <Icon name="close" size={20} />
-          </button>
-        </span>
       </div>
       <div key={transaction.id} className="pane-content rise">
         <div className="pane-title-row">
