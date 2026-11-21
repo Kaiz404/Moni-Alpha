@@ -38,9 +38,9 @@ export function waitingLine(waiting: readonly Capture[], currency: string): stri
   return `${formatMoney(total as MinorAmount, currency)} not counted yet`;
 }
 
-/** The list's toolbar: "3 waiting, oldest first". */
+/** The list's toolbar count, beside its sort control: "3 waiting". */
 export function waitingCount(count: number): string {
-  return `${count} waiting, oldest first`;
+  return `${count} waiting`;
 }
 
 /**

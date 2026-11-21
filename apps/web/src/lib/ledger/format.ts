@@ -15,6 +15,11 @@ export function rowDay(at: string, now: Date, calendar: Calendar): string {
   return dayLabel(calendar.dayKey(at), calendar.dayKey(now));
 }
 
+/** A row's when: "7:31 pm" today, else "Yesterday" or "Mon 12 Oct". */
+export function rowWhen(at: string, now: Date, calendar: Calendar): string {
+  return calendar.dayKey(at) === calendar.dayKey(now) ? clockTime(at, calendar.zone) : rowDay(at, now, calendar);
+}
+
 export type AmountTone = 'expense' | 'income' | 'transfer';
 
 /** −RM45.90 for spending, +RM350.00 in Deep mint for income, unsigned Meta for a transfer. */

@@ -21,12 +21,13 @@ import { SlideOver } from '@/components/ledger/slide-over';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { showToast } from '@/components/shell/shell-store';
 import { applyPlan, commit, reviewContext, reviewView } from '@/lib/ledger/commit';
-import { captureSource, clockTime } from '@/lib/ledger/format';
+import { rowWhen } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { moniStore } from '@/lib/moni-store';
 import { approvedText, captureName, notMineText, parseReviewView, waitingCount, waitingLine, type ReviewView } from '@/lib/review-view';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { CapturePane } from './capture-pane';
+import { Fact } from './fact';
 import { CaughtUp, RecentList } from './review-done';
 import { SourceBubble } from './source-bubble';
 import '@/components/ledger/ledger.css';
@@ -103,7 +104,9 @@ function ReviewBody({
   setSimilar: Dispatch<SetStateAction<Record<string, boolean>>>;
 }) {
   const { projection, currency, calendar, now, userId } = ledger;
-  const queue = inboxOrder(ledger.waiting);
+  const [newestFirst, setNewestFirst] = useState(false);
+  const oldestFirst = inboxOrder(ledger.waiting);
+  const queue = newestFirst ? [...oldestFirst].reverse() : oldestFirst;
   const open = queue.find((capture) => capture.id === asked) ?? queue[0] ?? null;
   const index = open ? queue.indexOf(open) : -1;
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
@@ -284,11 +287,15 @@ function ReviewBody({
               {allState !== 'false' && <Glyph name={allState === 'true' ? 'check-bold' : 'minus-thick'} size={15} />}
             </button>
             <span className="num inbox-count">{waitingCount(queue.length)}</span>
+            <button type="button" className="inbox-sort press" onClick={() => setNewestFirst(!newestFirst)}>
+              <Glyph name="swap-vertical" size={18} />
+              {newestFirst ? 'Newest first' : 'Oldest first'}
+            </button>
           </div>
           <div role="grid" aria-label="Captures waiting" className="inbox-rows">
             {queue.map((capture) => {
               const next = edited(capture);
-              const wallet = next.walletId ? ledger.walletNames[next.walletId] : null;
+              const wallet = next.walletId ? projection.walletsById[next.walletId] : undefined;
               const category = next.categoryId ? projection.categoriesById[next.categoryId] : undefined;
               const pill = reviewStatus({
                 hasWallet: Boolean(next.walletId),
@@ -321,15 +328,20 @@ function ReviewBody({
                   <SourceBubble capture={capture} size={40} />
                   <span className="inbox-text">
                     <b className="inbox-name">{captureName(next)}</b>
-                    <span>
-                      {captureSource(capture)} at {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
-                    </span>
-                    <span>
-                      {category?.name ?? 'No category'}, {wallet ?? <span className="pick-wallet">Pick a wallet</span>}
+                    <span className="facts">
+                      <Fact icon={category?.icon ?? 'help-circle-outline'} color={category?.color ?? null}>
+                        {category?.name ?? 'No category'}
+                      </Fact>
+                      {wallet && (
+                        <Fact icon={wallet.icon} color={wallet.color}>
+                          {wallet.name}
+                        </Fact>
+                      )}
                     </span>
                   </span>
                   <span className="inbox-end">
                     <span className="num inbox-amount">{formatMoney(next.amountMinor ?? 0, capture.currency)}</span>
+                    <span className="num meta">{rowWhen(capture.transactionDate ?? capture.createdAt, now, calendar)}</span>
                     {pill && (
                       <span className="tone-pill" data-tone={pill.tone}>
                         {pill.label}

@@ -2,11 +2,9 @@
 
 import {
   combine,
-  familiarity,
   formatMoney,
   planCaptureWallet,
   planReview,
-  timesFiled,
   usualCaptures,
   type FinanceProposal,
 } from '@repo/core';
@@ -17,7 +15,7 @@ import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit, planContext, reviewContext, reviewView } from '@/lib/ledger/commit';
-import { captureSource, clockTime } from '@/lib/ledger/format';
+import { rowWhen } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import type { ChecklistItem } from '@/lib/setup';
 import { useOnline } from '@/components/states/connection';
@@ -31,9 +29,9 @@ function waitingTotal(captures: readonly FinanceProposal[], currency: string): s
   return `${formatMoney(total as MinorAmount, currency)} waiting`;
 }
 
-/** W2-Home's lilac card: the newest captures with Approve in place, and "Approve all N usual". */
+/** W2-Home's lilac card: the newest captures with Approve in place, and "Approve all N usual". A row is the merchant, the amount and when; the alert waits in the drawer (#119). */
 export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: ChecklistItem[] | null }) {
-  const { waiting, transactions, projection, walletNames, currency, calendar, wallets, userId } = ledger;
+  const { waiting, transactions, projection, walletNames, currency, calendar, now, wallets, userId } = ledger;
   const usual = usualCaptures(waiting, transactions);
   const online = useOnline();
   // With the drawer already open, the card's links change what it shows instead of stacking history.
@@ -81,11 +79,9 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
       )}
       <ul className="review-list" data-only="sidebar rail rail-one-column" hidden={!online}>
         {waiting.slice(0, SHOWN).map((capture) => {
-          const known = familiarity(timesFiled(capture, transactions));
           const category = capture.categoryId ? projection.categoriesById[capture.categoryId] : undefined;
-          const who = !capture.walletId ? 'Needs a wallet' : known === 'usual' ? 'Usual for you' : known === 'seen' ? 'Seen before' : captureSource(capture);
-          const where = capture.walletId ? (walletNames[capture.walletId] ?? 'Wallet') : captureSource(capture);
           const merchant = capture.merchant ?? capture.description ?? 'Capture';
+          const at = capture.transactionDate ?? capture.createdAt;
           return (
             <li key={capture.id} className="review-row">
               <Link href={reviewHref(capture.id)} scroll={false} replace={drawerOpen} className="review-row-link">
@@ -95,15 +91,12 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
                     <span className="row-title">{merchant}</span>
                     <span className="num row-amount">{formatMoney(capture.amountMinor ?? 0, capture.currency)}</span>
                   </span>
-                  <span className="row-meta" data-tone={capture.walletId ? 'lilac' : 'lemon'}>
-                    {who}, {where} at {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
-                  </span>
+                  <span className="row-meta num">{rowWhen(at, now, calendar)}</span>
                 </span>
               </Link>
               {capture.walletId ? (
                 <button type="button" className="btn btn-key review-approve press" aria-label={`Approve ${merchant}`} onClick={() => approve([capture])}>
-                  <Icon name="check" size={18} />
-                  Approve
+                  <Icon name="check" size={20} />
                 </button>
               ) : (
                 <Select
@@ -117,9 +110,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
                     .map((wallet) => ({ value: wallet.id, label: wallet.name, lead: <Bubble icon={wallet.icon} color={wallet.color} size={28} glyph={15} /> }))}
                   onChange={(walletId) => pickWallet(capture, walletId)}
                 >
-                  <Glyph name="wallet-outline" size={18} />
-                  Wallet
-                  <Icon name="chevron-down" size={16} />
+                  <Glyph name="wallet-outline" size={20} />
                 </Select>
               )}
             </li>

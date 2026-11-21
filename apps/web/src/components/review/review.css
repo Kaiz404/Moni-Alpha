@@ -122,9 +122,41 @@ html[data-layout='phone'] .drawer-head .icon-round {
   text-overflow: ellipsis;
 }
 
-.pick-wallet {
-  color: var(--color-on-lemon);
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 14px;
+}
+
+.fact {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fact-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inbox-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 14px;
   font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.inbox-sort:hover {
+  background: var(--color-sand-light);
 }
 
 .inbox-end {
@@ -277,41 +309,7 @@ html[data-layout='phone'] .drawer-head .icon-round {
   gap: 12px;
 }
 
-.source-alert {
-  background: var(--color-card);
-  border-radius: 18px;
-  padding: 14px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 1px 0 var(--color-hairline);
-}
-
-.source-alert-app {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-muted);
-}
-
-.source-alert-app b {
-  font-weight: 600;
-  color: var(--color-foreground);
-}
-
-.source-alert-bell {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-lemon);
-  color: var(--color-foreground);
-}
-
-.source-alert blockquote,
+.source-quote,
 .source-chat blockquote {
   margin: 0;
   font-size: 18px;
@@ -551,7 +549,13 @@ html[data-layout='phone'] .drawer-head .icon-round {
   font-weight: 600;
 }
 
-.rule-line svg {
+.rule-into {
+  display: inline-flex;
+  vertical-align: top;
+  font-weight: 500;
+}
+
+.rule-line > svg {
   vertical-align: -2px;
   color: var(--color-muted);
 }
@@ -627,10 +631,8 @@ html[data-layout='phone'] .drawer-head .icon-round {
   align-items: center;
   gap: 4px 12px;
   min-height: 52px;
-  padding: 8px 14px;
-  border-radius: 16px;
-  background: var(--color-card);
-  box-shadow: 0 0 0 1.5px var(--color-hairline);
+  padding: 8px 0;
+  border-top: 1.5px solid var(--color-background);
 }
 
 .rule-next .inbox-text > b {

@@ -49,7 +49,8 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 **4. No middle-dot separators.**
 - Do: put two facts in two places (the right side, a second line), or set them apart with weight, colour or plain words.
 - Don't: join text with " · ".
-- Example: "5 wallets · RM2,555.40" became "5 wallets with RM2,555.40", "Bill · every month" became "Monthly bill", and "Today · 12:41 pm" became "Today at 12:41 pm" (#76). The copy lint fails on the dot in any string on the phone, the shared packages and the web.
+- Example: "5 wallets · RM2,555.40" became "5 wallets with RM2,555.40", "Bill · every month" became "Monthly bill", and "Today · 12:41 pm" became "Today at 12:41 pm" (#76). The copy lint fails on the dot in any string on the phone, the shared packages and the web. Review's "No category · MAE" became the category and the wallet, each with its small bubble, and "6 waiting · oldest first" became the count and a sort control (#119).
+- Owner on #119: "different categories should have different ways to be showcased entirely"
 - Owner: "I think it looks very AI-like… Feels a bit kind of sloppy."
 
 **5. Nothing that looks AI-generated.**
@@ -105,10 +106,11 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 - Example: in-place wallet rename removed (#15). Reports folded into Budget. The sparkle Moni header button removed, leaving Ask and Add as the ways into Moni (#14). Auto-add rules moved out of Permissions (#78).
 - Owner: "there should be only a one-way entry to do that" "I'm not sure what it's doing here" (#78)
 
-**14. One surface, rounded all the way.**
-- Do: use one flat sheet, and a press layer clipped to the shape pressed.
-- Don't: put a white card inside a sheet, or a square press fill inside a rounded control.
-- Owner: "I don't like the box in a box design… Just make it like one sheet." "you seem to only round up the corners of the wrapper components"
+**14. One surface, rounded all the way. No card inside a card.**
+- Do: use one flat sheet or one block, with a quote or a list straight on it. Clip a row's hover and press fill to the rounded list it sits in (`overflow: hidden` with the radius).
+- Don't: put a card inside a card or a sheet (a white card on a Sand block, a bordered box in a pane), or let a square fill run past a rounded corner.
+- Example: Review's bank alert was a white card inside the Sand source block, with the source and time said twice; it became one header line and the quote on the Sand block. Home's review rows painted their hover past the list's rounded corners (#119).
+- Owner: "I don't like the box in a box design… Just make it like one sheet." "you seem to only round up the corners of the wrapper components" "I don't like card in the card designs like this"
 
 ## Sheets and pickers
 
@@ -186,7 +188,7 @@ For each screenshot of a changed screen, phone or web, answer each question. Rep
 4. Is a destructive action anywhere but the header's top right? (9)
 5. Do actions sit inside the content instead of the pinned bar or thumb reach? (7, 10)
 6. On a phone tab root, is the key content below y 744? (11)
-7. Is there a card inside a sheet, or a square fill inside a rounded shape? (14)
+7. Is there a card inside a card or a sheet, or a square fill past a rounded shape? (14)
 8. Is a picker a long list, or a native browser control? (16)
 9. Does a chart have a legend or numbers at rest, or differ from its twin on another screen? (17)
 10. On the web in landscape, is there an empty pane, or is it the phone layout made wider? (23)

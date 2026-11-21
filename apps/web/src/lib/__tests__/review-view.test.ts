@@ -16,7 +16,7 @@ describe('review words', () => {
   it('sums what waits in the main currency only, or says nothing waits', () => {
     expect(waitingLine([capture('GRAB*FOOD', 2340), capture('Jaya Grocer', 8640), capture('Steam', 999, 'USD')], 'MYR')).toBe('RM109.80 not counted yet');
     expect(waitingLine([], 'MYR')).toBe('Nothing waiting');
-    expect(waitingCount(3)).toBe('3 waiting, oldest first');
+    expect(waitingCount(3)).toBe('3 waiting');
   });
 
   it('names one approval by its category, counts several, and names a capture left without a wallet', () => {

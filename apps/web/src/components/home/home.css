@@ -284,8 +284,9 @@ html[data-layout='phone'] .spent-card .toggle-pill[data-at='daily'] {
 .review-list {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
   border-radius: 18px;
+  overflow: hidden;
   background: var(--color-card);
   display: flex;
   flex-direction: column;
@@ -294,9 +295,9 @@ html[data-layout='phone'] .spent-card .toggle-pill[data-at='daily'] {
 .review-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   min-height: 64px;
-  padding-right: 10px;
+  padding-right: 12px;
   transition: background-color 120ms ease;
 }
 
@@ -332,19 +333,11 @@ html[data-layout='phone'] .spent-card .toggle-pill[data-at='daily'] {
   font-weight: 600;
 }
 
-.row-meta[data-tone='lilac'] {
-  color: var(--color-on-lilac);
-}
-
-.row-meta[data-tone='lemon'] {
-  color: var(--color-on-lemon);
-}
-
 .review-approve {
-  height: 36px;
-  padding: 0 12px 0 10px;
-  gap: 4px;
-  font-size: 14px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex: none;
 }
 
 .approve-usual {

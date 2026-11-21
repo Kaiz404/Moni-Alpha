@@ -24,6 +24,7 @@ import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { useReceiptPhoto } from '@/lib/receipt-photo';
 import { captureName } from '@/lib/review-view';
+import { Fact } from './fact';
 import { SourceBubble } from './source-bubble';
 
 
@@ -71,7 +72,7 @@ export function CapturePane({
   onApprove: () => void;
   onNotMine: () => void;
 }) {
-  const { projection, calendar, now, wallets, walletNames, userId } = ledger;
+  const { projection, calendar, now, wallets, userId } = ledger;
   const [editing, setEditing] = useState<'merchant' | 'amount' | null>(null);
   const [draft, setDraft] = useState('');
   const photo = useReceiptPhoto(capture.sourceType === 'image' ? capture.sourceImageUri : null);
@@ -89,7 +90,7 @@ export function CapturePane({
     .filter((each) => each.isActive && (each.userId === null || each.userId === userId) && (each.type === null || each.type === type))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
   const at = capture.transactionDate ?? capture.createdAt;
-  const when = `${dayLabel(calendar.dayKey(at), calendar.dayKey(now))} at ${clockTime(at, calendar.zone)}`;
+  const whenAt = (time: string) => `${dayLabel(calendar.dayKey(time), calendar.dayKey(now))} at ${clockTime(time, calendar.zone)}`;
   const pill = reviewStatus({
     hasWallet: Boolean(next.walletId),
     paired: Boolean(capture.pairing),
@@ -105,8 +106,22 @@ export function CapturePane({
     ? sameCurrency.find((each) => each.name.toLowerCase().includes(capture.walletHint!.toLowerCase()) || capture.walletHint!.toLowerCase().includes(each.name.toLowerCase()))
     : undefined;
   const needsWallet = !next.walletId;
-  const filedAs = (row: FinanceTransaction) =>
-    `${(row.categoryId && projection.categoriesById[row.categoryId]?.name) || 'No category'}, ${walletNames[row.walletId] ?? 'Wallet'}`;
+  const filedAs = (categoryId: string | null, walletId: string | null) => {
+    const filed = categoryId ? projection.categoriesById[categoryId] : undefined;
+    const into = walletId ? projection.walletsById[walletId] : undefined;
+    return (
+      <>
+        <Fact icon={filed?.icon ?? 'help-circle-outline'} color={filed?.color ?? null}>
+          {filed?.name ?? 'No category'}
+        </Fact>
+        {into && (
+          <Fact icon={into.icon} color={into.color}>
+            {into.name}
+          </Fact>
+        )}
+      </>
+    );
+  };
 
   const set = (patch: ReviewEdits) => {
     onEdits({ ...edits, ...patch });
@@ -190,7 +205,7 @@ export function CapturePane({
             <SourceBubble capture={capture} size={40} />
             <span className="inbox-text">
               <b>{captureSource(capture)}</b>
-              <span>{when}</span>
+              <span>{whenAt(capture.notificationReceivedAt ?? at)}</span>
             </span>
             {pill && (
               <span className="tone-pill" data-tone={pill.tone}>
@@ -198,21 +213,10 @@ export function CapturePane({
               </span>
             )}
           </div>
-          {capture.sourceType === 'notification' && (
-            <div className="source-alert">
-              <span className="source-alert-app">
-                <span className="source-alert-bell">
-                  <Glyph name="bell-outline" size={13} />
-                </span>
-                <b>{capture.notificationTitle ?? 'Bank'}</b> at {clockTime(capture.notificationReceivedAt ?? at, calendar.zone)}
-              </span>
-              <blockquote>“{capture.notificationBody ?? capture.sourceText ?? ''}”</blockquote>
-            </div>
-          )}
+          {capture.sourceType === 'notification' && <blockquote className="source-quote">“{capture.notificationBody ?? capture.sourceText ?? ''}”</blockquote>}
           {capture.sourceType === 'text' && (
             <div className="source-chat">
               <blockquote>{capture.sourceText ?? captureName(capture)}</blockquote>
-              <span className="meta">You, in Moni chat at {clockTime(at, calendar.zone)}</span>
             </div>
           )}
           {capture.sourceType === 'image' &&
@@ -316,8 +320,8 @@ export function CapturePane({
           {rule ? (
             <div className="rule-preview rise" aria-label="Rule preview">
               <p className="rule-line">
-                {capture.notificationTitle ?? 'Bank'} alerts from {captureName(next)} <Glyph name="arrow-right" size={15} /> {category?.name ?? 'No category'},{' '}
-                {wallet?.name ?? 'Wallet'}
+                {capture.notificationTitle ?? 'Bank'} alerts from {captureName(next)} <Glyph name="arrow-right" size={15} />{' '}
+                <span className="facts rule-into">{filedAs(next.categoryId, next.walletId)}</span>
               </p>
               <div className="rule-head">
                 <span className="caps">Would have matched</span>
@@ -336,8 +340,9 @@ export function CapturePane({
                       </span>
                       <span className="inbox-text">
                         <span className="rule-quote">“{alertText(match)}”</span>
-                        <span>
-                          {dayLabel(calendar.dayKey(match.transactionDate), calendar.dayKey(now))} at {clockTime(match.transactionDate, calendar.zone)}, filed as {filedAs(match)}
+                        <span className="facts">
+                          <span>{whenAt(match.transactionDate)}</span>
+                          {filedAs(match.categoryId, match.walletId)}
                         </span>
                       </span>
                       <span className="num rule-amount">{formatSignedMoney('expense', match.amountMinor, match.currency)}</span>
@@ -354,9 +359,7 @@ export function CapturePane({
                   <b>
                     {captureName(next)} <span className="auto-chip">Auto</span>
                   </b>
-                  <span>
-                    {category?.name ?? 'No category'}, {wallet?.name ?? 'Wallet'}
-                  </span>
+                  <span className="facts">{filedAs(next.categoryId, next.walletId)}</span>
                 </span>
                 <span className="rule-auto">Added automatically</span>
               </div>
@@ -377,7 +380,7 @@ export function CapturePane({
                       <Bubble icon={filed?.icon} color={filed?.color} size={30} glyph={16} />
                       <span className="inbox-text">
                         <b>{dayLabel(calendar.dayKey(each.transactionDate), calendar.dayKey(now))}</b>
-                        <span>{filedAs(each)}</span>
+                        <span className="facts">{filedAs(each.categoryId, each.walletId)}</span>
                       </span>
                       <span className="num">{formatSignedMoney('expense', each.amountMinor, each.currency)}</span>
                     </div>

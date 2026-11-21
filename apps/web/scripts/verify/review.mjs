@@ -54,6 +54,17 @@ export async function verifyReview(t) {
       await p.locator('.home[data-loaded]').waitFor({ timeout: 30_000 });
       const where = `Review at ${size.width} ${theme}`;
       check(`${where}: Home has no Review drawer until the card opens it`, (await p.locator('aside.slide-over').count()) === 0);
+      if (size.layout !== 'phone') {
+        const corner = await p.evaluate(() => {
+          const list = document.querySelector('.review-list');
+          const rows = list?.querySelectorAll('.review-row');
+          if (!list || !rows?.length) return null;
+          const box = list.getBoundingClientRect();
+          const hit = document.elementFromPoint(box.left + 1, box.bottom - 1);
+          return { rows: rows.length, inRow: Boolean(hit?.closest('.review-row')), metaDots: [...list.querySelectorAll('.row-meta')].some((meta) => meta.textContent.includes('\u00b7')) };
+        });
+        check(`${where}: Home's review rows stop at the list's rounded corner, and each says only when`, corner !== null && !corner.inRow && !corner.metaDots, corner);
+      }
       await p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true }).click();
       await p.waitForURL(/review=deck/);
       await ready(p);
@@ -83,6 +94,12 @@ export async function verifyReview(t) {
         await p.waitForURL(/review=list/);
         const names = await p.locator('.inbox-row .inbox-name').allTextContents();
         check(`${where}: All ${pending.length} lists the waiting captures, oldest first`, names.join('|') === pending.map((row) => row.merchant).join('|'), names);
+        await drawer(p).getByRole('button', { name: 'Oldest first' }).click();
+        const flipped = await p.locator('.inbox-row .inbox-name').allTextContents();
+        check(`${where}: Oldest first turns to Newest first and reverses the list`, (await visible(drawer(p).getByRole('button', { name: 'Newest first' }))) && flipped.join('|') === [...names].reverse().join('|'), flipped);
+        await drawer(p).getByRole('button', { name: 'Newest first' }).click();
+        const dotted = await drawer(p).evaluate((el) => el.textContent.includes('·'));
+        check(`${where}: the drawer joins nothing with a middle dot`, !dotted);
       }
       await shot(p, `review-${size.width}-${theme}`);
       const behind = await p.evaluate(() => ({
@@ -111,7 +128,7 @@ export async function verifyReview(t) {
   await ready(p);
   await settle(p);
   const pane = p.locator('section.capture-card:visible');
-  const quote = await p.locator('.source-alert blockquote').textContent();
+  const quote = await p.locator('.source-quote').textContent();
   check('the bank alert sits beside the proposal, quoted', /^“.*GRAB\*FOOD.*”$/.test(quote ?? ''), quote);
   const amount = await p.getByTestId('capture-amount').textContent();
   check(`the proposal reads ${MINUS}${cents(minorOf(first.amount))}`, amount === `${MINUS}${cents(minorOf(first.amount))}`, amount);

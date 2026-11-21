@@ -1,14 +1,15 @@
 'use client';
 
-import { approvedRow, dayLabel, formatMoney, formatSignedMoney, planned, planReopen, type AutoAddRuleItem, type ReviewedProposal, type StoredRow } from '@repo/core';
+import { approvedRow, formatMoney, formatSignedMoney, planned, planReopen, type AutoAddRuleItem, type ReviewedProposal, type StoredRow } from '@repo/core';
 import Link from 'next/link';
 import { Cat } from '@/components/brand';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit } from '@/lib/ledger/commit';
-import { captureSource, clockTime } from '@/lib/ledger/format';
+import { captureSource, rowWhen } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { moniStore } from '@/lib/moni-store';
 import { caughtUpLine, captureName } from '@/lib/review-view';
+import { Fact } from './fact';
 
 /** Puts a Not mine capture back in Review, with Undo. */
 function moveBack(proposal: ReviewedProposal) {
@@ -65,7 +66,6 @@ function RuleList({ rules, wallets }: { rules: AutoAddRuleItem[]; wallets: Ledge
 export function RecentList({ ledger, titled = true }: { ledger: Ledger; titled?: boolean }) {
   const { projection, calendar, now, walletNames, aliases } = ledger;
   const lookups = { categoriesById: projection.categoriesById, walletNames, aliases };
-  const today = calendar.dayKey(now);
   return (
     <div className="recent-list" id="recently-reviewed">
       {titled && <h3 className="recent-head caps">Recently reviewed</h3>}
@@ -78,24 +78,36 @@ export function RecentList({ ledger, titled = true }: { ledger: Ledger; titled?:
             const proposed = proposal.categoryId ? projection.categoriesById[proposal.categoryId] : undefined;
             const row = approvedRow(proposal, projection.transactionsById, lookups);
             const category = row ? { name: row.category, icon: row.icon, color: row.color } : proposed;
-            const day = calendar.dayKey(proposal.reviewedAt);
-            const when = day === today ? ` at ${clockTime(proposal.reviewedAt, calendar.zone)}` : `, ${dayLabel(day, today)}`;
-            const where = notMine
-              ? captureSource(proposal)
-              : `${category?.name ?? 'No category'}, ${row?.wallet ?? ((proposal.walletId && walletNames[proposal.walletId]) || 'Wallet')}`;
+            const when = rowWhen(proposal.reviewedAt, now, calendar);
+            const walletId = (row && projection.transactionsById[row.id]?.walletId) || proposal.walletId;
+            const wallet = walletId ? projection.walletsById[walletId] : undefined;
             return (
               <li key={proposal.id} className="recent-row" data-status={proposal.status}>
                 {notMine ? <Bubble icon="close" color={null} size={36} glyph={18} /> : <Bubble icon={category?.icon} color={category?.color} size={36} glyph={18} />}
                 <span className="inbox-text">
                   <b>{row?.title ?? captureName(proposal)}</b>
-                  <span>
-                    {notMine ? 'Not mine' : 'Approved'}, {where}{when}
-                  </span>
+                  {notMine ? (
+                    <span>Not mine, from {captureSource(proposal)}</span>
+                  ) : (
+                    <span className="facts">
+                      <Fact icon={category?.icon ?? 'help-circle-outline'} color={category?.color ?? null}>
+                        {category?.name ?? 'No category'}
+                      </Fact>
+                      {wallet && (
+                        <Fact icon={wallet.icon} color={wallet.color}>
+                          {wallet.name}
+                        </Fact>
+                      )}
+                    </span>
+                  )}
                 </span>
-                <span className="num recent-amount" data-tone={notMine ? 'quiet' : undefined}>
-                  {notMine
-                    ? formatMoney(proposal.amountMinor ?? 0, proposal.currency)
-                    : formatSignedMoney(proposal.type ?? 'expense', proposal.amountMinor ?? 0, proposal.currency)}
+                <span className="inbox-end">
+                  <span className="num recent-amount" data-tone={notMine ? 'quiet' : undefined}>
+                    {notMine
+                      ? formatMoney(proposal.amountMinor ?? 0, proposal.currency)
+                      : formatSignedMoney(proposal.type ?? 'expense', proposal.amountMinor ?? 0, proposal.currency)}
+                  </span>
+                  <span className="num meta">{when}</span>
                 </span>
                 {notMine && (
                   <button type="button" className="btn btn-out press move-back" onClick={() => moveBack(proposal)}>
