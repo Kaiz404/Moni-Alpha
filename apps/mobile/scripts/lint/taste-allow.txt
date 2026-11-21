@@ -1,7 +1,3 @@
 # Known breaks of the moni-taste rules. Open issues: text arrow #110, native control #99 #101 #107. The list only shrinks.
 # Entries are `<file>: <rule>`. Regenerate: pnpm --filter moni lint:taste --write
-apps/web/src/components/activity/activity-screen.tsx: text arrow
-apps/web/src/components/activity/detail-pane.tsx: text arrow
 apps/web/src/components/shell/panes.tsx: native control
-apps/web/src/components/wallets/wallet-form.tsx: native control
-apps/web/src/components/wallets/wallet-screen.tsx: text arrow
