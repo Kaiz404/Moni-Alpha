@@ -705,6 +705,7 @@ html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
 }
 
 .pane-top-title {
+  flex: 1 1 auto;
   font-size: 18px;
   font-weight: 700;
 }
@@ -911,15 +912,8 @@ html[data-layout='phone'] .icon-round-line {
   background: var(--color-sand-light);
 }
 
-.delete-btn {
-  align-self: flex-start;
+.pane-linked {
   margin-top: 16px;
-  color: var(--color-over);
-  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
-}
-
-.delete-btn:hover {
-  background: var(--color-destructive-fill);
 }
 
 /* ---------- the phone layout ---------- */

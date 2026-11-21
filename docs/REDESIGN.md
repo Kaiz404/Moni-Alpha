@@ -63,7 +63,7 @@ Values are in `redesign/tokens.md`, words in `redesign/glossary.md`. The owner's
 - **One progress style:** full Coral with "RMx over" when over budget; never a pace tick or a bar past 100%.
 - **Editing:** existing values edit in place with the system keyboard; new money uses the amount page; fixed sets (category, wallet, date) use picker sheets.
 - **Compact pickers** (owner, 20 Nov 2026): a month, a year or a day is picked from a grid, a page at a time (12 months; a decade of years; a month of days, Sunday first), with arrows between pages. Never a long radio list. Birth month and year (#77), the bill and debt due dates (#81) and Budget's Choose month (#111) use it (`components/sheets/grid-picker-sheet.tsx`).
-- **Rows:** transaction rows have no chevron and no ⋯; press feedback plus hold for Edit category / Change wallet / Delete. Delete is also a visible button on the detail page.
+- **Rows:** transaction rows have no chevron and no ⋯; press feedback plus hold for Edit category / Change wallet / Delete. Delete is also the detail page's header trash button (#113).
 - **See all:** on a pushed page it pushes a deeper list (`/transactions`, 20 a page) under that page, so Back returns there; it never jumps to the Activity tab (owner's direction, 16 Nov 2026). This covers the bill page's history, a transaction's same-merchant row, the place page and Categories' income presets.
 - **Visible affordances:** anything tappable looks tappable; long press and swipes only duplicate visible controls.
 - **First screen:** the key content of every tab root sits above y 744 on a 390 × 844 phone.

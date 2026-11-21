@@ -27,7 +27,7 @@ import {
   transactionSource,
   type Tile,
 } from '@/components/transaction/detail-tiles';
-import { Button } from '@/components/ui/button';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { NotFound } from '@/components/ui/empty-tile';
 import {
   InPlaceField,
@@ -516,6 +516,14 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       screen="txn"
       kind="pushed"
       title="Transaction"
+      trailing={
+        <HeaderIconButton
+          testID={tid('txn', 'delete')}
+          icon="trash-can-outline"
+          accessibilityLabel="Delete transaction"
+          onPress={() => void remove()}
+        />
+      }
     >
       <InPlaceGroup>
         <PageScroll
@@ -634,15 +642,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           />
 
           <DetailLinks links={links} />
-
-          <Button
-            testID={tid('txn', 'delete')}
-            variant="destructive"
-            icon="trash-can-outline"
-            label="Delete transaction"
-            className="mt-1"
-            onPress={() => void remove()}
-          />
         </PageScroll>
       </InPlaceGroup>
     </Page>

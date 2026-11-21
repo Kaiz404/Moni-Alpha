@@ -20,7 +20,7 @@ import type { Ledger } from '@/lib/ledger/use-ledger';
 
 /**
  * The docked detail pane (W2-Activity): J and K move, each value is a chip with its popover, merchant
- * and amount edit in place, Delete stays visible. In the phone layout it is the pushed Transaction page.
+ * and amount edit in place, Delete is the trash at the top right. In the phone layout it is the pushed Transaction page.
  */
 export function DetailPane({
   ledger,
@@ -101,6 +101,11 @@ export function DetailPane({
         <span className="pane-top-title" data-only="phone">
           Transaction
         </span>
+        {linked ? null : (
+          <button type="button" className="icon-round icon-round-line press" aria-label="Delete transaction" data-only="phone" onClick={onDelete}>
+            <Icon name="delete-outline" size={22} />
+          </button>
+        )}
         <span data-only="sidebar rail rail-one-column" className="pane-nav">
           <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Previous transaction (K)" onClick={() => onMove(-1)}>
             <Glyph name="chevron-up" size={20} />
@@ -111,6 +116,12 @@ export function DetailPane({
             <span className="kbd kbd-inline">J</span>
           </button>
           <span className="meta num pane-position">{position}</span>
+          {linked ? null : (
+            <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Delete transaction (Del)" onClick={onDelete}>
+              <Icon name="delete-outline" size={20} />
+              <span className="kbd kbd-inline">Del</span>
+            </button>
+          )}
           <button type="button" className="icon-round icon-round-line press" aria-label="Close (Esc)" onClick={onClose}>
             <Icon name="close" size={20} />
           </button>
@@ -273,18 +284,7 @@ export function DetailPane({
             {transaction.notes ?? 'Add a note'}
           </button>
         )}
-        <span className="grow-space" />
-        {linked ? (
-          <p className="meta">This row belongs to a debt. Change it on Debts.</p>
-        ) : (
-          <button type="button" className="btn delete-btn press" onClick={onDelete}>
-            <Icon name="delete-outline" size={20} />
-            Delete transaction
-            <span className="kbd" data-only="sidebar rail rail-one-column">
-              Del
-            </span>
-          </button>
-        )}
+        {linked && <p className="meta pane-linked">This row belongs to a debt. Change it on Debts.</p>}
       </div>
     </>
   );

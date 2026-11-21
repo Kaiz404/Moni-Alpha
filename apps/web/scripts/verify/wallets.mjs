@@ -135,7 +135,7 @@ export async function verifyWallets(t) {
   await open(p, `/home/wallets/${defaultId}`);
   await p.locator('[data-screen="wallet"]').waitFor({ timeout: 20_000 });
   const defaultName = await p.locator('.wallet-hero-name').textContent();
-  await p.getByRole('button', { name: 'Delete', exact: true }).click();
+  await p.getByRole('button', { name: 'Delete wallet', exact: true }).click();
   await p.getByRole('alertdialog', { name: `Delete ${defaultName}?` }).getByRole('button', { name: 'Delete', exact: true }).click();
   await p.waitForURL(/\/home\/wallets$/);
   const cleared = await until('preferences', (prefs) => prefs?.default_wallet_id === null);

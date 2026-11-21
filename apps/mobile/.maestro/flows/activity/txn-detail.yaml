@@ -41,10 +41,11 @@ tags:
 - assertVisible: With Mei
 - takeScreenshot: a2-note
 
+# Delete is the header's trash button.
 - scrollUntilVisible:
     element:
       id: txn.delete
-    direction: DOWN
+    direction: UP
 - tapOn:
     id: txn.delete
 - assertVisible: Delete this transaction?

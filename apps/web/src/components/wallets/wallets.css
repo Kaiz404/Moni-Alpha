@@ -268,10 +268,6 @@ html[data-layout='phone'] .wallet-line-balance {
   padding: 8px 14px 4px;
 }
 
-.wallet-delete {
-  color: var(--color-danger);
-}
-
 .wallet-gone {
   align-items: center;
   gap: 10px;

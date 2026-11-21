@@ -161,9 +161,8 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
         <Glyph name="pencil-outline" size={18} />
         Edit wallet
       </button>
-      <button type="button" className="btn btn-out press wallet-delete" onClick={() => setConfirming(true)}>
-        <Glyph name="delete-outline" size={18} />
-        Delete
+      <button type="button" className="round-btn press" aria-label="Delete wallet" onClick={() => setConfirming(true)}>
+        <Glyph name="delete-outline" size={20} />
       </button>
     </>
   );

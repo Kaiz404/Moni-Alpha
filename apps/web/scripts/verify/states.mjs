@@ -437,7 +437,7 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     await p.keyboard.press('j');
     const pane = p.getByRole('complementary', { name: 'Transaction' });
     await pane.waitFor({ timeout: 10_000 });
-    await pane.getByRole('button', { name: /^Delete transaction/ }).click();
+    await pane.locator('.pane-top').getByRole('button', { name: /^Delete transaction/ }).click();
     const one = p.getByRole('alertdialog', { name: 'Delete this transaction?' });
     await one.waitFor({ timeout: 5000 }).catch(() => {});
     check(
