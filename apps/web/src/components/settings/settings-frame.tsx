@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Page } from '@/components/shell/page';
-import { useShellApi } from '@/components/shell/shell-context';
 import { SETTINGS_GROUPS, settingsPlace, type SettingsSection } from '@/lib/settings-nav';
 import { Mdi, SECTION_ICONS } from './mdi';
 import { useMerchantNames } from './use-merchant-names';
@@ -17,7 +16,6 @@ import './settings.css';
  * Profile rows on `/settings`, and each section is a page pushed over it with Back.
  */
 export function SettingsFrame({ children }: { children: ReactNode }) {
-  const { user } = useShellApi();
   const place = settingsPlace(usePathname());
   const toName = useMerchantNames().toName.length;
   const meta: Partial<Record<SettingsSection, ReactNode>> = {
@@ -28,7 +26,7 @@ export function SettingsFrame({ children }: { children: ReactNode }) {
     ) : null,
   };
   return (
-    <Page title="Settings" sub={`${user.name} · your data in Moni`} phone="pushed" phoneTitle={place.phoneTitle} back={place.back}>
+    <Page title="Settings" phone="pushed" phoneTitle={place.phoneTitle} back={place.back}>
       <div className="settings" data-index={place.index || undefined}>
         <nav aria-label="Settings" className="settings-nav">
           {SETTINGS_GROUPS.map((group) => (

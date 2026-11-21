@@ -183,10 +183,6 @@
   color: var(--color-ink-2);
 }
 
-.setup-cat > span:last-child {
-  padding-bottom: 8px;
-}
-
 /* ---------- the step ---------- */
 
 .setup-mid {

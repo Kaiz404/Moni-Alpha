@@ -513,13 +513,8 @@ button.set-row:hover {
 }
 
 .map-help {
-  padding-left: 88px;
   font-size: 13px;
   line-height: 18px;
-  color: var(--color-muted);
-}
-
-.map-help[data-tone='ink'] {
   color: var(--color-ink-2);
 }
 
@@ -650,14 +645,6 @@ button.set-row:hover {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.preview-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-muted);
 }
 
 .preview-table {
@@ -802,19 +789,6 @@ button.set-row:hover {
   height: 24px;
   padding: 0 9px;
   font-size: 12px;
-}
-
-.preview-note {
-  margin: 0;
-  display: flex;
-  gap: 8px;
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-ink-2);
-}
-
-.preview-note svg {
-  color: var(--color-muted);
 }
 
 .import-foot {

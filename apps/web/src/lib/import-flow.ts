@@ -24,18 +24,18 @@ export function columnLetter(index: number): string {
 }
 
 /** The pickers W2-Data draws, then the rest a statement may need, shown once mapped or asked for. */
-export const BOARD_FIELDS: readonly { field: MappedField; label: string; help?: string }[] = [
+export const BOARD_FIELDS: readonly { field: MappedField; label: string }[] = [
   { field: 'date', label: 'Date' },
-  { field: 'merchant', label: 'Merchant', help: 'Named codes show your name.' },
-  { field: 'amount', label: 'Amount', help: 'A minus sign means spending.' },
-  { field: 'category', label: 'Category', help: 'Filed the way you filed that merchant before.' },
+  { field: 'merchant', label: 'Merchant' },
+  { field: 'amount', label: 'Amount' },
+  { field: 'category', label: 'Category' },
 ];
 
-export const MORE_FIELDS: readonly { field: MappedField; label: string; help?: string }[] = [
-  { field: 'moneyOut', label: 'Money out', help: 'A column of spending only.' },
-  { field: 'moneyIn', label: 'Money in', help: 'A column of money in only.' },
+export const MORE_FIELDS: readonly { field: MappedField; label: string }[] = [
+  { field: 'moneyOut', label: 'Money out' },
+  { field: 'moneyIn', label: 'Money in' },
   { field: 'note', label: 'Note' },
-  { field: 'type', label: 'Type', help: 'Words like debit and credit.' },
+  { field: 'type', label: 'Type' },
   { field: 'currency', label: 'Currency' },
 ];
 

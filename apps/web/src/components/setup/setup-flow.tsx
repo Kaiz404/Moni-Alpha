@@ -248,10 +248,6 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
                   dispatch({ kind: 'currency', code });
                 }}
               />
-              <p className="setup-note">
-                <Glyph name="information-outline" size={18} />
-                Totals, budgets and charts use this one. Wallets in other currencies keep their own and are never added in.
-              </p>
               <footer className="setup-foot">
                 <span className="setup-fill" />
                 {cont('Continue')}
@@ -305,10 +301,6 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
                 onRemove={(key) => dispatch({ kind: 'removeWallet', key })}
                 onAdd={() => dispatch({ kind: 'addWallet' })}
               />
-              <p className="setup-note">
-                <Glyph name="information-outline" size={18} />
-                Use what&apos;s in each one today. If a balance drifts, Moni asks you to check it now and then.
-              </p>
               <footer className="setup-foot">
                 {back}
                 <span className="setup-fill" />
@@ -379,7 +371,6 @@ function Stepper({ step, currency, ai, wallets }: { step: SetupStep; currency: C
       </div>
       <div className="setup-cat">
         <Cat mood={step === 4 ? 'happy' : 'neutral'} size={88} id={`setup-cat-${step === 4 ? 'happy' : 'neutral'}`} />
-        <span>About two minutes. Every choice can change later in Settings.</span>
       </div>
     </nav>
   );

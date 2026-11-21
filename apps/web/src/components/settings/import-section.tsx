@@ -95,18 +95,13 @@ function Picker({
   );
 }
 
-function MapRow({ label, help, tone, children }: { label: string; help?: string | null; tone?: 'ink'; children: ReactNode }) {
+function MapRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="map-row">
       <div className="map-line">
         <span className="map-label">{label}</span>
         {children}
       </div>
-      {help && (
-        <span className="map-help" data-tone={tone}>
-          {help}
-        </span>
-      )}
     </div>
   );
 }
@@ -389,7 +384,7 @@ export function ImportSection() {
                   )}
                 </>
               ) : null}
-              <span className="import-foot-note">{missing ? `${missing} to see what is new.` : 'Nothing is saved yet. Check the file shows every row before you add them.'}</span>
+              <span className="import-foot-note">{missing && `${missing} to see what is new.`}</span>
               <button type="button" className="btn btn-sand press" onClick={back}>
                 Back
               </button>
@@ -528,8 +523,8 @@ function MatchColumns({
     ) : (
       <span className="col-letter">{columnLetter(column)}</span>
     );
-  const pickField = (field: MappedField, label: string, help?: string) => (
-    <MapRow key={field} label={label} help={help}>
+  const pickField = (field: MappedField, label: string) => (
+    <MapRow key={field} label={label}>
       <Picker
         label={`${label} column`}
         value={mapping[field] === null ? 'none' : String(mapping[field])}
@@ -600,13 +595,13 @@ function MatchColumns({
                 Month first
               </button>
             </div>
-            <span className="map-help" data-tone="ink" style={{ paddingLeft: 0 }}>
+            <span className="map-help">
               {hint}
             </span>
           </div>
         )}
-        {BOARD_FIELDS.filter((each) => each.field !== 'date').map((each) => pickField(each.field, each.label, each.help))}
-        {extra.map((each) => pickField(each.field, each.label, each.help))}
+        {BOARD_FIELDS.filter((each) => each.field !== 'date').map((each) => pickField(each.field, each.label))}
+        {extra.map((each) => pickField(each.field, each.label))}
         {!moreFields && extra.length < MORE_FIELDS.length && (
           <button type="button" className="text-link map-more press" onClick={onMoreFields}>
             More fields
@@ -618,10 +613,6 @@ function MatchColumns({
         <div className="preview-head">
           <span className="caps" style={{ color: 'var(--color-muted)' }}>
             Your file · first {Math.min(PREVIEW_ROWS, table.rows.length)} of {plural(table.rows.length, 'row')}
-          </span>
-          <span className="preview-hint">
-            <Mdi path={SETTINGS_ICONS.eye} size={15} />
-            Grey lines are how Moni reads each cell
           </span>
         </div>
         <div role="table" aria-label="First rows of the file" className="preview-table">
@@ -651,10 +642,6 @@ function MatchColumns({
           ))}
           {table.rows.length > PREVIEW_ROWS && <div className="p-more">and {plural(table.rows.length - PREVIEW_ROWS, 'more row')}</div>}
         </div>
-        <p className="preview-note">
-          <Mdi path={SETTINGS_ICONS.info} size={16} />
-          <span>A row counts as already here when Moni holds a payment with the same date, amount and merchant in this wallet. Check the file lists both kinds before anything is added.</span>
-        </p>
       </div>
     </div>
   );
