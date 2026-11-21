@@ -1,7 +1,7 @@
 import type { MoniSupabase } from '../supabase';
 
 type Row = Record<string, unknown>;
-type Result = { data: Row[] | null; error: { message: string; code?: string } | null };
+type Result = { data: Row[] | null; error: { message: string; code?: string } | null; status?: number };
 
 /**
  * Postgres behind PostgREST as the store meets it: a response stops at `maxRows` with no error, a
@@ -28,6 +28,8 @@ export function fakeSupabase() {
     latency: null as ((call: string) => number) | null,
     /** Set, the server stamps `created_at` and `updated_at` as Postgres's defaults and trigger do. */
     clock: null as (() => string) | null,
+    /** The error a request gets instead of landing, by its call (`insert transactions`) and how many of that call went before it. */
+    fail: null as ((call: string, nth: number) => (Result['error'] & { status?: number }) | null) | null,
     /** `table.column` to the table its foreign key points at; a write to a missing row is refused. */
     foreignKeys: new Map<string, string>(),
     /** How long a landed write takes to reach the realtime handlers; unset, it reaches them at once. */
@@ -40,6 +42,7 @@ export function fakeSupabase() {
     data: null,
     error: { code: 'PGRST205', message: `Could not find the table 'public.${table}' in the schema cache` },
   });
+  const sentCalls = new Map<string, number>();
   const offline: Result = { data: null, error: { message: 'TypeError: Network request failed' } };
 
   function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[], columns?: string, patch?: Row) {
@@ -79,10 +82,14 @@ export function fakeSupabase() {
         const call = `${label} ${table}${window ? ` ${window.join('-')}` : ''}`;
         server.calls.push(call);
         server.requests += 1;
+        const nth = sentCalls.get(call) ?? 0;
+        sentCalls.set(call, nth + 1);
+        const refused = server.fail?.(call, nth) ?? null;
         const failed = server.offline || server.failOnRequest === server.requests;
         // A request's body leaves the device when it is sent, so a later local change can't alter it.
         const sent = inserting && structuredClone(inserting);
-        const land = () => (failed ? offline : arrive(sent));
+        const land = (): Result =>
+          refused ? { data: null, error: { message: refused.message, code: refused.code }, status: refused.status } : failed ? offline : arrive(sent);
         const delay = server.latency?.(call) ?? 0;
         const landed = delay > 0 ? new Promise<Result>((done) => setTimeout(() => done(land()), delay)) : Promise.resolve(land());
         return landed.then(resolve, reject);

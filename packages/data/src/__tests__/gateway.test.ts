@@ -68,4 +68,30 @@ describe('the row gateway', () => {
     server.offline = false;
   });
 
+  it('tries again after a passing failure and gives up on a refusal', async () => {
+    server.tables.set('transactions', [{ id: 't1' }]);
+    const failures = {
+      'server error': { message: 'upstream connect error', status: 503 },
+      'statement timeout': { message: 'canceling statement due to statement timeout', code: '57014', status: 500 },
+      'expired session': { message: 'JWT expired', code: 'PGRST303', status: 401 },
+      'row it points at not there yet': { message: 'violates foreign key constraint', code: '23503', status: 409 },
+      'row-level security': { message: 'new row violates row-level security policy', code: '42501', status: 403 },
+      'check constraint': { message: 'violates check constraint', code: '23514', status: 400 },
+    };
+    const retryable: Record<string, boolean> = {};
+    for (const [name, error] of Object.entries(failures)) {
+      server.fail = () => error;
+      const result = await gateway.update('transactions', { id: 't1' });
+      retryable[name] = !result.ok && result.retryable;
+    }
+    server.fail = null;
+    expect(retryable).toEqual({
+      'server error': true,
+      'statement timeout': true,
+      'expired session': true,
+      'row it points at not there yet': true,
+      'row-level security': false,
+      'check constraint': false,
+    });
+  });
 });

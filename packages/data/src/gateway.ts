@@ -15,8 +15,25 @@ const PULL_PAGE = 1000;
 
 const COLOURED: ReadonlySet<SyncedTable> = new Set(['categories', 'wallets']);
 
-function failure(message: string): Failure {
-  return { ok: false, message, retryable: isNetworkError(message) };
+/**
+ * Postgres and PostgREST codes for a failure that passes: a statement timeout, a serialization or
+ * deadlock abort, an expired session, and a row this one points at that is not there yet (its insert
+ * is still being retried).
+ */
+const PASSING_CODES: ReadonlySet<string> = new Set(['57014', '40001', '40P01', 'PGRST301', 'PGRST303', '23503']);
+
+type SupabaseError = { message: string; code?: string };
+
+/**
+ * Worth trying again: the request never got an answer, or the server failed for a reason that
+ * passes. A refusal (row-level security, a check, a table the server lacks) stays one.
+ */
+function failure(error: SupabaseError, status?: number): Failure {
+  const passing =
+    isNetworkError(error.message) ||
+    (status !== undefined && (status >= 500 || status === 401 || status === 408 || status === 429)) ||
+    (error.code !== undefined && PASSING_CODES.has(error.code));
+  return { ok: false, message: error.message, retryable: passing };
 }
 
 /**
@@ -45,15 +62,15 @@ export function createRowGateway(client: MoniSupabase) {
       const row = withCurrentColor(table, input);
       const inserted = await supabase.from(table).insert(row).select();
       if (inserted.error?.code !== '23505') {
-        return inserted.error ? failure(inserted.error.message) : { ok: true, row: inserted.data?.[0] };
+        return inserted.error ? failure(inserted.error, inserted.status) : { ok: true, row: inserted.data?.[0] };
       }
       const id = row.id as string;
       const revived = await supabase.from(table).update(row).eq('id', id).eq('deleted', true).select();
-      if (revived.error) return failure(revived.error.message);
+      if (revived.error) return failure(revived.error, revived.status);
       if (revived.data?.length) return { ok: true, row: revived.data[0] };
       const live = await supabase.from(table).select().eq('id', id);
       // Nothing under this id means another unique key clashed, which is a real failure.
-      if (!live.data?.length) return failure(inserted.error.message);
+      if (!live.data?.length) return failure(inserted.error, inserted.status);
       // The same row queued again before its insert returned (an Undo a second after Add marks it
       // deleted): a newer version wins. A create with no time or an older one, such as a re-queued
       // row from an old app version, never overwrites the server.
@@ -62,7 +79,7 @@ export function createRowGateway(client: MoniSupabase) {
       const newer = !Number.isNaN(at(row.updated_at)) && (Number.isNaN(at(current.updated_at)) || at(row.updated_at) > at(current.updated_at));
       if (!newer) return { ok: true, row: current };
       const updated = await supabase.from(table).update(row).eq('id', id).select();
-      return updated.error ? failure(updated.error.message) : { ok: true, row: updated.data?.[0] ?? current };
+      return updated.error ? failure(updated.error, updated.status) : { ok: true, row: updated.data?.[0] ?? current };
     },
 
     async update(table: SyncedTable, input: Row): Promise<RowResult> {
@@ -71,7 +88,7 @@ export function createRowGateway(client: MoniSupabase) {
         .update(withCurrentColor(table, input))
         .eq('id', input.id as string)
         .select();
-      return updated.error ? failure(updated.error.message) : { ok: true, row: updated.data?.[0] };
+      return updated.error ? failure(updated.error, updated.status) : { ok: true, row: updated.data?.[0] };
     },
 
     /** Synced rows are never `DELETE`d: a device pulling by `updated_at` would never learn of it. */
@@ -92,7 +109,7 @@ export function createRowGateway(client: MoniSupabase) {
           ? supabase.from(table).select().gt('updated_at', new Date(changedSince).toISOString())
           : supabase.from(table).select();
         const page = await query.order('id').range(rows.length, rows.length + PULL_PAGE - 1);
-        if (page.error) return failure(page.error.message);
+        if (page.error) return failure(page.error, page.status);
         if (!page.data.length) return { ok: true, rows };
         rows.push(...page.data);
       }
