@@ -6,7 +6,6 @@ import {
   formatSignedMoney,
   monthName,
   monthShort,
-  spendingParams,
   type FinanceProposal,
   type FinanceTransaction,
 } from '@repo/core';
@@ -23,6 +22,7 @@ const CHART_W = 340;
 const CHART_H = 150;
 const AXIS = 44;
 const PLOT_H = CHART_H - 4;
+const PAGE = 6;
 
 /** Six months of one category against its budget line; the month on show is the bold one, and a month's spending shows under the pointer. */
 function HistoryChart({ line, months, currency }: { line: BudgetLine; months: readonly string[]; currency: string }) {
@@ -139,13 +139,10 @@ export function CategoryPane({
   onMove: (by: 1 | -1) => void;
   onClose: () => void;
 }) {
-  const shown = 6;
-  const reviewRows = isCurrent ? toReview.slice(0, shown) : [];
-  const paymentRows = payments.slice(0, Math.max(0, shown - reviewRows.length));
+  const reviewRows = isCurrent ? toReview : [];
   const meta = payments.length
     ? `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}${reviewRows.length ? ` · ${reviewRows.length} to review` : ''}`
     : 'No payments yet';
-  const activityHref = `/activity?${new URLSearchParams(spendingParams({ kind: 'category', categoryId: line.categoryId }, month) as Record<string, string>)}`;
   return (
     <div className="detail-body" key={line.categoryId} data-category={line.categoryId}>
       <div className="detail-top">
@@ -213,42 +210,81 @@ export function CategoryPane({
         <span className="caps">Last {months.length} months</span>
         <HistoryChart line={line} months={months} currency={currency} />
       </div>
+      <PaneRows key={month} line={line} heading={isCurrent ? 'This month' : `In ${monthShort(month)}`} reviewRows={reviewRows} payments={payments} currency={currency} walletNames={walletNames} calendar={calendar} today={today} />
+    </div>
+  );
+}
+
+/** The category's captures to review, then its payments, six to a page so the pane never leaves Budget. */
+function PaneRows({
+  line,
+  heading,
+  reviewRows,
+  payments,
+  currency,
+  walletNames,
+  calendar,
+  today,
+}: {
+  line: BudgetLine;
+  heading: string;
+  reviewRows: readonly FinanceProposal[];
+  payments: readonly FinanceTransaction[];
+  currency: string;
+  walletNames: Record<string, string>;
+  calendar: Calendar;
+  today: string;
+}) {
+  const [page, setPage] = useState(1);
+  const rows = [...reviewRows.map((proposal) => ({ kind: 'review' as const, proposal })), ...payments.map((payment) => ({ kind: 'payment' as const, payment }))];
+  const pages = Math.ceil(rows.length / PAGE);
+  const shown = rows.slice((page - 1) * PAGE, page * PAGE);
+  return (
+    <>
       <div className="detail-rule pane-list-head">
-        <span className="caps">{isCurrent ? 'This month' : `In ${monthShort(month)}`}</span>
-        {payments.length > 0 && (
-          <Link href={activityHref} className="link see-all">
-            See all {payments.length} in Activity
-            <Glyph name="chevron-right" size={18} />
-          </Link>
+        <span className="caps">{heading}</span>
+        {pages > 1 && (
+          <nav aria-label="Pages" className="pager">
+            <button type="button" className="pg press" aria-label="Previous page" disabled={page === 1} onClick={() => setPage(page - 1)}>
+              <Glyph name="chevron-left" size={20} />
+            </button>
+            <span className="meta num" aria-current="page">
+              {page} of {pages}
+            </span>
+            <button type="button" className="pg press" aria-label="Next page" disabled={page === pages} onClick={() => setPage(page + 1)}>
+              <Glyph name="chevron-right" size={20} />
+            </button>
+          </nav>
         )}
       </div>
       <div className="pane-list">
-        {reviewRows.map((proposal) => (
-          <Link key={proposal.id} href={reviewHref(proposal.id)} className="pane-row">
-            <Bubble icon={line.icon} color={line.color} size={30} glyph={16} />
-            <span className="row-text">
-              <b>{proposal.merchant ?? proposal.description ?? line.name}</b>
-              <span className="pane-row-meta">
-                <span className="review-count">To review</span>
-                {dayLabel(calendar.dayKey(proposal.transactionDate ?? proposal.createdAt), today)} · {proposal.walletId ? (walletNames[proposal.walletId] ?? 'no wallet') : 'no wallet'}
+        {shown.map((row) =>
+          row.kind === 'review' ? (
+            <Link key={row.proposal.id} href={reviewHref(row.proposal.id)} className="pane-row">
+              <Bubble icon={line.icon} color={line.color} size={30} glyph={16} />
+              <span className="row-text">
+                <b>{row.proposal.merchant ?? row.proposal.description ?? line.name}</b>
+                <span className="pane-row-meta">
+                  <span className="review-count">To review</span>
+                  {dayLabel(calendar.dayKey(row.proposal.transactionDate ?? row.proposal.createdAt), today)} · {row.proposal.walletId ? (walletNames[row.proposal.walletId] ?? 'no wallet') : 'no wallet'}
+                </span>
               </span>
-            </span>
-            <span className="num pane-row-amount tone-plain">{formatMoney(proposal.amountMinor ?? 0, currency)}</span>
-          </Link>
-        ))}
-        {paymentRows.map((payment) => (
-          <Link key={payment.id} href={activityHref} className="pane-row">
-            <Bubble icon={line.icon} color={line.color} size={30} glyph={16} />
-            <span className="row-text">
-              <b>{payment.merchant ?? payment.description ?? line.name}</b>
-              <span>
-                {dayLabel(calendar.dayKey(payment.transactionDate), today)} · {walletNames[payment.walletId] ?? 'Wallet'}
+              <span className="num pane-row-amount tone-plain">{formatMoney(row.proposal.amountMinor ?? 0, currency)}</span>
+            </Link>
+          ) : (
+            <Link key={row.payment.id} href={`/activity/${row.payment.id}`} className="pane-row">
+              <Bubble icon={line.icon} color={line.color} size={30} glyph={16} />
+              <span className="row-text">
+                <b>{row.payment.merchant ?? row.payment.description ?? line.name}</b>
+                <span>
+                  {dayLabel(calendar.dayKey(row.payment.transactionDate), today)} · {walletNames[row.payment.walletId] ?? 'Wallet'}
+                </span>
               </span>
-            </span>
-            <span className="num pane-row-amount">{formatSignedMoney('expense', payment.amountMinor, currency)}</span>
-          </Link>
-        ))}
-        {payments.length === 0 && reviewRows.length === 0 && (
+              <span className="num pane-row-amount">{formatSignedMoney('expense', row.payment.amountMinor, currency)}</span>
+            </Link>
+          ),
+        )}
+        {rows.length === 0 && (
           <div className="dashed-tile">
             <Glyph name="receipt-text-outline" size={22} />
             <span>
@@ -259,6 +295,6 @@ export function CategoryPane({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

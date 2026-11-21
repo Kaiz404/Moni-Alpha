@@ -1052,11 +1052,6 @@ html[data-layout='phone'] .pane-note {
   min-height: 44px;
 }
 
-html[data-layout='phone'] .pg {
-  width: 44px;
-  height: 44px;
-}
-
 html[data-layout='phone'] :is(.kind-chip, .pencil) {
   position: relative;
 }

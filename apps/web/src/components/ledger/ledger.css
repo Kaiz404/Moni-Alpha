@@ -709,6 +709,11 @@ html:not([data-layout='phone']) .icon-round-key {
   opacity: 0.4;
 }
 
+html[data-layout='phone'] .pg {
+  width: 44px;
+  height: 44px;
+}
+
 .pg[aria-current='page'] {
   background: var(--color-primary);
   color: var(--color-primary-foreground);

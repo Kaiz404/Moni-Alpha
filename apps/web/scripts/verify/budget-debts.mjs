@@ -204,6 +204,19 @@ export async function verifyBudgetDebts(t) {
     { restText, tipValue, rowSpent },
   );
   await p.mouse.move(0, 0);
+  const paneHrefs = await p.locator('aside.side-pane a[href]').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+  const pager = p.locator('aside.side-pane nav[aria-label="Pages"]');
+  let paged = { pages: 0 };
+  if (await pager.isVisible()) {
+    const before = await p.locator('aside.side-pane .pane-row').first().getAttribute('href');
+    await pager.getByRole('button', { name: 'Next page' }).click();
+    paged = { pages: (await pager.textContent()).trim(), before, after: await p.locator('aside.side-pane .pane-row').first().getAttribute('href'), path: new URL(p.url()).pathname };
+  }
+  check(
+    "the category pane links nowhere in Activity's list and pages its payments in place",
+    !paneHrefs.some((href) => href.startsWith('/activity?')) && (paged.pages === 0 || (paged.path === '/budget' && paged.before !== paged.after && /^2 of \d+$/.test(paged.pages))),
+    { paneHrefs, paged },
+  );
   await p.keyboard.press('j');
   await p.waitForURL(new RegExp(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`)).catch(() => {});
   check('J moves to the next category', p.url().includes(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`), p.url());
