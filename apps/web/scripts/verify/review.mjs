@@ -174,8 +174,10 @@ export async function verifyReview(t) {
   check('Space ticks the open capture, twice for two, and the Ink bar counts them', (await visible(bar)) && (await bar.textContent())?.includes('2 selected'));
   await shot(p, 'review-1440-bulk');
   await bar.getByRole('button', { name: /^Approve/ }).click();
-  const both = await until('proposals', (r) => [first.id, pending[1].id].every((id) => r.some((row) => row.id === id && row.status === 'approved')));
+  // A toast lasts 4 s, less than the dev project can take to show both rows, so it is read first.
+  await p.getByRole('status').filter({ hasText: '2 approved' }).waitFor({ timeout: 4000 }).catch(() => {});
   const bulkToast = await p.getByRole('status').allTextContents().catch(() => []);
+  const both = await until('proposals', (r) => [first.id, pending[1].id].every((id) => r.some((row) => row.id === id && row.status === 'approved')));
   check('bulk Approve approves both', both.ok && bulkToast.some((text) => text.includes('2 approved')), {
     statuses: both.rows.filter((row) => [first.id, pending[1].id].includes(row.id)).map((row) => row.status),
     toast: bulkToast,
