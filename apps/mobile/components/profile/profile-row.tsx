@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import {
   IconSymbol,
   type IconSymbolName,
@@ -31,7 +32,8 @@ export const PROFILE_TINT_CLASS: Record<ProfileTint, string> = {
 };
 
 type ProfileRowProps = {
-  icon: IconSymbolName;
+  /** `moni` draws the cat, the mark for Moni's AI. */
+  icon: IconSymbolName | 'moni';
   tint: ProfileTint;
   title: string;
   meta?: string;
@@ -54,16 +56,20 @@ type ProfileRowProps = {
 /** A settings row with a meta line: 42 bubble, 16/600 title, 13 meta, trailing value 8 before the chevron. */
 export function ProfileRow(props: ProfileRowProps) {
   const tokens = useThemeTokens();
+  const glyphColor =
+    props.tint === 'sand' || props.tint === 'attention'
+      ? tokens.foreground
+      : tokens.onCategory;
   const body = (
     <>
       <View
         className={`h-[42px] w-[42px] items-center justify-center rounded-full ${PROFILE_TINT_CLASS[props.tint]}`}
       >
-        <IconSymbol
-          name={props.icon}
-          size={20}
-          color={props.tint === 'sand' || props.tint === 'attention' ? tokens.foreground : tokens.onCategory}
-        />
+        {props.icon === 'moni' ? (
+          <MoniGlyph size={20} color={glyphColor} />
+        ) : (
+          <IconSymbol name={props.icon} size={20} color={glyphColor} />
+        )}
       </View>
       <View className="min-w-0 flex-1">
         <Text

@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
 import { useBudgetData } from '@/components/budget/use-budget';
@@ -508,7 +509,7 @@ export default function BillScreen() {
               />
             </SwitchRow>
             <SwitchRow
-              icon="auto-fix"
+              icon="moni"
               title="Auto-add bank alerts"
               meta={
                 rule
@@ -686,7 +687,7 @@ function SwitchRow({
   meta,
   children,
 }: {
-  icon: 'bell-outline' | 'auto-fix';
+  icon: 'bell-outline' | 'moni';
   title: string;
   meta: string;
   children: ReactNode;
@@ -695,11 +696,11 @@ function SwitchRow({
   return (
     <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
       <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={tokens.foreground}
-        />
+        {icon === 'moni' ? (
+          <MoniGlyph size={20} color={tokens.foreground} />
+        ) : (
+          <IconSymbol name={icon} size={20} color={tokens.foreground} />
+        )}
       </View>
       <View className="min-w-0 flex-1">
         <Text

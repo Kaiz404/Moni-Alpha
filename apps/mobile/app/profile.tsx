@@ -230,7 +230,7 @@ export default function ProfileScreen() {
         <Section label="PRIVACY AND DATA">
           <ProfileRow
             testID={tid('profile', 'row', 'moni-ai')}
-            icon="creation"
+            icon="moni"
             tint="lilac"
             title="Moni's AI"
             value={aiOn ? 'On' : 'Off'}

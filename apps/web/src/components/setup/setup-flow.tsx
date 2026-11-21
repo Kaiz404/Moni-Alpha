@@ -30,12 +30,7 @@ import { PhoneStep } from './phone-step';
 import { Item } from './setup-item';
 import './setup.css';
 
-const STEPS: readonly { title: string; icon: string }[] = [
-  { title: 'Main currency', icon: 'currency-usd' },
-  { title: "Moni's AI", icon: 'robot-happy-outline' },
-  { title: 'Wallets', icon: 'wallet-outline' },
-  { title: 'Phone app', icon: 'cellphone-arrow-down' },
-];
+const STEPS = ['Main currency', "Moni's AI", 'Wallets', 'Phone app'] as const;
 
 type State = {
   step: SetupStep;
@@ -352,16 +347,16 @@ function Stepper({ step, currency, ai, wallets }: { step: SetupStep; currency: C
           <span style={{ width: `${(step / 4) * 100}%` }} />
         </span>
         <ol>
-          {STEPS.map((each, index) => {
+          {STEPS.map((title, index) => {
             const n = index + 1;
             const state = n < step ? 'done' : n === step ? 'now' : 'next';
             return (
-              <li key={each.title} className="setup-srow" aria-current={n === step ? 'step' : undefined}>
+              <li key={title} className="setup-srow" aria-current={n === step ? 'step' : undefined}>
                 <span className="setup-dot" data-s={state}>
                   {state === 'done' ? <Glyph name="check-bold" size={16} /> : n}
                 </span>
                 <span className="setup-stext">
-                  <b>{each.title}</b>
+                  <b>{title}</b>
                   <span>{state === 'done' ? done[index] : state === 'now' ? (n === 1 ? done[0] : 'Now') : ''}</span>
                 </span>
               </li>

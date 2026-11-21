@@ -64,8 +64,6 @@ const names = [
     'file-delimited-outline',
     'bell-ring-outline',
     'currency-usd',
-    'robot-happy-outline',
-    'cellphone-arrow-down',
     'cloud-alert-outline',
     'home-outline',
     'open-in-new',

@@ -157,7 +157,7 @@ function main() {
     writeList(
       ALLOW_PATH,
       [
-        'Known breaks of the moni-taste rules. Open issues: sparkle icon #109, text arrow #110, native control #99 #101 #107. The list only shrinks.',
+        'Known breaks of the moni-taste rules. Open issues: text arrow #110, native control #99 #101 #107. The list only shrinks.',
         'Entries are `<file>: <rule>`. Regenerate: pnpm --filter moni lint:taste --write',
       ],
       hits.map(allowKey),
