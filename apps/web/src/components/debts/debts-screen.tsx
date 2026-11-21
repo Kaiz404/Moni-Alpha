@@ -486,11 +486,6 @@ function PeopleCard({
             </button>
           )}
         </h2>
-        <span className="hint-keys">
-          <span className="kbd">J</span>
-          <span className="kbd">K</span>
-          move · <span className="kbd">R</span>record a repayment
-        </span>
       </div>
       {summary.open.length === 0 ? (
         <div className="dashed-tile all-settled">

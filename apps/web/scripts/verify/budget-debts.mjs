@@ -89,6 +89,15 @@ export async function verifyBudgetDebts(t) {
             fills,
             { box, tabbar, back },
           );
+          if (size.layout === 'sidebar') {
+            const keyOn = (name) => p.locator(`aside.side-pane button[aria-label$="(${name})"] .kbd`).first().textContent().catch(() => null);
+            const keys = { K: await keyOn('K'), J: await keyOn('J'), [screen === 'budget' ? 'E' : 'R']: await (screen === 'budget' ? p.locator('aside.side-pane :is(.pill-field, .set-btn) .kbd').first().textContent().catch(() => null) : p.locator('aside.side-pane button', { hasText: 'Record a repayment' }).locator('.kbd').textContent().catch(() => null)) };
+            check(
+              `${where}: K and J sit on the pane's chevrons and ${screen === 'budget' ? 'E on its budget' : 'R on Record a repayment'}, with no hints off to one side`,
+              Object.entries(keys).every(([key, text]) => key === text) && (await p.locator('.hint-keys').count()) === 0,
+              keys,
+            );
+          }
           await shot(p, `${screen}-${size.width}-${theme}-pane`);
           await p.keyboard.press('Escape');
           await p.waitForURL((url) => !/category=|person=/.test(url.search)).catch(() => {});

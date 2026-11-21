@@ -300,13 +300,6 @@ function ReviewBody({
               {allState !== 'false' && <Glyph name={allState === 'true' ? 'check-bold' : 'minus-thick'} size={15} />}
             </button>
             <span className="num inbox-count">{waitingCount(queue.length)}</span>
-            <span className="hint-keys">
-              <span className="kbd">J</span>
-              <span className="kbd">K</span>
-              move
-              <span className="kbd">Space</span>
-              select
-            </span>
           </div>
           <div role="grid" aria-label="Captures waiting" className="inbox-rows">
             {queue.map((capture) => {

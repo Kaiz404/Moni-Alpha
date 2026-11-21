@@ -37,20 +37,6 @@ html[data-layout='phone'] .ledger-main {
   animation: fade-in 180ms ease 300ms both;
 }
 
-.hint-keys {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-muted);
-  white-space: nowrap;
-}
-
-html[data-layout='rail-one-column'] .hint-keys,
-html[data-layout='phone'] .hint-keys {
-  display: none;
-}
-
 .round-btn {
   width: 40px;
   height: 40px;
@@ -75,6 +61,12 @@ html[data-layout='phone'] .hint-keys {
 .round-btn.small {
   width: 36px;
   height: 36px;
+}
+
+.round-btn.round-btn-key {
+  width: auto;
+  padding: 0 8px 0 6px;
+  gap: 4px;
 }
 
 .chip {

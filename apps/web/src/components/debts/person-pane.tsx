@@ -93,11 +93,13 @@ export function PersonPane({
           <Glyph name="chevron-left" />
         </button>
         <span className="desk-nav desk-nav-group">
-          <button type="button" className="round-btn small" onClick={() => onMove(-1)} aria-label="Previous person (K)" disabled={index <= 0}>
+          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(-1)} aria-label="Previous person (K)" disabled={index <= 0}>
             <Glyph name="chevron-up" />
+            <span className="kbd kbd-inline">K</span>
           </button>
-          <button type="button" className="round-btn small" onClick={() => onMove(1)} aria-label="Next person (J)" disabled={index === count - 1}>
+          <button type="button" className="round-btn small round-btn-key" onClick={() => onMove(1)} aria-label="Next person (J)" disabled={index === count - 1}>
             <Glyph name="chevron-down" />
+            <span className="kbd kbd-inline">J</span>
           </button>
         </span>
         <span className="count num">{index >= 0 && <span className="desk-nav">{index + 1} of {count}</span>}</span>

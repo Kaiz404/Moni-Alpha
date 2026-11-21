@@ -173,11 +173,13 @@ export function CapturePane({
     <section className="capture-card" aria-label="Capture" data-capture={capture.id}>
       <div className="capture-top">
         <span className="pane-nav" data-only="sidebar rail rail-one-column">
-          <button type="button" className="icon-round icon-round-line press" aria-label="Previous capture (K)" onClick={() => onMove(-1)}>
+          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Previous capture (K)" onClick={() => onMove(-1)}>
             <Glyph name="chevron-up" size={20} />
+            <span className="kbd kbd-inline">K</span>
           </button>
-          <button type="button" className="icon-round icon-round-line press" aria-label="Next capture (J)" onClick={() => onMove(1)}>
+          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Next capture (J)" onClick={() => onMove(1)}>
             <Icon name="chevron-down" size={20} />
+            <span className="kbd kbd-inline">J</span>
           </button>
         </span>
         <span className="num meta capture-position">{position}</span>

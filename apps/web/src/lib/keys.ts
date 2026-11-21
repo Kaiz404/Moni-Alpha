@@ -89,6 +89,31 @@ export const SHORTCUT_GROUPS: readonly { title: string; rows: readonly ShortcutR
     ],
   },
   {
+    title: 'Budget',
+    rows: [
+      { label: 'Next and previous category', keys: ['J', 'K'] },
+      { label: 'Edit the budget', keys: ['E'] },
+    ],
+  },
+  {
+    title: 'Debts',
+    rows: [
+      { label: 'Next and previous person', keys: ['J', 'K'] },
+      { label: 'Record a repayment', keys: ['R'] },
+      { label: 'Remind', keys: ['M'] },
+      { label: 'Record a debt', keys: ['D'] },
+    ],
+  },
+  {
+    title: 'Review',
+    rows: [
+      { label: 'Next and previous capture', keys: ['J', 'K'] },
+      { label: 'Select the capture', keys: ['Space'] },
+      { label: 'Approve', keys: ['A'] },
+      { label: 'Not mine', keys: ['X'] },
+    ],
+  },
+  {
     title: 'Moni chat',
     rows: [
       { label: 'Send', keys: ['Enter'] },

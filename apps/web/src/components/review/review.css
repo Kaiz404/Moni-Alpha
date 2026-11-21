@@ -43,19 +43,6 @@ html[data-layout='phone'] .drawer-head .icon-round {
   padding: 0 12px;
 }
 
-.inbox-tools .hint-keys {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--color-muted);
-}
-
-.inbox-tools .hint-keys .kbd + .kbd,
-.inbox-tools .hint-keys .kbd:nth-of-type(3) {
-  margin-left: 2px;
-}
-
 /* ---------- the inbox ---------- */
 
 .review-inbox {

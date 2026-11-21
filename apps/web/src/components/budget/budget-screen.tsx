@@ -311,11 +311,6 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                   <h2 className="card-title">Budgets</h2>
                   {showTable && (
                     <>
-                      <span className="hint-keys">
-                        <span className="kbd">J</span>
-                        <span className="kbd">K</span>
-                        move · <span className="kbd">E</span>edit budget
-                      </span>
                       {editable && (
                         <button type="button" className="btn btn-out press suggest-btn" onClick={() => setSuggesting(true)}>
                           <AskMoniMark size={20} id="suggest-open" />

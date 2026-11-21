@@ -151,6 +151,12 @@ export async function verifyReview(t) {
   await p.waitForFunction((id) => document.querySelector('section.capture-card')?.getAttribute('data-capture') === id, first.id, { timeout: 5000 }).catch(() => {});
   check('and opens it again', (await pane.getAttribute('data-capture')) === first.id);
 
+  check(
+    "K and J sit on the capture's chevrons, with no hints beside the list",
+    (await drawer(p).getByRole('button', { name: 'Previous capture (K)' }).locator('.kbd').textContent()) === 'K' &&
+      (await drawer(p).getByRole('button', { name: 'Next capture (J)' }).locator('.kbd').textContent()) === 'J' &&
+      (await drawer(p).locator('.hint-keys').count()) === 0,
+  );
   await p.keyboard.press('j');
   await p.waitForURL(new RegExp(`capture=${pending[1].id}`)).catch(() => {});
   check('J opens the next capture and puts it in the URL', p.url().includes(`capture=${pending[1].id}`) && (await pane.getAttribute('data-capture')) === pending[1].id, p.url());
