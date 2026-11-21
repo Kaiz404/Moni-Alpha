@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney, type NewDebt } from '@repo/core';
+import { formatMoney, lastDueDate, type NewDebt } from '@repo/core';
 import { parseAmountDraft } from '@/lib/budget-view';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
@@ -141,7 +141,7 @@ export function RecordDebt({
         </div>
         <div className="field-row">
           <span className="label-text">Due date</span>
-          <DateField label="Due date" className="pill-field press" today={today} value={draft.dueDate || null} onChange={(dueDate) => set({ dueDate })} onClear={() => set({ dueDate: '' })} />
+          <DateField label="Due date" className="pill-field press" min={today} max={lastDueDate(today)} today={today} value={draft.dueDate || null} onChange={(dueDate) => set({ dueDate })} onClear={() => set({ dueDate: '' })} />
         </div>
       </div>
       <label className="debt-input">

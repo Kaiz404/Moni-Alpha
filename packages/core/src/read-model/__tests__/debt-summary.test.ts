@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { summarizeDebts } from '../debt-summary';
+import { lastDueDate, summarizeDebts } from '../debt-summary';
 import { createCalendar } from '../../calendar';
 import type { FinanceDebt, FinanceDebtActivity } from '../types';
 
@@ -160,5 +160,15 @@ describe('summarizeDebts', () => {
     );
 
     expect(summary.comingUp.map((row) => row.daysLeft)).toEqual([-2]);
+  });
+});
+
+describe('lastDueDate', () => {
+  it('is the same day a year ahead', () => {
+    expect(lastDueDate('2026-10-14')).toBe('2027-10-14');
+  });
+
+  it('holds the 29th of February to the end of the next February', () => {
+    expect(lastDueDate('2028-02-29')).toBe('2029-02-28');
   });
 });

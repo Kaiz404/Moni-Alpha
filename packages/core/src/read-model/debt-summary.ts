@@ -1,6 +1,6 @@
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { type Calendar, daysBetween, parseDayKey } from '../calendar';
+import { addMonths, type Calendar, type DayKey, dayOfMonth, daysBetween, parseDayKey } from '../calendar';
 import { debtStatus, type DebtStatus, debtTotals } from '../ledger';
 import type { FinanceDebt, FinanceDebtActivity } from './types';
 
@@ -67,6 +67,11 @@ export function describeDebt(debt: FinanceDebt, activities: readonly Activity[])
 export function daysUntil(dueDate: string, now: Date, calendar: Calendar): number | null {
   const due = parseDayKey(dueDate);
   return due ? daysBetween(calendar.dayKey(now), due) : null;
+}
+
+/** The last day a due date can be set to: a year from today. The first is today. */
+export function lastDueDate(today: DayKey): DayKey {
+  return addMonths(today, 12, dayOfMonth(today));
 }
 
 function byDueThenName(a: DebtLine, b: DebtLine): number {

@@ -1,11 +1,9 @@
 import { PageGridPicker } from '@/components/sheets/grid-picker-sheet';
 import { Button } from '@/components/ui/button';
-import { addMonths, dateLabel, dayOfMonth, parseDayKey } from '@repo/core';
+import { dateLabel, lastDueDate, parseDayKey } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { dayGrid, pageOf } from '@/lib/dates/grid-pages';
 import { tid } from '@/lib/test-ids';
-
-const MONTHS_AHEAD = 12;
 
 /** A local `YYYY-MM-DD` for the debt pages' due-date label: "Fri 30 Oct". */
 export function dueLabel(
@@ -32,7 +30,7 @@ export function DueDateSheet({
   onDismiss: () => void;
 }) {
   const today = deviceCalendar.dayKey(new Date());
-  const layout = dayGrid(today, addMonths(today, MONTHS_AHEAD, dayOfMonth(today)), today, selected);
+  const layout = dayGrid(today, lastDueDate(today), today, selected);
   return (
     <PageGridPicker
       open={open}
