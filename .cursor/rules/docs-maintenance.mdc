@@ -19,6 +19,7 @@ Docs are lean and single-source-of-truth. When a change affects any area below, 
 | Backend endpoints/auth/deploy | `apps/backend/README.md` |
 | Mobile structure or data flow | `apps/mobile/README.md` |
 | Mobile visual language, semantic tokens, or component standards | `docs/DESIGN_SYSTEM.md` + `apps/mobile/README.md` |
+| Owner design feedback, a new taste rule or check | `.claude/skills/moni-taste/SKILL.md` (+ `check-taste.mjs` / `copy-rules.mjs` when a parser can see it) |
 | Redesign v2 progress, board mapping, v2 tokens or vocabulary | `docs/REDESIGN.md` (status line, tables) + `docs/redesign/tokens.md` / `glossary.md` |
 | Web dashboard | `apps/web/README.md` |
 | Web app design handoff, board mapping, web build progress | `docs/WEB.md` (status line, tables) + `docs/web/PLAN.md` |

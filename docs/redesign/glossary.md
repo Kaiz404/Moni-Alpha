@@ -62,6 +62,8 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Ask Moni tab, Moni tab | Moni chat. |
 | Don't ask again | Don't ask about similar. |
 | Queued, Queued for review | Waiting for review. |
+| Archive, Archived (categories, wallets) | Delete. To the user it is delete (#8). |
+| Tap or drag, Tap a bar, and other gesture hints | Nothing. The control shows it responds. |
 
 ## Formatting
 

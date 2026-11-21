@@ -71,6 +71,17 @@ export const RULES = [
     reason: 'the status is Waiting for review',
   },
   {
+    term: 'Archive',
+    pattern: /\barchiv(e|es|ed|ing)\b/i,
+    reason: 'say Delete: to the user it is delete (#8)',
+  },
+  {
+    term: 'gesture hint',
+    pattern:
+      /\b(tap|press|hold|touch|click)\b.{0,12}\bdrag\b|\bdrag to (see|scrub|explore|compare)\b|^tap an? (bar|point|day|slice)\b/i,
+    reason: 'no gesture hints: the control shows it responds',
+  },
+  {
     term: 'hyphen before RM',
     pattern: /(?<![\w.])[-–]\s?(RM|\$)\d/,
     reason: 'minus is U+2212: −RM45.90',

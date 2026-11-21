@@ -12,7 +12,7 @@ Prepend Node first in every shell: `export PATH="$HOME/.nvm/versions/node/v22.23
 ## 1. Static gate, every change
 
 ```bash
-scripts/verify/gate.sh          # check-types, lint, mobile custom lints, go vet, all tests, web build
+scripts/verify/gate.sh          # check-types, lint, mobile custom lints (copy, taste), go vet, all tests, web build
 scripts/verify/gate.sh --fast   # the same without tests and the web build, while iterating
 ```
 
@@ -64,6 +64,10 @@ Use the `moni-device` skill: `run-flows.sh` for flows, `review-pair.sh` for a sc
 - `apps/backend`: `go test ./...` and `go vet ./...` (both in the gate). A push to `main` deploys to Cloud Run, so keep old clients working.
 - A migration: push it to the dev project (`supabase db push`), run `pnpm gen:db-types`, and commit both. The `@repo/types` test fails when the types predate the newest migration.
 
+## 5. Design review, every change a user can see
+
+Run after the screenshots exist (device evidence, parity pairs, or `web-verify` renders). Open each screenshot of a changed screen, phone and web, light and dark, and answer the ten questions in `.claude/skills/moni-taste/SKILL.md` "Review a screenshot". A "yes" is a finding: fix it in this change, or file it with the `moni-issues` skill naming the rule, and list it in the report. The gate's `lint:taste` and `lint:copy` catch the parsed rules; this step covers the rest. A change with no visible effect says `design review: nothing visible`.
+
 ## Report
 
-For each commit: the gate's last line, the `render-parity` line, the `areas:` line, the `parity` line when the phone ran (or why it didn't), the flows' `<passed>/<total>` line, evidence paths, and every intended visible change with its screenshot or dump line.
+For each commit: the gate's last line, the `render-parity` line, the `areas:` line, the `parity` line when the phone ran (or why it didn't), the flows' `<passed>/<total>` line, evidence paths, and every intended visible change with its screenshot or dump line, and the design review's findings with their rule numbers (or `design review: clean`).

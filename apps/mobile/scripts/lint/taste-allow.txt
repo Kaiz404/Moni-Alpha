@@ -1,0 +1,19 @@
+# Known breaks of the moni-taste rules. Open issues: sparkle icon #109, text arrow #110, native control #99 #101 #107. The list only shrinks.
+# Entries are `<file>: <rule>`. Regenerate: pnpm --filter moni lint:taste --write
+apps/mobile/app/bill/[seriesKey].tsx: sparkle icon
+apps/mobile/app/profile.tsx: sparkle icon
+apps/web/src/components/activity/activity-screen.tsx: text arrow
+apps/web/src/components/activity/detail-pane.tsx: native control
+apps/web/src/components/activity/detail-pane.tsx: text arrow
+apps/web/src/components/activity/filters.tsx: native control
+apps/web/src/components/auth/login-view.tsx: native control
+apps/web/src/components/budget/budget-screen.tsx: native control
+apps/web/src/components/debts/person-pane.tsx: native control
+apps/web/src/components/debts/record-debt.tsx: native control
+apps/web/src/components/settings/import-section.tsx: native control
+apps/web/src/components/settings/merchants-section.tsx: native control
+apps/web/src/components/setup/setup-flow.tsx: native control
+apps/web/src/components/setup/setup-flow.tsx: sparkle icon
+apps/web/src/components/shell/panes.tsx: native control
+apps/web/src/components/wallets/wallet-form.tsx: native control
+apps/web/src/components/wallets/wallet-screen.tsx: text arrow

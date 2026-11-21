@@ -114,3 +114,18 @@ test('an allow list longer than its base fails', () => {
   );
   assert.equal(checkCopy({ hits, allow, base: allow }).grownBy, 0);
 });
+
+test('the chart hints fe9dd857 removed fail as gesture hints', () => {
+  assert.deepEqual(
+    terms(`const A = ({ spend }) => <Text>{spend ? 'Tap a bar' : 'Tap or drag'}</Text>;`),
+    ['gesture hint: Tap a bar', 'gesture hint: Tap or drag'],
+  );
+});
+
+test('the Archive labels 4a8dedb6 replaced with Delete fail', () => {
+  assert.deepEqual(
+    terms('const A = () => <Button label="Archive category" />;'),
+    ['Archive: Archive category'],
+  );
+  assert.deepEqual(terms('const A = () => <Button label="Delete category" />;'), []);
+});

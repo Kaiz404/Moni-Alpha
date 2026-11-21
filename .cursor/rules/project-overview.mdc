@@ -55,6 +55,10 @@ Langfuse (JP cloud, keys in `apps/backend/.env`) is how Moni's AI is observed an
 
 The mobile app is being rebuilt to a new design kept on a claude.ai design canvas. Before building or changing any mobile screen, read `docs/REDESIGN.md`: which canvas boards to build and which to ignore, the target navigation (Home · Activity · + · Budget · Debts; Moni chat as a pushed page), the rules every screen follows, the code gaps, and the open owner decisions. Values and words: `docs/redesign/tokens.md`, `docs/redesign/glossary.md`.
 
+## Owner's taste
+
+Before designing, building, reviewing or filing anything a user sees, on the phone, the web or the canvas, read `.claude/skills/moni-taste/SKILL.md`: the owner's design rules, each with a do, a don't and a real before and after. `pnpm --filter moni lint:taste` and `lint:copy` (both in the gate) enforce the rules a parser can see. When the owner gives new design feedback, add or sharpen a rule there in the same pass.
+
 ## Keep the phone, the web and the canvas in step
 
 Every UI or flow change, issue, or design decision covers all three records: the mobile app, the web app (`docs/WEB.md`, `apps/web`), and the claude.ai design canvas (Redesign and Web app pages). They must describe the same thing.

@@ -25,7 +25,7 @@ check() {
 
 check check-types pnpm turbo check-types --output-logs=errors-only
 check lint pnpm turbo lint --output-logs=errors-only
-for l in lint:tokens lint:copy lint:test-ids lint:flow-ids lint:unreferenced; do
+for l in lint:tokens lint:copy lint:taste lint:test-ids lint:flow-ids lint:unreferenced; do
   check "moni-$l" pnpm --filter moni "$l"
 done
 check go-vet bash -c 'cd apps/backend && go vet ./...'

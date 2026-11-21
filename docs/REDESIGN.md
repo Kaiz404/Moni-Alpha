@@ -57,7 +57,7 @@ Board titles on the canvas say which variant is the chosen one. Ignore any board
 
 ## Rules that apply to every screen
 
-Values are in `redesign/tokens.md`, words in `redesign/glossary.md`.
+Values are in `redesign/tokens.md`, words in `redesign/glossary.md`. The owner's taste behind these rules, with real before and after pairs and the checks that enforce them, is in `.claude/skills/moni-taste/SKILL.md`.
 
 - **One main currency** on focused pages (Home, Activity, Budget, Debts, charts). Other currencies only on Wallets and their own wallet page. Never convert or sum across currencies.
 - **One progress style:** full Coral with "RMx over" when over budget; never a pace tick or a bar past 100%.
