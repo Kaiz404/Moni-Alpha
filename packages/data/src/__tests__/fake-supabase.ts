@@ -28,6 +28,8 @@ export function fakeSupabase() {
     latency: null as ((call: string) => number) | null,
     /** Set, the server stamps `created_at` and `updated_at` as Postgres's defaults and trigger do. */
     clock: null as (() => string) | null,
+    /** `table.column` to the table its foreign key points at; a write to a missing row is refused. */
+    foreignKeys: new Map<string, string>(),
     /** How long a landed write takes to reach the realtime handlers; unset, it reaches them at once. */
     realtimeLag: 0,
     /** Realtime handlers by table; each landed write reaches them as Postgres's change feed would. */
@@ -40,7 +42,7 @@ export function fakeSupabase() {
   });
   const offline: Result = { data: null, error: { message: 'TypeError: Network request failed' } };
 
-  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[], columns?: string) {
+  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[], columns?: string, patch?: Row) {
     const filters: ((row: Row) => boolean)[] = [];
     let orderBy: string | null = null;
     let window: [number, number] | null = null;
@@ -91,6 +93,14 @@ export function fakeSupabase() {
       if (columns && server.missingColumns.has(`${table}.${columns}`))
         return { data: null, error: { code: '42703', message: `column ${table}.${columns} does not exist` } };
       if (!rows) return missing(table);
+      const dangling = (row: Row) =>
+        [...server.foreignKeys].find(([column, target]) => {
+          const [from, field] = column.split('.') as [string, string];
+          const value = row[field];
+          return from === table && value != null && !server.tables.get(target)?.some((other) => other.id === value);
+        });
+      const broken = (sent ?? (patch ? [patch] : [])).map(dangling).find(Boolean);
+      if (broken) return { data: null, error: { code: '23503', message: `insert or update on table "${table}" violates foreign key constraint "${broken[0].replace('.', '_')}_fkey"` } };
       if (sent && rows.some((row) => sent.some((insert) => insert.id !== undefined && row.id === insert.id))) {
         for (const insert of sent) server.clashes.push(`${table} ${String(insert.id)}`);
         return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
@@ -130,8 +140,13 @@ export function fakeSupabase() {
       insert: (row: Row | Row[]) => query(table, 'insert', () => [], Array.isArray(row) ? row : [row]),
       update: (patch: Row) => {
         const sent = structuredClone(patch);
-        return query(table, 'update', (matched) =>
-          matched.map((row) => Object.assign(row, sent, server.clock ? { updated_at: server.clock() } : {})),
+        return query(
+          table,
+          'update',
+          (matched) => matched.map((row) => Object.assign(row, sent, server.clock ? { updated_at: server.clock() } : {})),
+          undefined,
+          undefined,
+          sent,
         );
       },
     }),

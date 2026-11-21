@@ -29,6 +29,7 @@ async function mount(
   for (const table of SYNCED_TABLES) server.tables.set(table, (seed[table] ?? []).map((row) => ({ ...row })));
   server.clock = () => new Date(Date.now() + serverAheadMs).toISOString();
   server.realtimeLag = realtimeLag;
+  server.foreignKeys.set('proposed_transactions.transaction_id', 'transactions');
   const store = createMoniStore({ supabase, persist: memoryPersist(), uuid: () => crypto.randomUUID() });
   stores.push(store);
   store.all.forEach((obs$) => observe(() => obs$.get()));
@@ -129,6 +130,36 @@ describe.each(CLOCKS)("a row's writes made a moment apart, with %s", (_, clocks)
     expect(serverRow(server, 'transactions', 'tx-2')?.deleted).toBe(false);
     expect(store.proposedTransactions$['p-1']!.peek()).toMatchObject({ status: 'approved', transaction_id: 'tx-2' });
     expect(store.transactions$['tx-1']!.deleted.peek() ?? 'gone').not.toBe(false);
+  });
+});
+
+describe('a write that points at a row made in the same change', () => {
+  it('waits for that row to land: an approve whose ledger row is slow keeps the capture approved', async () => {
+    const { server, store } = await mount({ proposed_transactions: [PROPOSAL] }, (call) => (call === 'insert transactions' ? 300 : 20));
+    const at = now();
+
+    write(store, {
+      insert: [{ table: 'transactions', row: { ...EXPENSE } as never }],
+      patch: [{ table: 'proposed_transactions', id: 'p-1', patch: { status: 'approved', reviewed_at: at, transaction_id: 'tx-1', updated_at: at } }],
+    });
+    await wait(1_000);
+
+    expect(serverRow(server, 'proposed_transactions', 'p-1')).toMatchObject({ status: 'approved', transaction_id: 'tx-1' });
+    expect(serverRow(server, 'transactions', 'tx-1')?.deleted).toBe(false);
+  });
+
+  it('two new rows that point at each other both land', async () => {
+    const { server, store } = await mount({}, () => 20);
+
+    write(store, {
+      insert: [
+        { table: 'transactions', row: { ...EXPENSE, id: 'out', linked_transaction_id: 'in' } as never },
+        { table: 'transactions', row: { ...EXPENSE, id: 'in', linked_transaction_id: 'out' } as never },
+      ],
+    });
+    await wait(500);
+
+    expect(server.tables.get('transactions')?.map((row) => row.id).sort()).toEqual(['in', 'out']);
   });
 });
 

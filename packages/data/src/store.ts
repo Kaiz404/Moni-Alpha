@@ -81,13 +81,13 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
   // The row is copied as it is now: Legend-State hands over the live object, which later edits change.
   const create = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
     const row = { ...input };
-    const result = await rowSync.send(`${table}/${String(row.id)}`, () => gateway.createOrRevive(table, row));
+    const result = await rowSync.send(table, row, 'create', () => gateway.createOrRevive(table, row));
     return result.ok ? result.row : failWrite(params, result, 'create', input);
   };
 
   const update = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
     const row = { ...input };
-    const result = await rowSync.send(`${table}/${String(row.id)}`, () => gateway.update(table, row));
+    const result = await rowSync.send(table, row, 'update', () => gateway.update(table, row));
     return result.ok ? result.row : failWrite(params, result, 'update', input);
   };
 
