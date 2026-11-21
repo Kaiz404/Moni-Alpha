@@ -7,6 +7,7 @@ import {
   lastPaymentBySeries,
   pendingProposals,
   spendByMonth,
+  firstSpendMonth,
   spendMonths,
   spendSlices,
   type FinanceTransaction,
@@ -63,6 +64,7 @@ export function useBudget(source: Ledger, requested: string | null, setup: boole
         };
       },
       months: spendMonths(ledger.transactions, currency, now, calendar),
+      firstMonth: firstSpendMonth(ledger.transactions, currency, now, calendar),
       hasBudgets: money.budgeted.length > 0,
       ledger,
     };

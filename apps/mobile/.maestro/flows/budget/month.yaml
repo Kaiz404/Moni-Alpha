@@ -67,7 +67,7 @@ tags:
       id: budget.month
     direction: UP
 
-# The month chooser lists this month first; picking another redraws the tab.
+# Choose month is this year's months in a grid; picking an earlier one redraws the tab.
 - tapOn:
     id: budget.month
 - assertVisible: Choose month
@@ -76,11 +76,13 @@ tags:
     when:
       visible:
         id: sheet\.option\.\d{4}-\d{2}
-        index: 1
+        enabled: true
+        selected: false
     commands:
       - tapOn:
           id: sheet\.option\.\d{4}-\d{2}
-          index: 1
+          enabled: true
+          selected: false
       - assertNotVisible: Choose month
       - assertVisible:
           id: budget.spend-ring.total

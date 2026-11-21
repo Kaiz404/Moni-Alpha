@@ -7,8 +7,10 @@ import {
   dayOfMonth,
   monthName,
   monthOf,
+  monthShort,
   shiftMonth,
   shortDate,
+  yearsOfMonths,
   type DayKey,
   type MonthKey,
 } from '@repo/core';
@@ -280,6 +282,137 @@ export function DateField({
         </Floating>
       )}
     </>
+  );
+}
+
+/**
+ * A chip that shows a month and opens a year of months a page, with arrows between years; months
+ * outside `first` to `last` can't be picked. The phone's Choose month grid (#111).
+ */
+export function MonthField({
+  label,
+  value,
+  first,
+  last,
+  onChange,
+  className,
+}: {
+  label: string;
+  value: MonthKey;
+  first: MonthKey;
+  last: MonthKey;
+  onChange: (month: MonthKey) => void;
+  className: string;
+}) {
+  const anchor = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const text = `${monthName(value)} ${value.slice(0, 4)}`;
+  return (
+    <>
+      <button
+        ref={anchor}
+        type="button"
+        className={`select-trigger ${className}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`${label}: ${text}`}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="select-value">{text}</span>
+        <Icon
+          name="chevron-down"
+          size={18}
+        />
+      </button>
+      {open && (
+        <Floating
+          anchor={anchor}
+          role="listbox"
+          label={label}
+          className="date-pop"
+          onClose={() => setOpen(false)}
+        >
+          <MonthGrid
+            value={value}
+            first={first}
+            last={last}
+            onPick={(month) => {
+              setOpen(false);
+              if (month !== value) onChange(month);
+            }}
+          />
+        </Floating>
+      )}
+    </>
+  );
+}
+
+function MonthGrid({
+  value,
+  first,
+  last,
+  onPick,
+}: {
+  value: MonthKey;
+  first: MonthKey;
+  last: MonthKey;
+  onPick: (month: MonthKey) => void;
+}) {
+  const years = yearsOfMonths(first, last);
+  const [at, setAt] = useState(() =>
+    Math.max(0, years.findIndex((each) => each.year === value.slice(0, 4))),
+  );
+  const page = years[at] ?? years[0]!;
+  return (
+    <div className="calendar">
+      <div className="calendar-head">
+        <button
+          type="button"
+          className="calendar-step press"
+          aria-label={`Previous year, ${Number(page.year) - 1}`}
+          disabled={at === 0}
+          onClick={() => setAt(at - 1)}
+        >
+          <Glyph
+            name="chevron-left"
+            size={20}
+          />
+        </button>
+        <span
+          className="calendar-title"
+          aria-live="polite"
+        >
+          {page.year}
+        </span>
+        <button
+          type="button"
+          className="calendar-step press"
+          aria-label={`Next year, ${Number(page.year) + 1}`}
+          disabled={at === years.length - 1}
+          onClick={() => setAt(at + 1)}
+        >
+          <Icon
+            name="chevron-right"
+            size={20}
+          />
+        </button>
+      </div>
+      <div className="month-grid">
+        {page.months.map((month) => (
+          <button
+            key={month}
+            type="button"
+            role="option"
+            aria-selected={month === value}
+            aria-label={`${monthName(month)} ${page.year}`}
+            disabled={month < first || month > last}
+            onClick={() => onPick(month)}
+          >
+            {monthShort(month)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

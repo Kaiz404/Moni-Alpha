@@ -98,6 +98,15 @@ export function monthsBetween(from: MonthKey, to: MonthKey): number {
   return (toYear - fromYear) * 12 + toMonth - fromMonth;
 }
 
+/** Each year from `first`'s to `last`'s with its twelve months, January first: a month picker's pages. */
+export function yearsOfMonths(first: MonthKey, last: MonthKey): { year: string; months: MonthKey[] }[] {
+  const from = Number(first.slice(0, 4));
+  return Array.from({ length: Number(last.slice(0, 4)) - from + 1 }, (_, at) => {
+    const year = String(from + at);
+    return { year, months: Array.from({ length: 12 }, (_, month): MonthKey => `${year}-${pad(month + 1)}`) };
+  });
+}
+
 /** Day `date` of the month `months` after the one holding `day`, clamped to that month's length. */
 export function addMonths(day: DayKey, months: number, date: number): DayKey {
   const month = shiftMonth(monthOf(day), months);

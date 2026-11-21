@@ -10,6 +10,7 @@ import {
   lastDayOf,
   parseDayKey,
   shiftMonth,
+  yearsOfMonths,
   weekday,
 } from '../calendar';
 
@@ -105,6 +106,15 @@ describe('civil arithmetic', () => {
   it('shifts months across the year', () => {
     expect(shiftMonth('2026-01', -1)).toBe('2025-12');
     expect(shiftMonth('2026-11', 14)).toBe('2028-01');
+  });
+
+  it('lays out a month picker a year a page', () => {
+    const years = yearsOfMonths('2025-11', '2026-02');
+    expect(years.map((each) => each.year)).toEqual(['2025', '2026']);
+    expect(years[1]?.months).toEqual([
+      '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06',
+      '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12',
+    ]);
   });
 
   it('clamps a monthly day to the shorter month', () => {

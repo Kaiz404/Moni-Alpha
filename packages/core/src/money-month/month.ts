@@ -317,7 +317,23 @@ function leftThisMonth({
   };
 }
 
-/** Months the chooser offers, newest first: this month and every earlier month with spend. */
+/** The oldest month with spending in `currency`, never after this month: where the Budget month picker starts. */
+export function firstSpendMonth(
+  transactions: readonly FinanceTransaction[],
+  currency: CurrencyCode,
+  now: Date,
+  calendar: Calendar,
+): MonthKey {
+  let first = calendar.monthKey(now);
+  for (const transaction of transactions) {
+    if (transaction.currency !== currency || !countsAsSpending(transaction)) continue;
+    const month = calendar.monthKey(transaction.transactionDate);
+    if (month < first) first = month;
+  }
+  return first;
+}
+
+/** This month and every earlier month with spending, newest first. */
 export function spendMonths(
   transactions: readonly FinanceTransaction[],
   currency: CurrencyCode,

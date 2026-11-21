@@ -87,11 +87,6 @@ type Sheets = {
   /** Dates are local `YYYY-MM-DD`. */
   date: { request: { selected: string }; result: string };
   chooser: { request: object; result: CaptureChoice };
-  /** The Budget tab's month chooser; months are `YYYY-MM`. */
-  month: {
-    request: { months: { month: string; name: string; meta: string }[]; selected: string };
-    result: string;
-  };
   /**
    * Activity's dates. Resolves to the dates, null for all time. `editing` asks the caller to
    * pick one end and open the sheet again, for a platform whose date picker is itself a sheet.

@@ -12,6 +12,7 @@ import type {
 import {
   buildMoneyMonth,
   moneyLedger,
+  firstSpendMonth,
   spendMonths,
   spendSlices,
   type MoneyLedger,
@@ -405,6 +406,17 @@ describe('spendSlices', () => {
 
   it('has nothing for a month with no spending', () => {
     expect(spendSlices([spend(2, 40, 'food')], '2026-09', MYR, [food], KL)).toEqual([]);
+  });
+});
+
+describe('firstSpendMonth', () => {
+  it('starts at the oldest month with spending in the currency', () => {
+    const usdInAugust = spend(1, 5, 'food', { currency: 'USD' as CurrencyCode, transactionDate: noon(1, 8) });
+    expect(firstSpendMonth([...october().transactions, usdInAugust], MYR, WED_14_OCT, KL)).toBe('2026-09');
+  });
+
+  it('is this month when nothing was spent', () => {
+    expect(firstSpendMonth([], MYR, WED_14_OCT, KL)).toBe('2026-10');
   });
 });
 

@@ -269,6 +269,40 @@
   cursor: default;
 }
 
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.month-grid button {
+  height: 40px;
+  border-radius: 9999px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.month-grid button:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+}
+
+.month-grid button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.month-grid button[aria-selected='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.month-grid button:disabled {
+  color: var(--color-muted);
+  opacity: 0.45;
+  cursor: default;
+}
+
 .date-pop {
   width: 280px;
   padding: 10px 12px 12px;

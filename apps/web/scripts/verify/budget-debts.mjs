@@ -130,9 +130,12 @@ export async function verifyBudgetDebts(t) {
       check('Budget draws no native select', (await p.locator('select').count()) === 0);
       await p.locator('.month-nav .chip').filter({ visible: true }).first().locator('svg').last().click();
       const months = p.getByRole('listbox', { name: 'Month' });
-      check("the month chip's chevron opens Moni's list with this month ticked", (await months.isVisible()) && (await months.getByRole('option', { selected: true }).count()) === 1);
+      check("the month chip's chevron opens Moni's month grid with this month picked", (await months.isVisible()) && (await months.getByRole('option', { selected: true }).count()) === 1);
+      const cells = await months.getByRole('option').evaluateAll((all) => all.map((cell) => ({ name: cell.ariaLabel, picked: cell.ariaSelected === 'true', off: cell.disabled })));
+      const picked = cells.findIndex((cell) => cell.picked);
+      check('the month grid shows a year, Jan to Dec, and no month after this one', cells.length === 12 && cells.slice(picked + 1).every((cell) => cell.off), cells);
       await p.keyboard.press('Escape');
-      check('Esc closes the month list and gives the chip the focus back', !(await months.isVisible()) && (await p.evaluate(() => document.activeElement?.matches('.month-nav .chip'))));
+      check('Esc closes the month grid and gives the chip the focus back', !(await months.isVisible()) && (await p.evaluate(() => document.activeElement?.matches('.month-nav .chip'))));
     }
     if (monthStep) {
       await p.locator('.page-head .month-nav .round-btn').first().click();

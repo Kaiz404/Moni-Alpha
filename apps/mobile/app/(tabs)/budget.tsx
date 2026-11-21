@@ -30,6 +30,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   lastPaymentBySeries,
+  firstSpendMonth,
   spendMonths,
   spendSlices,
   type MoneyMonth,
@@ -39,6 +40,7 @@ import {
   monthShort,
 } from '@repo/core';
 import { openSheet } from '@/lib/sheet/sheet-store';
+import { pageOf, yearMonthGrid } from '@/lib/dates/grid-pages';
 import { tid } from '@/lib/test-ids';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
@@ -64,6 +66,10 @@ export default function BudgetScreen() {
     () => spendMonths(data.transactions, data.currency, data.now, deviceCalendar),
     [data.transactions, data.currency, data.now],
   );
+  const firstMonth = useMemo(
+    () => firstSpendMonth(data.transactions, data.currency, data.now, deviceCalendar),
+    [data.transactions, data.currency, data.now],
+  );
   const categoriesById = useMemo(
     () =>
       Object.fromEntries(
@@ -73,21 +79,13 @@ export default function BudgetScreen() {
   );
 
   const chooseMonth = async () => {
+    const layout = yearMonthGrid(firstMonth < month ? firstMonth : month, current);
     const picked = await openSheet({
-      kind: 'month',
+      kind: 'gridPicker',
+      title: 'Choose month',
+      layout,
       selected: month,
-      months: months.map((item) => {
-        const [year] = item.month.split('-');
-        const spent = formatMoney(item.spentMinor, data.currency);
-        return {
-          month: item.month,
-          name: `${monthName(item.month)} ${year}`,
-          meta:
-            item.month === current
-              ? `${spent} so far`
-              : `${spent} spent`,
-        };
-      }),
+      startPage: pageOf(layout, month),
     });
     if (picked) setChosen(picked === current ? null : picked);
   };

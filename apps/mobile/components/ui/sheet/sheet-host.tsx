@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 
 import { RangeSheet } from '@/components/activity/range-sheet';
-import { MonthSheet } from '@/components/budget/month-sheet';
 import { PlaceSheet } from '@/components/capture/place-sheet';
 import { DeleteAccountSheet } from '@/components/profile/delete-account-sheet';
 import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
@@ -126,14 +125,6 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
       return (
         <CaptureChooserSheet
           {...frame}
-          onPick={sheet.settle}
-        />
-      );
-    case 'month':
-      return (
-        <MonthSheet
-          {...frame}
-          request={sheet.request}
           onPick={sheet.settle}
         />
       );

@@ -9,7 +9,9 @@ import {
   monthsBetween,
   shiftMonth,
   weekday,
+  yearsOfMonths,
   type DayKey,
+  type MonthKey,
 } from '@repo/core';
 
 export type GridCell = {
@@ -46,6 +48,22 @@ export function monthGrid(): GridLayout {
         })),
       },
     ],
+  };
+}
+
+/** A year a page, oldest first; ids are `YYYY-MM`, and months outside `first` to `last` can't be picked. */
+export function yearMonthGrid(first: MonthKey, last: MonthKey): GridLayout {
+  return {
+    columns: 4,
+    pages: yearsOfMonths(first, last).map(({ year, months }) => ({
+      label: year,
+      cells: months.map((month) => ({
+        id: month,
+        label: shortMonth(Number(month.slice(5))),
+        accessibilityLabel: `${monthName(month)} ${year}`,
+        disabled: month < first || month > last,
+      })),
+    })),
   };
 }
 

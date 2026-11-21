@@ -1,4 +1,4 @@
-import { dayGrid, monthGrid, pageOf, yearGrid } from '@/lib/dates/grid-pages';
+import { dayGrid, monthGrid, pageOf, yearGrid, yearMonthGrid } from '@/lib/dates/grid-pages';
 
 const ids = (cells: readonly ({ id: string } | null)[]) => cells.map((cell) => cell?.id ?? null);
 
@@ -11,6 +11,18 @@ describe('monthGrid', () => {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ]);
     expect(grid.pages[0].cells[3]).toEqual({ id: '4', label: 'Apr', accessibilityLabel: 'April', disabled: false });
+  });
+});
+
+describe('yearMonthGrid', () => {
+  it('pages each year Jan to Dec and greys the months outside the range', () => {
+    const grid = yearMonthGrid('2025-11', '2026-10');
+    expect(grid.columns).toBe(4);
+    expect(grid.pages.map((page) => page.label)).toEqual(['2025', '2026']);
+    expect(grid.pages[0].cells.filter((cell) => !cell?.disabled).map((cell) => cell?.id)).toEqual(['2025-11', '2025-12']);
+    expect(grid.pages[1].cells[9]).toEqual({ id: '2026-10', label: 'Oct', accessibilityLabel: 'October 2026', disabled: false });
+    expect(grid.pages[1].cells[10]?.disabled).toBe(true);
+    expect(pageOf(grid, '2025-12')).toBe(0);
   });
 });
 
