@@ -1,4 +1,4 @@
-import { observe } from '@legendapp/state';
+import { observe, syncState } from '@legendapp/state';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { memoryPersist } from '../persist';
@@ -129,6 +129,19 @@ describe('a write', () => {
     transaction$('live').set(row('live'));
     await settle();
     expect(server.tables.get('transactions')).toEqual([live]);
+  });
+});
+
+describe('a pull the server fails', () => {
+  it('reports the error on that table at once, so its card can say it could not load', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    server.tables.set('wallets', []);
+    server.fail = (call) => (call.startsWith('list wallets') ? { message: 'down', status: 500 } : null);
+    await store.enableStoreSync({ fullReset: true });
+    await settle();
+    server.fail = null;
+
+    expect(syncState(store.wallets$).error.peek()?.message).toBe('down');
   });
 });
 

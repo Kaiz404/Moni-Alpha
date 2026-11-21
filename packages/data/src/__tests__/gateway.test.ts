@@ -68,7 +68,7 @@ describe('the row gateway', () => {
     server.offline = false;
   });
 
-  it('tries again after a passing failure and gives up on a refusal', async () => {
+  it('tries a write again after a passing failure, and gives up on a refusal or a pull the server failed', async () => {
     server.tables.set('transactions', [{ id: 't1' }]);
     const failures = {
       'server error': { message: 'upstream connect error', status: 503 },
@@ -84,8 +84,13 @@ describe('the row gateway', () => {
       const result = await gateway.update('transactions', { id: 't1' });
       retryable[name] = !result.ok && result.retryable;
     }
+    server.tables.set('wallets', []);
+    server.fail = () => failures['server error'];
+    const pull = await gateway.list('wallets');
+    retryable['a pull the server failed'] = !pull.ok && pull.retryable;
     server.fail = null;
     expect(retryable).toEqual({
+      'a pull the server failed': false,
       'server error': true,
       'statement timeout': true,
       'expired session': true,

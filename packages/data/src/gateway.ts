@@ -109,7 +109,8 @@ export function createRowGateway(client: MoniSupabase) {
           ? supabase.from(table).select().gt('updated_at', new Date(changedSince).toISOString())
           : supabase.from(table).select();
         const page = await query.order('id').range(rows.length, rows.length + PULL_PAGE - 1);
-        if (page.error) return failure(page.error, page.status);
+        // A pull the server failed is shown at once, with Try again; only a lost one retries on its own.
+        if (page.error) return { ok: false, message: page.error.message, retryable: isNetworkError(page.error.message) };
         if (!page.data.length) return { ok: true, rows };
         rows.push(...page.data);
       }
