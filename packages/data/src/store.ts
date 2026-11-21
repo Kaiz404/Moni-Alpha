@@ -1,12 +1,13 @@
-import { observable, syncState, when, type Observable } from '@legendapp/state';
+import { internal, observable, syncState, when, type Observable } from '@legendapp/state';
 import { synced } from '@legendapp/state/sync';
-import { configureSyncedSupabase, syncedSupabase } from '@legendapp/state/sync-plugins/supabase';
+import { syncedCrud } from '@legendapp/state/sync-plugins/crud';
 import type { AiConsent } from '@repo/core';
 import type { UserPreferences } from '@repo/types';
 
 import { createRowGateway, type Failure, type Row } from './gateway';
 import type { MoniPersist } from './persist';
 import { fetchAiConsent, fetchProfilePreferences } from './profile';
+import { createRowSync } from './row-sync';
 import type { StoredRow, SyncedTable } from '@repo/core';
 
 import type { MoniSupabase } from './supabase';
@@ -14,6 +15,12 @@ import type { MoniSupabase } from './supabase';
 type WriteParams = {
   onError: (error: Error, params: Record<string, unknown>) => void;
   cancelRetry?: boolean;
+};
+type ListParams = WriteParams & { lastSync?: number };
+type FeedPayload = { eventType: 'INSERT' | 'UPDATE' | 'DELETE'; new: Row; old: Row };
+type FeedParams = {
+  value$: Observable<Record<string, Row> | undefined>;
+  update: (params: { value: Row[]; mode?: 'merge' }) => void;
 };
 
 const RETRY = { infinite: true, backoff: 'exponential', delay: 1_000, maxDelay: 5 * 60_000 } as const;
@@ -62,50 +69,74 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
   const authReady$ = observable(false);
   const waitForAuth = () => authReady$.get();
 
-  configureSyncedSupabase({
-    generateId: uuid,
-    changesSince: 'last-sync',
-    fieldCreatedAt: 'created_at',
-    fieldUpdatedAt: 'updated_at',
-    fieldDeleted: 'deleted',
-  });
-
   /** Stops Legend-State retrying a write Supabase refused rather than one that never arrived. */
-  function failWrite(params: WriteParams, failed: Failure, source: string, input: unknown) {
+  function failWrite(params: WriteParams, failed: Failure, source: string, input: unknown): never {
     if (!failed.retryable) params.cancelRetry = true;
     params.onError(new Error(failed.message), { setParams: params, source, type: 'set', retry: params, input });
-    return { data: undefined };
+    throw new Error(failed.message);
   }
 
+  const rowSync = createRowSync();
+
+  // The row is copied as it is now: Legend-State hands over the live object, which later edits change.
   const create = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
-    const result = await gateway.createOrRevive(table, input);
-    return result.ok ? { data: result.row } : failWrite(params, result, 'create', input);
+    const row = { ...input };
+    const result = await rowSync.send(`${table}/${String(row.id)}`, () => gateway.createOrRevive(table, row));
+    return result.ok ? result.row : failWrite(params, result, 'create', input);
   };
 
   const update = (table: SyncedTable) => async (input: Row, params: WriteParams) => {
-    const result = await gateway.update(table, input);
-    return result.ok ? { data: result.row } : failWrite(params, result, 'update', input);
+    const row = { ...input };
+    const result = await rowSync.send(`${table}/${String(row.id)}`, () => gateway.update(table, row));
+    return result.ok ? result.row : failWrite(params, result, 'update', input);
   };
 
-  const list = (table: SyncedTable) => async (params: { lastSync?: number; cancelRetry?: boolean }) => {
+  const list = (table: SyncedTable) => async (params: ListParams) => {
     const result = await gateway.list(table, params.lastSync);
-    if (result.ok) return { data: result.rows, error: null };
+    if (result.ok) return result.rows;
     // Thrown, so Legend-State's retry runs it again.
     if (result.retryable) throw new Error(result.message);
     params.cancelRetry = true;
-    return { data: null, error: { message: result.message } };
+    params.onError(new Error(result.message), { getParams: params, source: 'list', type: 'get', retry: params });
+    return null;
+  };
+
+  let channels = 0;
+
+  /** Postgres's change feed for one table; a version older than the one the device holds is dropped. */
+  const subscribe = (table: SyncedTable) => (params: FeedParams) => {
+    const channel = supabase
+      .channel(`moni_${table}_${(channels += 1)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload: FeedPayload) => {
+        if (payload.eventType === 'DELETE') {
+          params.update({ value: [{ ...payload.old, [internal.symbolDelete]: true }] });
+          return;
+        }
+        const version = payload.new;
+        const id = String(version.id);
+        if (rowSync.isNewer(`${table}/${id}`, version, params.value$.peek()?.[id])) {
+          params.update({ value: [version], mode: 'merge' });
+        }
+      })
+      .subscribe();
+    return () => void channel.unsubscribe();
   };
 
   function syncTable<T extends SyncedTable>(table: T, gate?: Observable<boolean>): Record<string, StoredRow<T>> {
     // Inferring the row type from the client's schema over a union of tables never finishes; StoredRow names it.
-    const sync = syncedSupabase as (props: object) => Record<string, StoredRow<T>>;
+    const sync = syncedCrud as unknown as (props: object) => Record<string, StoredRow<T>>;
     return sync({
-      supabase,
-      collection: table,
-      list: list(table) as never,
-      create: create(table) as never,
-      ...(table === 'categories' || table === 'wallets' ? { update: update(table) as never } : {}),
-      realtime: true,
+      list: list(table),
+      create: create(table),
+      update: update(table),
+      subscribe: subscribe(table),
+      mode: 'merge',
+      changesSince: 'last-sync',
+      fieldCreatedAt: 'created_at',
+      fieldUpdatedAt: 'updated_at',
+      fieldDeleted: 'deleted',
+      updatePartial: false,
+      generateId: uuid,
       retry: RETRY,
       persist: { name: table, ...persistOptions },
       waitFor: gate ?? waitForAuth,
