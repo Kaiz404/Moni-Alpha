@@ -189,6 +189,9 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.waitForTimeout(600);
   const total = (await a.locator('.running-total').textContent().catch(() => '')) ?? '';
   check(`Activity's chart leads with ${want.spent} spent this month`, total === want.spent, { total, want: want.spent });
+  const plotText = (await a.locator('.running-card').evaluate((el) => el.querySelector('.running-plot')?.textContent ?? '')) ?? '';
+  const side = (await a.locator('.running-side').textContent().catch(() => '')) ?? '';
+  check("Activity's chart has no legend and no month's total on its lines at rest", /^Money in \+\S+$/.test(side) && !/\.\d\d/.test(plotText), { side, plotText });
   const range = (await a.locator('.activity-foot .meta').textContent().catch(() => '')) ?? '';
   const rows = await a.locator('.activity-table [role="row"][data-row-id]').count();
   check(

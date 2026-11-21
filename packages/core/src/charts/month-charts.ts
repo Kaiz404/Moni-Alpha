@@ -1,5 +1,5 @@
 import { addDays, daysInMonth, firstDayOf, type MonthKey } from '../calendar';
-import { chartTicks, dateLabel, formatMoney, monthShort } from '../glossary';
+import { chartTicks, dateLabel, formatMoney } from '../glossary';
 
 /**
  * Layout for the month charts the web draws at any size: Home's Pace and Daily, and Activity's running
@@ -207,8 +207,6 @@ export type RunningChart = {
   line: Point[];
   area: string;
   previous: Point[];
-  /** "Sep RM1,744.30" at the end of last month's line. */
-  previousEnd: { x: number; y: number; month: string; value: string } | null;
   ticks: ChartTickMark[];
   /** Per day so far: this month's total, and last month's by the same day for the hollow dot. */
   days: (ChartDay & { previousY: number | null })[];
@@ -222,7 +220,6 @@ export function runningChart({
   month,
   daily,
   throughDay,
-  previousMonth,
   previousDaily,
   budget,
   currency,
@@ -231,7 +228,6 @@ export function runningChart({
   month: MonthKey;
   daily: readonly number[];
   throughDay: number;
-  previousMonth: MonthKey;
   previousDaily: readonly number[];
   budget: number | null;
   currency: string;
@@ -260,10 +256,6 @@ export function runningChart({
       ? `M${line[0]!.x.toFixed(1)},${base} L${line.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' L')} L${lastPoint.x.toFixed(1)},${base} Z`
       : '',
     previous,
-    previousEnd:
-      before.length > 0
-        ? { ...previous.at(-1)!, month: monthShort(previousMonth), value: formatMoney(before.at(-1)!, currency) }
-        : null,
     ticks: (() => {
       const marks = monthTicks(month, throughDay, xOf);
       const end = xOf(span);

@@ -246,17 +246,6 @@
   }
 }
 
-.week-value {
-  position: absolute;
-  left: -12px;
-  right: -12px;
-  text-align: center;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 700;
-  pointer-events: none;
-}
-
 .week-pace {
   position: absolute;
   left: 0;

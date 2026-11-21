@@ -69,9 +69,6 @@ function WeekChart({ card, ledger, today }: { card: Extract<LedgerCard, { kind: 
         <div className="week-area">
           {weeks.map((week, index) => (
             <div key={week.from} className="week-col" onPointerMove={(event) => point(event, index)} onPointerEnter={(event) => point(event, index)}>
-              <span className="week-value num" style={{ bottom: `calc(${pct(week.spentMinor)} + 4px)` }}>
-                {formatMoney(week.spentMinor, ledger.currency)}
-              </span>
               <span className="week-bar" data-week={week.label} style={{ height: pct(week.spentMinor), background: fill, animationDelay: `${index * 60}ms` }} />
             </div>
           ))}

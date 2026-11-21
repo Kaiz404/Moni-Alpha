@@ -95,7 +95,6 @@ describe('runningChart', () => {
     month: '2026-10',
     daily: [...ten(14), ...Array(17).fill(0)],
     throughDay: 14,
-    previousMonth: '2026-09',
     previousDaily: Array(30).fill(600),
     budget: 18000,
     currency: 'MYR',
@@ -107,9 +106,8 @@ describe('runningChart', () => {
     expect(chart.budget?.text).toBe('Budget RM180');
   });
 
-  it('ends last month dashed with its total, and keeps both months for each day so far', () => {
+  it('draws all of last month dashed, and keeps both months for each day so far', () => {
     expect(chart.previous).toHaveLength(30);
-    expect(chart.previousEnd).toMatchObject({ month: 'Sep', value: 'RM180.00' });
     expect(chart.days[13]).toMatchObject({ day: 14, date: 'Wed 14 Oct', value: 'RM140.00' });
     expect(chart.days[13]!.previousY).toBeCloseTo(100 - (92 * 8400) / 20000);
   });

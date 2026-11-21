@@ -202,9 +202,15 @@ export async function verifyChat(t) {
     check('then the question goes to the gateway once, with the snapshot and tone', analyzed.length === 1 && analyzed[0]?.message === question && Boolean(analyzed[0]?.snapshot?.currencies), {
       calls: analyzed.length,
     });
-    const weeks = await card.locator('.week-bar').evaluateAll((bars) =>
-      bars.map((bar) => ({ week: bar.dataset.week, value: bar.previousElementSibling?.textContent })),
-    );
+    check('the week bars print no values at rest', (await card.locator('.week-col').evaluateAll((cols) => cols.map((col) => col.textContent.trim()).join(''))) === '');
+    const weeks = [];
+    for (const col of await card.locator('.week-col').all()) {
+      await col.hover();
+      const week = await col.locator('.week-bar').getAttribute('data-week');
+      const tip = (await card.locator('.week-tip').textContent({ timeout: 2000 }).catch(() => '')) ?? '';
+      weeks.push({ week, value: tip.startsWith(week) ? tip.slice(week.length).trim() : tip });
+    }
+    await p.mouse.move(0, 0);
     const foodRows = seed.transactions.filter((row) => spends(row) && inMonth(row) && row.category_id === food.id);
     const want = [];
     for (let start = 1; start <= Number(seed.seedDay.slice(8)); start += 7) {
@@ -218,7 +224,7 @@ export async function verifyChat(t) {
       want.push(money(sum));
     }
     check(
-      "the answer card is Food & Dining by week, each bar what the web e2e user's Food rows add up to",
+      "the answer card is Food & Dining by week, each bar's tooltip what the web e2e user's Food rows add up to",
       (await card.locator('.caps').first().textContent())?.toUpperCase() === 'FOOD & DINING BY WEEK' && JSON.stringify(weeks.map((w) => w.value)) === JSON.stringify(want),
       { weeks, want },
     );

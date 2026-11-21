@@ -4,14 +4,17 @@ import {
   dayLabel,
   formatMoney,
   formatSignedMoney,
+  monthName,
   monthShort,
   spendingParams,
   type FinanceProposal,
   type FinanceTransaction,
 } from '@repo/core';
 import Link from 'next/link';
+import { useState, type PointerEvent } from 'react';
 import { chartTop, type BudgetLine } from '@/lib/budget-view';
 import type { Calendar } from '@repo/core';
+import { Callout } from '@/components/ledger/chart-parts';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { reviewHref } from '@/lib/review-view';
 import { BudgetEditor, type BudgetEdit } from './budget-editor';
@@ -21,7 +24,7 @@ const CHART_H = 150;
 const AXIS = 44;
 const PLOT_H = CHART_H - 4;
 
-/** Six months of one category against its budget line; the month on show is the bold one. */
+/** Six months of one category against its budget line; the month on show is the bold one, and a month's spending shows under the pointer. */
 function HistoryChart({ line, months, currency }: { line: BudgetLine; months: readonly string[]; currency: string }) {
   const top = chartTop(line.months, line.budgetMinor);
   const x0 = AXIS + 8;
@@ -31,7 +34,11 @@ function HistoryChart({ line, months, currency }: { line: BudgetLine; months: re
   const over = line.note.tone === 'over';
   const lineY = line.budgetMinor ? Math.max(22, Math.min(PLOT_H, y(line.budgetMinor))) : null;
   const last = months.length - 1;
-  const spent = line.months[last] ?? 0;
+  const [tip, setTip] = useState<number | null>(null);
+  const point = (event: PointerEvent<HTMLDivElement>) => {
+    const x = event.clientX - event.currentTarget.getBoundingClientRect().left;
+    setTip(x < x0 ? null : Math.min(last, Math.floor((x - x0) / slot)));
+  };
   return (
     <div className="history">
       <div
@@ -39,6 +46,8 @@ function HistoryChart({ line, months, currency }: { line: BudgetLine; months: re
         role="img"
         aria-label={`${line.name} spending by month: ${months.map((month, index) => `${monthShort(month)} ${formatMoney(line.months[index] ?? 0, currency)}`).join(', ')}`}
         style={{ width: CHART_W, height: CHART_H }}
+        onPointerMove={point}
+        onPointerLeave={() => setTip(null)}
       >
         <svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`} aria-hidden="true">
           <line x1={x0} y1={PLOT_H} x2={CHART_W} y2={PLOT_H} stroke="var(--color-hairline)" strokeWidth={1.5} />
@@ -73,11 +82,7 @@ function HistoryChart({ line, months, currency }: { line: BudgetLine; months: re
             </span>
           </>
         )}
-        {spent > 0 && (
-          <span className="num history-value" style={{ left: x0 + slot * last + slot / 2 - 40, top: y(spent) - 20 }}>
-            <span>{formatMoney(spent, currency)}</span>
-          </span>
-        )}
+        {tip !== null && <Callout x={x0 + slot * tip + slot / 2} width={CHART_W} date={monthName(months[tip]!)} value={formatMoney(line.months[tip] ?? 0, currency)} />}
       </div>
       <div className="history-ticks" style={{ width: CHART_W, paddingLeft: x0 }}>
         {months.map((month, index) => (

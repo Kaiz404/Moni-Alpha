@@ -527,21 +527,6 @@ html[data-layout='phone'] .history-budget-label {
   background: var(--color-background);
 }
 
-.history-value {
-  position: absolute;
-  width: 80px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 700;
-}
-
-.history-value > span {
-  background: var(--color-card);
-  padding: 0 4px;
-  border-radius: 6px;
-}
-
 .history-ticks {
   display: flex;
   box-sizing: border-box;

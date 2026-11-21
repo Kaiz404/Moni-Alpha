@@ -183,6 +183,18 @@ export async function verifyBudgetDebts(t) {
   await first.locator('.row-name').click();
   await p.waitForURL(new RegExp(`category=${firstId}`));
   check('picking a row opens its category pane with its name', (await p.locator('aside.side-pane h2').textContent()) === firstName);
+  const history = p.locator('aside.side-pane .history-plot');
+  const restText = await history.evaluate((el) => [...el.querySelectorAll('span')].map((span) => span.textContent).join('|'));
+  const historyBox = await history.boundingBox();
+  await p.mouse.move(historyBox.x + historyBox.width - 12, historyBox.y + historyBox.height - 12);
+  const tipValue = await history.locator('.chart-tip-value').textContent({ timeout: 2000 }).catch(() => null);
+  const rowSpent = await first.locator('[data-col="spent"]').textContent();
+  check(
+    "the six-month chart prints no month's value at rest, and the pointer on this month shows what its row spent",
+    !/\.\d\d/.test(restText) && tipValue !== null && near(ringgit(tipValue), ringgit(rowSpent)),
+    { restText, tipValue, rowSpent },
+  );
+  await p.mouse.move(0, 0);
   await p.keyboard.press('j');
   await p.waitForURL(new RegExp(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`)).catch(() => {});
   check('J moves to the next category', p.url().includes(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`), p.url());

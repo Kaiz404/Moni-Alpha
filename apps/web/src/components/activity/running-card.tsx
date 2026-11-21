@@ -28,14 +28,13 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
         month: month.month,
         daily: month.daily,
         throughDay: month.throughDay,
-        previousMonth,
         previousDaily: previous.daily,
         budget: month.budgetMinor,
         currency,
-        box: { ...box, width: Math.max(box.width - (box.width < 360 ? 0 : 130), 120) },
+        box,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- box follows size
-    [month, previous, previousMonth, currency, size.width, size.height],
+    [month, previous, currency, size.width, size.height],
   );
   const [hover, handlers] = useHoverDay(chart.days);
   const comparison = comparisonFor(month.month, now, calendar);
@@ -79,20 +78,6 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
           <span className="running-in num">
             Money in <b>+{formatMoney(incomeMinor, currency)}</b>
           </span>
-          <span className="running-key" data-only="sidebar rail rail-one-column">
-            <span>
-              <svg width="22" height="4" aria-hidden="true">
-                <line x1="1" y1="2" x2="21" y2="2" className="key-solid" />
-              </svg>
-              {name}
-            </span>
-            <span>
-              <svg width="22" height="4" aria-hidden="true">
-                <line x1="1" y1="2" x2="21" y2="2" className="key-dashed" />
-              </svg>
-              {monthName(previousMonth)}
-            </span>
-          </span>
         </div>
       </div>
       <div ref={ref} className="running-plot">
@@ -110,7 +95,6 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
               {chart.budget && <line x1={chart.grid.left} x2={chart.grid.right} y1={chart.budget.y} y2={chart.budget.y} className="budget-line" />}
               {chart.area && <path d={chart.area} className="area" />}
               {!blank && chart.previous.length > 0 && <polyline points={chart.previous.map((point) => `${point.x},${point.y}`).join(' ')} className="previous-line" />}
-              {!blank && chart.previousEnd && <circle cx={chart.previousEnd.x} cy={chart.previousEnd.y} r={4} className="hollow-dot" />}
               {chart.line.length > 0 && <polyline points={chart.line.map((point) => `${point.x},${point.y}`).join(' ')} pathLength={1} className="spend-line draw" />}
               {!blank && chart.line.at(-1) && <circle cx={chart.line.at(-1)!.x} cy={chart.line.at(-1)!.y} r={5} className="hover-dot" />}
               {hover && (
@@ -126,12 +110,6 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
             {chart.budget && (
               <span className="budget-label num" style={{ left: chart.grid.left + 8, top: chart.budget.y - 19 }}>
                 {chart.budget.text}
-              </span>
-            )}
-            {!blank && chart.previousEnd && (
-              <span className="previous-tag num" style={{ left: chart.previousEnd.x + 8, top: chart.previousEnd.y - 11 }}>
-                <span>{chart.previousEnd.month}</span>
-                <b>{chart.previousEnd.value}</b>
               </span>
             )}
             {hover && <Callout x={hover.x} width={box.width} date={hover.date} value={hover.value} />}
