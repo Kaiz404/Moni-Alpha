@@ -148,6 +148,25 @@ describe('a write that points at a row made in the same change', () => {
     expect(serverRow(server, 'transactions', 'tx-1')?.deleted).toBe(false);
   });
 
+  it('keeps waiting while that row is retried: an insert lost once to the network still leaves the capture approved', async () => {
+    const { server, store } = await mount({ proposed_transactions: [PROPOSAL] }, () => 20);
+    server.fail = (call, nth) => (call === 'insert transactions' && nth === 0 ? { message: 'TypeError: Failed to fetch' } : null);
+    const at = now();
+
+    write(store, {
+      insert: [{ table: 'transactions', row: { ...EXPENSE } as never }],
+      patch: [{ table: 'proposed_transactions', id: 'p-1', patch: { status: 'approved', reviewed_at: at, transaction_id: 'tx-1', updated_at: at } }],
+    });
+    await wait(3_500);
+
+    expect(server.calls.filter((call) => /^(insert|update) /.test(call))).toEqual([
+      'insert transactions',
+      'insert transactions',
+      'update proposed_transactions',
+    ]);
+    expect(serverRow(server, 'proposed_transactions', 'p-1')).toMatchObject({ status: 'approved', transaction_id: 'tx-1' });
+  });
+
   it('two new rows that point at each other both land', async () => {
     const { server, store } = await mount({}, () => 20);
 

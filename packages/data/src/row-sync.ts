@@ -2,8 +2,11 @@ import type { Row, RowResult } from './gateway';
 
 /** This device's writes to one row: the last one queued, how many are still out, the server's stamp on the last that landed. */
 type RowWrites = { tail: Promise<unknown>; out: number; landedAt: number };
-/** A create still out, numbered in the order writes were handed over, settling once it has landed or failed. */
-type Create = { order: number; settled: Promise<unknown> };
+/**
+ * A row being created, numbered by its first attempt. It settles once an attempt lands or is refused
+ * for good, not when one is lost to the network: the next attempt is still to come.
+ */
+type Create = { order: number; settled: Promise<void>; settle: () => void };
 
 /**
  * One local change reaches sync as a write per table, each a few promise steps after the last, and in
@@ -40,32 +43,38 @@ export function createRowSync() {
     });
   }
 
+  function startCreate(id: string): Create {
+    let settle = () => {};
+    const settled = new Promise<void>((resolve) => (settle = resolve));
+    const create = { order: (handedOver += 1), settled, settle };
+    creates.set(id, create);
+    return create;
+  }
+
   function send(table: string, version: Row, kind: 'create' | 'update', write: () => Promise<RowResult>): Promise<RowResult> {
     const id = String(version.id);
     const key = `${table}/${id}`;
-    const order = (handedOver += 1);
+    const create = kind === 'create' ? (creates.get(id) ?? startCreate(id)) : undefined;
+    const order = create?.order ?? (handedOver += 1);
     const row = rows.get(key) ?? { tail: Promise.resolve(), out: 0, landedAt: -Infinity };
     rows.set(key, row);
     row.out += 1;
     const sent = row.tail
       .then(afterHandOver)
-      .then(() => Promise.all(pointedAt(version, kind === 'create' ? order : Infinity)))
+      .then(() => Promise.all(pointedAt(version, create ? order : Infinity)))
       .then(write)
       .then((result) => {
         if (result.ok) row.landedAt = Math.max(row.landedAt, stamp(result.row?.updated_at));
+        if (create && (result.ok || !result.retryable)) {
+          if (creates.get(id) === create) creates.delete(id);
+          create.settle();
+        }
         return result;
       })
       .finally(() => {
         row.out -= 1;
       });
     row.tail = sent.catch(() => undefined);
-    if (kind === 'create') {
-      const create = { order, settled: row.tail };
-      creates.set(id, create);
-      void create.settled.then(() => {
-        if (creates.get(id) === create) creates.delete(id);
-      });
-    }
     return sent;
   }
 
@@ -77,9 +86,11 @@ export function createRowSync() {
   function isNewer(key: string, version: Row, held: Row | undefined): boolean {
     const row = rows.get(key);
     if (!row) return !held || stamp(version.updated_at) > stamp(held.updated_at ?? held.created_at);
-    if (row.out > 0 || stamp(version.updated_at) <= row.landedAt) return false;
-    rows.delete(key);
-    return true;
+    if (row.out > 0) return false;
+    const at = stamp(version.updated_at);
+    // Once the last write's own echo is in, the row is back to the plain rule.
+    if (at >= row.landedAt) rows.delete(key);
+    return at > row.landedAt;
   }
 
   return { send, isNewer };
