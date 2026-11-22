@@ -100,6 +100,9 @@ if $dev; then
 else
   gradle_task=assembleRelease apk=android/app/build/outputs/apk/release/app-release.apk
 fi
+# EXPO_PUBLIC_* values are inlined into the JS bundle, but Gradle doesn't see env as an input, so an
+# env-only change (toast length, privacy URL) reused the old bundle. Drop the bundle so it is made again.
+rm -rf android/app/build/generated/assets/react android/app/build/generated/res/react android/app/build/intermediates/assets
 (cd android && ./gradlew "$gradle_task" -PreactNativeArchitectures=arm64-v8a --build-cache)
 if $preview; then
   # shellcheck disable=SC1090
