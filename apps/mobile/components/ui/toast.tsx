@@ -108,8 +108,11 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
       className={`min-h-14 flex-row items-center gap-2.5 rounded-full bg-primary py-1.5 pl-[18px] ${toast.undo ? 'pr-1.5' : 'pr-[18px]'}`}
       style={[SHADOW, rise]}
     >
+      {/* Out of the accessibility tree: a screen reader has nothing to read, and its shrinking bounds keep UI Automator waiting for the screen to settle. */}
       <View
         pointerEvents="none"
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
         className="absolute inset-0 overflow-hidden rounded-full"
       >
         <Animated.View
