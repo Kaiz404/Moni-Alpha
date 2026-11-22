@@ -22,10 +22,10 @@ const wallet = (id: string, name: string, type: string, currency: 'MYR' | 'USD',
   ({ id, name, type, currency, displayOrder, cardStyleId: null, icon: null, isActive: true }) as FinanceWallet;
 
 const WALLETS = [
-  wallet('maybank', 'Maybank', 'bank', 'MYR', 0),
+  wallet('maybank', 'Maybank Savings', 'bank', 'MYR', 0),
   wallet('tng', "Touch 'n Go", 'ewallet', 'MYR', 1),
   wallet('cash', 'Cash', 'cash', 'MYR', 2),
-  wallet('wise', 'Wise', 'bank', 'USD', 3),
+  wallet('wise', 'Wise USD', 'bank', 'USD', 3),
 ];
 const BALANCES = { maybank: 228180, tng: 8640, cash: 6360, wise: 12000 } as Record<string, MinorAmount>;
 
@@ -62,9 +62,10 @@ describe('WalletStrip', () => {
 
   it('shows each wallet in its own currency, then New wallet', () => {
     renderStrip();
-    expect(screen.getByLabelText('Maybank, RM2,281.80')).toBeTruthy();
+    expect(screen.getByText('Maybank')).toBeTruthy();
+    expect(screen.getByLabelText('Maybank Savings, RM2,281.80')).toBeTruthy();
     expect(screen.getByLabelText("Touch 'n Go, RM86.40")).toBeTruthy();
-    expect(screen.getByLabelText('Wise, US$120.00')).toBeTruthy();
+    expect(screen.getByLabelText('Wise USD, US$120.00')).toBeTruthy();
     expect(screen.getByTestId('home.wallets.new')).toBeTruthy();
   });
 

@@ -1,5 +1,5 @@
 # W1 Home wallet strip (#120): a card per wallet under net worth, ringgit then US$ behind a divider, then
-# New wallet. A card opens its wallet. Reorder on Wallets moves Cash to the front, and the strip follows.
+# New wallet. A card shows the short name and reads out the full one. A card opens its wallet. Reorder on Wallets moves Cash to the front, and the strip follows.
 # Holding a card to drag it on Home has no Maestro step (a hold that then moves); its jest
 # test (components/home/__tests__/wallet-strip.test.tsx) drives it.
 # Run: scripts/device/run-flows.sh .maestro/flows/home/home-wallet-strip.yaml
@@ -13,9 +13,9 @@ tags:
 - assertVisible:
     id: 'home\.wallets\.card\..*'
     index: 0
-- assertVisible: 'Maybank, RM2,281\.80'
+- assertVisible: 'Maybank Savings, RM2,281\.80'
 - takeScreenshot: w1-home-wallet-strip
-- tapOn: 'Maybank, RM2,281\.80'
+- tapOn: 'Maybank Savings, RM2,281\.80'
 - extendedWaitUntil:
     visible:
       id: wallet.balance.edit
