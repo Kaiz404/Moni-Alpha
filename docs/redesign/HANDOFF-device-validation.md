@@ -36,7 +36,7 @@ Updated 2 Nov 2026, after the second round of refinements. Sections below this o
 Running flows:
 
 ```bash
-EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 EXPO_PUBLIC_E2E_TOAST_MS=15000 apps/mobile/scripts/device/build-apk.sh
+EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 apps/mobile/scripts/device/build-apk.sh
 apps/mobile/scripts/device/run-areas.sh --sha <key>-clock --out <dir>
 ```
 
