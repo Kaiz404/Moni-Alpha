@@ -23,6 +23,9 @@ tags:
 - assertNotVisible: Later
 - assertVisible: Approve
 - takeScreenshot: smoke-review
+# Back lands on Home where it was. The wallet strip made Home taller, so the avatar is above the screen.
 - pressKey: Back
 - assertVisible:
-    id: home.avatar
+    id: home.review
+- assertNotVisible:
+    id: review.card
