@@ -52,7 +52,10 @@ e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
 # Maestro outlasts a 4 s toast: it waits up to 9 s for the screen to settle around each tap while one
 # shows, so an e2e build keeps them 30 s. Set it empty for a build a person tries.
 $preview || export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS-30000}
-env_hash=$(printf '%s\n' "APP_VARIANT=${APP_VARIANT:-}" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
+# The notification access sheet links the privacy policy only when this is set (#59). Until the
+# production domain is chosen, builds point at the deployed web app's page; set it empty to hide it.
+export EXPO_PUBLIC_PRIVACY_POLICY_URL=${EXPO_PUBLIC_PRIVACY_POLICY_URL-https://moni-web-plum.vercel.app/privacy}
+env_hash=$(printf '%s\n' "APP_VARIANT=${APP_VARIANT:-}" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "EXPO_PUBLIC_PRIVACY_POLICY_URL=$EXPO_PUBLIC_PRIVACY_POLICY_URL" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
 inputs=(apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml)
 sha=$(git -C "$root" rev-parse HEAD)
