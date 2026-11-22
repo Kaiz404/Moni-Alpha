@@ -49,8 +49,9 @@ fi
 # shellcheck disable=SC2086
 source "$here/app-env.sh" "$mobile" "$main_checkout" $dev_flag
 e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
-# Maestro outlasts a 4 s toast, so an e2e build keeps them 15 s. Set it empty for a build a person tries.
-$preview || export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS-15000}
+# Maestro outlasts a 4 s toast: it waits up to 9 s for the screen to settle around each tap while one
+# shows, so an e2e build keeps them 30 s. Set it empty for a build a person tries.
+$preview || export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS-30000}
 env_hash=$(printf '%s\n' "APP_VARIANT=${APP_VARIANT:-}" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
 inputs=(apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml)

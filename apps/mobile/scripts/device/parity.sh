@@ -33,7 +33,7 @@ cache=${MONI_PARITY_DIR:-$HOME/.cache/moni-parity}
 mkdir -p "$out" "$cache"
 
 export EXPO_PUBLIC_E2E_NOW=${EXPO_PUBLIC_E2E_NOW:-2026-10-14T14:06:00+08:00}
-export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-15000}
+export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-30000}
 
 if $affected; then
   # Its own line, so a failing affected.mjs stops the run instead of reading as no areas.
