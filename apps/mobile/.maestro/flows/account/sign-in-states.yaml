@@ -35,6 +35,14 @@ tags:
 # A wrong password shows the wrong-details line and stays on the page.
 - tapOn:
     id: auth.email
+# Once the e2e sign-in is saved, Email gaining focus opens Google's "Use your saved password" dialog,
+# which takes the keys typed next. Answer it as a user does.
+- tapOn:
+    text: No thanks
+    optional: true
+- assertVisible:
+    id: auth.email
+    focused: true
 - inputText: ${E2E_EMAIL}
 - tapOn:
     id: auth.password

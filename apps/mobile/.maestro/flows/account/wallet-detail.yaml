@@ -95,5 +95,10 @@ tags:
     id: sheet.confirm
 - assertNotVisible:
     id: wallet.balance.edit
+# Wallets keeps the scroll that reached the wallet, so its scrolling header sits above the screen.
+- scrollUntilVisible:
+    element:
+      id: wallet.list.add
+    direction: UP
 - assertVisible: Wallets
 - assertNotVisible: K2 Renamed

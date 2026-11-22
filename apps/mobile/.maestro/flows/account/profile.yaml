@@ -18,13 +18,13 @@ tags:
     id: profile.theme
 - assertVisible: MONEY
 - assertNotVisible: Budgets
-- assertNotVisible: Home, Activity, Budget and Debts show this currency.*
+- assertNotVisible: The whole app uses this currency.
 - takeScreenshot: k1-l2-pair
 
 # Main currency lists only the currencies the seed holds; picking USD writes it, MYR puts it back.
 - tapOn:
     id: profile.main-currency
-- assertVisible: Home, Activity, Budget and Debts show this currency.*
+- assertVisible: The whole app uses this currency.
 - assertNotVisible: Singapore dollar
 - tapOn:
     id: profile.currency.usd

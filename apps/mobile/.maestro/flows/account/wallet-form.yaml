@@ -48,8 +48,12 @@ tags:
 - takeScreenshot: k2-l6-new
 
 # Lane 7. A bank wallet offers Alerts from, which opens the app picker sheet.
+# The header scrolled away with the list, so this opens the form from the Add a wallet row at its end.
+- scrollUntilVisible:
+    element:
+      id: wallet.list.add-wallet
 - tapOn:
-    id: wallet.list.add
+    id: wallet.list.add-wallet
 - tapOn:
     id: wallet.currency
 - assertVisible: Currency
