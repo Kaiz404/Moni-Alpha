@@ -21,11 +21,18 @@ tags:
       id: wallet.balance.edit
     timeout: 10000
 - back
-- swipe:
-    from:
-      id: 'home\.wallets\.card\..*'
-      index: 0
-    direction: LEFT
+# The strip snaps a card per swipe, so swipe it until New wallet at its end shows. The swipe stays on
+# the strip's row: scrollUntilVisible would swipe the screen's middle, which is the spending chart.
+- repeat:
+    while:
+      notVisible:
+        id: home.wallets.new
+    times: 5
+    commands:
+      - swipe:
+          start: 85%, 25%
+          end: 15%, 25%
+          duration: 400
 - assertVisible: 'Wise USD, US\$120\.00'
 - assertVisible:
     id: home.wallets.new
