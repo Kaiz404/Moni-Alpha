@@ -164,4 +164,9 @@ cases=$(grep -o '<testcase ' "$run/report.xml" 2>/dev/null | wc -l || true)
 # grep exits 1 when no flow failed, which pipefail would turn into this script's exit.
 failed=$(grep -o '<failure' "$run/report.xml" 2>/dev/null | wc -l || true)
 echo "$((cases - failed))/$cases flows passed, report $run/report.xml"
+# No flow ran (the phone dropped off adb, or the tags matched nothing): that proves nothing, so it fails.
+if ((cases == 0)); then
+  echo "NO FLOWS RAN: $(grep -v '^$' "$run/maestro.log" 2>/dev/null | tail -n 1)" >&2
+  exit 1
+fi
 exit "$rc"
