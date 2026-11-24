@@ -6,6 +6,7 @@ import {
   mdiChevronUp,
   mdiClose,
   mdiFitToScreenOutline,
+  mdiLayersOutline,
   mdiMagnify,
   mdiMapMarkerOffOutline,
   mdiMapMarkerOutline,
@@ -18,6 +19,7 @@ import {
 } from '@mdi/js';
 
 const PATHS = {
+  'layers-outline': mdiLayersOutline,
   'arrow-down': mdiArrowDown,
   'check-bold': mdiCheckBold,
   'chevron-down': mdiChevronDown,

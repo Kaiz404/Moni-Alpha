@@ -126,6 +126,8 @@ export type MapProps = {
   onPick: (id: string) => void;
   onHover: (id: string | null) => void;
   onHeat: (heat: boolean) => void;
+  satellite: boolean;
+  onSatellite: (satellite: boolean) => void;
   emptyLine: string;
   locationOff: boolean;
 };
@@ -137,7 +139,7 @@ export type MapProps = {
  * page, so the page below never traps a thumb. Gestures, Zoom and Fit move the map's camera and the pins
  * together; pins whose capsules touch at the current zoom merge into one with a count.
  */
-export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, move, onView, onPick, onHover, onHeat, emptyLine, locationOff }: MapProps) {
+export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, move, onView, onPick, onHover, onHeat, satellite, onSatellite, emptyLine, locationOff }: MapProps) {
   const [ref, box] = useBox();
   const currency = ledger.currency as CurrencyCode;
   const frame = useMemo(() => (box ? fitFrame(everywhere, box, insetsFor(layout)) : null), [box, everywhere, layout]);
@@ -323,7 +325,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
         event.preventDefault();
       }}
     >
-      <MapGround frame={frame} view={view} box={box} />
+      <MapGround frame={frame} view={view} box={box} satellite={satellite} />
       {box &&
         places.map((place) => {
           const { x, y } = at(place);
@@ -432,6 +434,18 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
         <span className="kbd">H</span>
       </div>
       <div className="map-zoom">
+        {google ? (
+          <button
+            type="button"
+            className="map-float map-btn map-layer press"
+            aria-pressed={satellite}
+            aria-label="Satellite view"
+            title={satellite ? 'Back to the map (S)' : 'Satellite view (S)'}
+            onClick={() => onSatellite(!satellite)}
+          >
+            <Mdi name="layers-outline" size={22} />
+          </button>
+        ) : null}
         <button type="button" className="map-float map-btn map-fit press" title="Fit every place" onClick={() => go(FIT, true)}>
           <Mdi name="fit-to-screen-outline" size={20} />
           <span>Fit</span>

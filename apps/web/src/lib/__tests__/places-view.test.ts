@@ -43,12 +43,13 @@ const box = { width: 800, height: 600 };
 
 describe('readPlacesQuery', () => {
   it('reads the URL, with Last 30 days, Pins and Spent when it says nothing', () => {
-    expect(readPlacesQuery(new URLSearchParams(''))).toEqual({ range: '30d', categoryId: null, walletId: null, view: 'pins', sort: 'spent', placeId: null });
-    expect(readPlacesQuery(new URLSearchParams('range=7d&category=food&wallet=w1&view=heat&sort=visits&place=3.1300,101.6710'))).toEqual({
+    expect(readPlacesQuery(new URLSearchParams(''))).toEqual({ range: '30d', categoryId: null, walletId: null, view: 'pins', layer: 'map', sort: 'spent', placeId: null });
+    expect(readPlacesQuery(new URLSearchParams('range=7d&category=food&wallet=w1&view=heat&sort=visits&layer=satellite&place=3.1300,101.6710'))).toEqual({
       range: '7d',
       categoryId: 'food',
       walletId: 'w1',
       view: 'heat',
+      layer: 'satellite',
       sort: 'visits',
       placeId: '3.1300,101.6710',
     });

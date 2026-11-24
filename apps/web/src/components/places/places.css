@@ -1546,3 +1546,9 @@ html[data-layout='phone'] :is(.pseg button, .map-pin-big)::before {
     animation: fade-in 180ms ease both;
   }
 }
+
+/* Map or Satellite: one round button over Fit, pressed while the satellite photos show, as Google's layer button. */
+.map-layer[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}

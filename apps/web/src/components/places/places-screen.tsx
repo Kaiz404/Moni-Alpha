@@ -115,6 +115,7 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
     if (key === 'j') step(1);
     else if (key === 'k') step(-1);
     else if (key === 'h') setParams({ view: query.view === 'heat' ? null : 'heat' });
+    else if (key === 's') setParams({ layer: query.layer === 'satellite' ? null : 'satellite' });
     else if (key === 'f') setView(FIT);
     else if (key === 'p' && picked.length && layout !== 'phone') setChoosing(true);
     else return false;
@@ -137,6 +138,8 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
           onPick={pick}
           onHover={setHoverId}
           onHeat={(heat) => setParams({ view: heat ? 'heat' : null })}
+          satellite={query.layer === 'satellite'}
+          onSatellite={(on) => setParams({ layer: on ? 'satellite' : null })}
           emptyLine={emptyLine}
           locationOff={data.locationOff}
         />

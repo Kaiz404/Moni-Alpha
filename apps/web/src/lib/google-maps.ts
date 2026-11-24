@@ -11,7 +11,7 @@ export type LatLngLiteral = { lat: number; lng: number };
 /** The few calls Moni makes on a `google.maps.Map`. */
 export type GoogleMap = {
   moveCamera(camera: { center: LatLngLiteral; zoom: number }): void;
-  setOptions(options: { styles: readonly MapStyleRule[]; backgroundColor?: string }): void;
+  setOptions(options: { styles: readonly MapStyleRule[]; backgroundColor?: string; mapTypeId?: 'roadmap' | 'hybrid' }): void;
 };
 
 type MapsApi = { Map: new (element: HTMLElement, options: Record<string, unknown>) => GoogleMap };

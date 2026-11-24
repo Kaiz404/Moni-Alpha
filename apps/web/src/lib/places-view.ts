@@ -6,6 +6,8 @@ export type PlacesQuery = {
   categoryId: string | null;
   walletId: string | null;
   view: 'pins' | 'heat';
+  /** The ground under the pins: Google's street map, or its satellite photos with labels. */
+  layer: 'map' | 'satellite';
   sort: 'spent' | 'visits';
   placeId: string | null;
 };
@@ -19,6 +21,7 @@ export function readPlacesQuery(params: URLSearchParams): PlacesQuery {
     categoryId: params.get('category'),
     walletId: params.get('wallet'),
     view: params.get('view') === 'heat' ? 'heat' : 'pins',
+    layer: params.get('layer') === 'satellite' ? 'satellite' : 'map',
     sort: params.get('sort') === 'visits' ? 'visits' : 'spent',
     placeId: params.get('place'),
   };

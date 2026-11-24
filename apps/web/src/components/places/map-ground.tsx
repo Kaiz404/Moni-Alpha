@@ -19,7 +19,7 @@ export function useMapsUsable(): boolean {
  * follows the pins' own frame and the page's zoom and pan, so a pin sits on its real street. Without a
  * usable key the ground is plain, with Map unavailable, as on the phone.
  */
-export function MapGround({ frame, view, box }: { frame: FitFrame | null; view: MapView; box: Box | null }) {
+export function MapGround({ frame, view, box, satellite = false }: { frame: FitFrame | null; view: MapView; box: Box | null; satellite?: boolean }) {
   const usable = useMapsUsable();
   const host = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<GoogleMap | null>(null);
@@ -51,8 +51,9 @@ export function MapGround({ frame, view, box }: { frame: FitFrame | null; view: 
   }, [usable]);
 
   useEffect(() => {
-    map?.setOptions({ styles: dark ? mapStyles.dark : mapStyles.light });
-  }, [map, dark]);
+    // Satellite photos take no styles; "hybrid" keeps Google's street and place names over them.
+    map?.setOptions({ styles: dark ? mapStyles.dark : mapStyles.light, mapTypeId: satellite ? 'hybrid' : 'roadmap' });
+  }, [map, dark, satellite]);
 
   useEffect(() => {
     if (!map || !frame || !box) return;

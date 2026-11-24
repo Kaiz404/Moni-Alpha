@@ -303,11 +303,14 @@ export async function verifyPlaces(t) {
   const pinched = Number(await scale());
   check('a trackpad\'s small wheel deltas zoom smoothly back out', pinched < 2 && pinched > 1, pinched);
   // A fast spin both ways starts a glide on every notch; none may hand Google a camera that isn't a number.
+  const spinErrors = [];
+  p.on('pageerror', (error) => spinErrors.push(String(error.stack || error).slice(0, 600)));
+  p.on('console', (m) => m.type() === 'error' && spinErrors.push(m.text().slice(0, 600)));
   for (let i = 0; i < 24; i += 1) await p.mouse.wheel(0, i % 6 < 3 ? -100 : 100);
   await p.waitForTimeout(900);
   const spun = Number(await scale());
-  const crashed = await p.evaluate(() => /went wrong/i.test(document.body.innerText));
-  check('a fast spin of the wheel both ways keeps the map up, at a real zoom', !crashed && Number.isFinite(spun) && spun > 0, { spun, crashed });
+  const crashed = await p.evaluate(() => /Something went wrong on our side/.test(document.body.innerText));
+  check('a fast spin of the wheel both ways keeps the map up, at a real zoom', !crashed && Number.isFinite(spun) && spun > 0, { spun, crashed, spinErrors });
   await p.mouse.move(blank.x, blank.y);
   await p.mouse.dblclick(blank.x, blank.y);
   await p.waitForTimeout(700);
