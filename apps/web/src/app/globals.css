@@ -78,6 +78,13 @@ button {
   text-align: inherit;
 }
 
+
+/* Every segment's label sits in the middle of its segment; buttons otherwise inherit the page's left alignment. */
+:is(.pseg, .seg, .seg-tabs, .toggle, .add-modes, .add-kinds, .phone-kinds, .auth-modes, .mn-seg, .order-seg, .view-tabs, [role='tablist']) > :is(button, a) {
+  text-align: center;
+  justify-content: center;
+}
+
 input,
 select,
 textarea {

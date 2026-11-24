@@ -454,11 +454,3 @@
     transform: none;
   }
 }
-
-/* ---------- Segmented controls ---------- */
-
-/* Every segment's label sits in the middle of its segment; buttons otherwise inherit the page's left alignment. */
-:is(.pseg, .seg, .seg-tabs, .toggle, .add-modes, .add-kinds, .phone-kinds) > button {
-  text-align: center;
-  justify-content: center;
-}
