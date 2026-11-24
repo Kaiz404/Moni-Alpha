@@ -1,5 +1,6 @@
 'use client';
 
+import { bindLayer, position } from '@ui-sdk/core';
 import {
   useEffect,
   useLayoutEffect,
@@ -8,8 +9,6 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  intersect,
-  placeFloating,
   TYPE_AHEAD_MS,
   typeAheadIndex,
   type Align,
@@ -20,9 +19,7 @@ import './controls.css';
 const ROWS =
   '[role="option"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]';
 const CHOSEN = '[aria-selected="true"],[aria-checked="true"]';
-
-/** Open popovers, newest last: Esc closes only the top one. */
-const stack: object[] = [];
+const EDGE = 8;
 
 function rowsOf(element: HTMLElement): HTMLElement[] {
   return [...element.querySelectorAll<HTMLElement>(ROWS)].filter(
@@ -31,9 +28,10 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
 }
 
 /**
- * A popover in the top layer, placed beside its anchor (or at a click) so it fits inside the window
- * and between `boundary`'s sides, flipping side or edge when it must. It closes on Esc, a press outside or the focus tabbing out, gives the
- * focus back to the anchor, and moves through its rows with the arrow keys.
+ * A popover in the top layer, placed by ui-sdk beside its anchor (or at a click) so it stays on screen,
+ * flipping side or edge when it must, and kept between `boundary`'s sides. It joins ui-sdk's layer
+ * stack, so Esc and a press outside close the top popover first. Focus tabbing out closes it too, the
+ * focus goes back to the anchor, and the arrow keys move through its rows.
  */
 export function Floating({
   anchor,
@@ -75,62 +73,56 @@ export function Floating({
   useLayoutEffect(() => {
     const element = ref.current!;
     const target = anchor.current;
-    element.showPopover?.();
-    const place = () => {
-      if (!target?.isConnected) return;
-      const box = target.getBoundingClientRect();
-      const from = point
-        ? { left: point.x, top: point.y, width: 0, height: 0 }
-        : box;
-      if (matchWidth)
-        element.style.minWidth = `max(220px, ${box.width}px)`;
-      element.style.maxHeight = '';
-      const viewport = {
+    if (matchWidth && target)
+      element.style.minWidth = `max(220px, ${target.getBoundingClientRect().width}px)`;
+    const stopLayer = bindLayer(element, {
+      topLayer: true,
+      contains: (node) => !!target?.contains(node),
+      onDismiss: (reason, event) => {
+        if (reason === 'escape-key') {
+          // Esc closes this popover only, never the pane or page under it.
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        closeRef.current();
+      },
+    });
+    // ui-sdk flips the side and slides along the edge; Moni's popovers flip to the anchor's other edge first.
+    const edge = (): Align => {
+      const fence = boundary?.current?.getBoundingClientRect() ?? {
         left: 0,
-        top: 0,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        right: window.innerWidth,
       };
-      const fence = boundary?.current?.getBoundingClientRect();
-      const within = fence
-        ? intersect(
-            { ...viewport, left: fence.left, width: fence.width },
-            viewport,
-          )
-        : viewport;
-      const spot = placeFloating(
-        from,
-        { width: element.offsetWidth, height: element.offsetHeight },
-        within,
-        { side, align },
-      );
-      element.style.left = `${spot.left}px`;
-      element.style.top = `${spot.top}px`;
-      element.style.maxHeight =
-        spot.maxHeight === null ? '' : `${spot.maxHeight}px`;
-      element.style.transformOrigin = spot.origin;
-      element.dataset.side = spot.side;
+      const from = point
+        ? { left: point.x, width: 0 }
+        : target?.getBoundingClientRect();
+      if (!from) return align;
+      const width = element.offsetWidth;
+      const startFits = from.left + width <= fence.right - EDGE;
+      const endFits = from.left + from.width - width >= fence.left + EDGE;
+      if (align === 'start' && !startFits && endFits) return 'end';
+      if (align === 'end' && !endFits && startFits) return 'start';
+      return align;
     };
-    place();
-    const scrolled = (event: Event) => {
-      if (!element.contains(event.target as Node)) place();
-    };
-    const resized = new ResizeObserver(place);
-    resized.observe(element);
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', scrolled, true);
+    const stopPosition = position(
+      () => point ?? anchor.current,
+      element,
+      () => ({
+        side: side ?? 'bottom',
+        align: edge(),
+        sideOffset: 6,
+        collisionPadding: EDGE,
+      }),
+    );
     return () => {
-      resized.disconnect();
-      window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', scrolled, true);
+      stopPosition();
+      stopLayer();
     };
   }, [anchor, point, boundary, side, align, matchWidth]);
 
   useEffect(() => {
     const element = ref.current!;
     const target = anchor.current;
-    const self = {};
-    stack.push(self);
     if (autoFocus && !element.contains(document.activeElement)) {
       const rows = rowsOf(element);
       const first =
@@ -141,38 +133,26 @@ export function Floating({
       first?.scrollIntoView({ block: 'nearest' });
     }
     let pressing = false;
-    const away = (event: PointerEvent) => {
+    const pressed = () => {
       pressing = true;
-      const node = event.target as Node;
-      if (!element.contains(node) && !target?.contains(node))
-        closeRef.current();
     };
     const released = () => {
       pressing = false;
     };
-    // A press is handled by `away`; this is Tab or Shift+Tab leaving a dialog, which would otherwise stay open.
+    // A press is ui-sdk's outside press; this is Tab or Shift+Tab leaving a dialog, which would otherwise stay open.
     const left = (event: FocusEvent) => {
       const next = event.relatedTarget as Node | null;
       if (!pressing && next && !element.contains(next)) closeRef.current();
     };
-    const escape = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape' || stack.at(-1) !== self) return;
-      event.preventDefault();
-      event.stopPropagation();
-      closeRef.current();
-    };
-    document.addEventListener('pointerdown', away, true);
+    document.addEventListener('pointerdown', pressed, true);
     document.addEventListener('pointerup', released, true);
     document.addEventListener('pointercancel', released, true);
     element.addEventListener('focusout', left);
-    window.addEventListener('keydown', escape, true);
     return () => {
-      stack.splice(stack.indexOf(self), 1);
-      document.removeEventListener('pointerdown', away, true);
+      document.removeEventListener('pointerdown', pressed, true);
       document.removeEventListener('pointerup', released, true);
       document.removeEventListener('pointercancel', released, true);
       element.removeEventListener('focusout', left);
-      window.removeEventListener('keydown', escape, true);
       const focus = document.activeElement;
       if (
         target?.isConnected &&
@@ -207,8 +187,8 @@ export function Floating({
   };
 
   const keys = (event: KeyboardEvent<HTMLDivElement>) => {
-    // The screen's own keys (J, K, X, Enter) must not act on the rows behind an open popover.
-    event.stopPropagation();
+    // The screen's own keys (J, K, X, Enter) must not act on the rows behind an open popover. Esc is ui-sdk's.
+    if (event.key !== 'Escape') event.stopPropagation();
     if (event.key === 'Tab' && role !== 'dialog') {
       onClose();
       return;
@@ -238,7 +218,6 @@ export function Floating({
   return (
     <div
       ref={ref}
-      popover="manual"
       role={role}
       aria-label={label}
       className={`popover motion-pop${className ? ` ${className}` : ''}`}

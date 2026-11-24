@@ -1,4 +1,4 @@
-/* ---------- popovers: the top layer, placed by Floating ---------- */
+/* ---------- popovers: the top layer, placed by ui-sdk (Floating, Select) ---------- */
 
 .popover {
   position: fixed;
@@ -7,6 +7,7 @@
   box-sizing: border-box;
   min-width: 220px;
   max-width: calc(100vw - 16px);
+  max-height: var(--available-height, none);
   margin: 0;
   padding: 6px;
   border: 0;
@@ -23,6 +24,21 @@
   animation:
     pop-in var(--duration-control) var(--ease-control) both,
     fade-in 120ms ease both;
+}
+
+.popover,
+.popover.motion-pop {
+  transform-origin: var(--transform-origin, top left);
+}
+
+.popover[data-ending-style] {
+  animation:
+    pop-out var(--duration-press) var(--ease-press) both,
+    fade-out 120ms ease both;
+}
+
+.popover-select {
+  min-width: max(220px, var(--anchor-width, 0px));
 }
 
 .popover-row {
@@ -117,7 +133,7 @@
 }
 
 .popover[role='listbox'] {
-  max-height: 360px;
+  max-height: min(360px, var(--available-height, 360px));
 }
 
 .select-trigger:disabled {
@@ -371,6 +387,10 @@
 @media (prefers-reduced-motion: reduce) {
   .popover {
     animation: fade-in 120ms ease both;
+  }
+
+  .popover[data-ending-style] {
+    animation: fade-out 120ms ease both;
   }
 
   .select-trigger[aria-expanded='true'] > svg:last-child {

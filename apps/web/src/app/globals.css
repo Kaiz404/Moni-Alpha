@@ -1,5 +1,14 @@
 /* Values come from @repo/design's tokens.css (imported in the root layout). Nothing here restates a hex. */
 
+/* ui-sdk's own few rules sit in this layer, under everything below. */
+@layer ui-sdk;
+
+@layer ui-sdk {
+  :where([data-slot][hidden]:not([hidden='until-found'])) {
+    display: none !important;
+  }
+}
+
 :root {
   --scrim: color-mix(in srgb, var(--color-tab-bar) 18%, transparent);
   --shadow-float: 0 12px 32px color-mix(in srgb, var(--color-tab-bar) 18%, transparent);
@@ -353,6 +362,20 @@ textarea::placeholder {
   from {
     opacity: 0;
     transform: scale(0.96);
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes grow-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
   }
 }
 
