@@ -918,7 +918,7 @@ try {
   await keepSignedIn();
   if (runs('wallets')) await verifyWallets({ browser, base, storage, check, shot, settle, open, widths: WIDTHS, background: BACKGROUND, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
-  if (runs('primitives')) await verifyPrimitives({ browser, base, storage, check, shot });
+  if (runs('primitives')) await verifyPrimitives({ browser, base, storage, check, shot, seed });
   await keepSignedIn();
   if (runs('site')) await verifySite({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND });
 

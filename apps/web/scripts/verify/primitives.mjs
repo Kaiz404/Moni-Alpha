@@ -12,12 +12,13 @@ const onScreen = (locator) =>
     return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
   });
 
-export async function verifyPrimitives({ browser, base, storage, check, shot }) {
+export async function verifyPrimitives({ browser, base, storage, check, shot, seed }) {
   for (const theme of ['light', 'dark']) {
     for (const size of SIZES) {
       const where = `${size.name} ${theme}`;
       const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, storageState: storage, colorScheme: theme });
       await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
+      await ctx.clock.setFixedTime(seed.pin);
       const p = await ctx.newPage();
       const name = (part) => `primitive-${part}-${size.name}-${theme}`;
       await p.goto(`${base}/activity`);
@@ -33,7 +34,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot }) 
       await p.waitForTimeout(300);
       check(`${where}: Esc closes the filter popover and focus returns to its chip`, await chip.evaluate((el) => el === document.activeElement));
 
-      const row = p.locator('.activity-table [role="row"][data-row-id]').nth(2);
+      const row = p.locator('[role="row"][data-row-id]:visible').nth(2);
       if (size.width >= 1024) {
         await row.click({ button: 'right' });
         const menu = p.getByRole('menu');
@@ -52,7 +53,9 @@ export async function verifyPrimitives({ browser, base, storage, check, shot }) 
         await shot(p, name('confirm'));
         await p.keyboard.press('Escape');
         await p.waitForTimeout(300);
-        check(`${where}: Esc closes the confirm`, !(await confirm.isVisible().catch(() => false)));
+        const confirmGone = !(await confirm.isVisible().catch(() => false));
+        check(`${where}: Esc closes the confirm`, confirmGone);
+        if (!confirmGone) await confirm.getByRole('button', { name: /^Cancel/ }).click();
       }
 
       await row.click();
@@ -91,7 +94,8 @@ export async function verifyPrimitives({ browser, base, storage, check, shot }) 
       check(`${where}: Esc closes the shortcuts dialog`, !(await shortcuts.isVisible().catch(() => false)));
 
       const account = p.locator('nav button[aria-haspopup="menu"]:visible').first();
-      await account.click();
+      await account.focus();
+      await p.keyboard.press('Enter');
       const menu = p.getByRole('menu', { name: 'Account' });
       await menu.waitFor({ timeout: 3000 }).catch(() => {});
       check(`${where}: the account menu opens on screen with Settings focused`, (await menu.isVisible()) && (await onScreen(menu)) && (await p.evaluate(() => document.activeElement?.textContent?.trim() === 'Settings')));
@@ -101,6 +105,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot }) 
       await p.keyboard.press('Escape');
       await p.waitForTimeout(300);
       check(`${where}: Esc closes the account menu and focus returns to the name`, !(await menu.isVisible().catch(() => false)) && (await account.evaluate((el) => el === document.activeElement)));
+      if (await menu.isVisible().catch(() => false)) await account.click({ force: true });
 
       await row.click();
       await pane.waitFor({ timeout: 5000 }).catch(() => {});
