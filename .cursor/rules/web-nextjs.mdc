@@ -32,7 +32,7 @@ src/app/(app)/<section>/        signed-in pages inside the shell (components/she
 src/lib/layout.ts               breakpoints → layout kind, the generated media queries and layout script
 src/lib/nav.ts                  every destination; sidebar, rail, tab bar, palette and G keys read it
 src/lib/commands.ts, keys.ts    Ctrl K rows and filtering; the shell's key map
-src/components/controls/        Floating (every popover and menu), Select, DateField, RangePicker; never a native <select> or date input
+src/components/controls/        Floating (every popover and menu), Select, DateField, RangePicker, on ui-sdk; never a native <select> or date input
 scripts/verify/drive.mjs        the Playwright drive behind the web-verify skill
 ```
 
