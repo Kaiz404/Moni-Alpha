@@ -22,6 +22,10 @@ Current rule map:
 
 When in doubt, prefer reading the relevant Cursor rule over guessing from memory.
 
+## ui-sdk (`apps/web`)
+
+The web app's popovers, menus, dialogs and other interactive parts run on ui-sdk (`@ui-sdk/react`, `@ui-sdk/core`). Before you use it, follow the `ui-sdk` skill (`.agents/skills/ui-sdk/`) if it is installed, and read `apps/web/node_modules/@ui-sdk/react/docs/llms.txt`. To build a new component, also search `docs/core.md` in that folder by heading, and read `rendering.md` next to it. ui-sdk gives behaviour only: the look comes from `@repo/design` tokens.
+
 ## pstack skills
 
 A core subset of [pstack](https://github.com/cursor/plugins/tree/main/pstack) (v0.15.13, commit `77526ff`, MIT) is vendored in `.cursor/skills/` (`poteto-mode`, `how`, `why`, `architect`, `tdd`, `unslop`, `no-comments`, `technical-writing`, `typescript-best-practices`, `create-verification-skill`, `show-me-your-work`, `arena`, `swarm`, `interrogate`, `principle-*`). `.claude/skills/` symlinks to the same directories; `.cursor/agents/` and `.claude/agents/` hold the `poteto-agent` and Comment Sicko subagents. To update, re-copy from upstream rather than editing in place.
