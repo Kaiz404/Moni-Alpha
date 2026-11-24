@@ -14,6 +14,7 @@ import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { FromTo } from '@/components/ledger/from-to';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
+import { ReceiptRow } from '@/components/receipt/receipt-row';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
@@ -252,6 +253,7 @@ export function DetailPane({
             <blockquote>&ldquo;{alert.text}&rdquo;</blockquote>
           </figure>
         )}
+        <ReceiptRow stored={transaction.receiptImageUrl} name={row.title} />
         {editing === 'note' ? (
           editor('Note', 'in-place-note')
         ) : (

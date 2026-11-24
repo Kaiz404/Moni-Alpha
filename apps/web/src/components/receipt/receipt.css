@@ -1,0 +1,158 @@
+/* The receipt full screen (the phone's ReceiptViewer): black, the photo contained, × at the top right. */
+.receipt-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+.receipt-viewer::backdrop {
+  background: transparent;
+}
+
+.receipt-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 24px;
+  overflow: hidden;
+  background: black;
+}
+
+.receipt-full {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: 0 0;
+  cursor: zoom-in;
+  user-select: none;
+  touch-action: none;
+  transition: transform 280ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.receipt-full[data-zoomed] {
+  cursor: grab;
+}
+
+.receipt-full[data-dragging] {
+  cursor: grabbing;
+  transition: none;
+}
+
+.receipt-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.receipt-close:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* The pane's row (the phone's detail link): the photo as its bubble, Receipt photo over Open the slip. */
+.receipt-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100% + 20px);
+  min-height: 62px;
+  margin: 10px -10px 0;
+  padding: 10px;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.receipt-row:hover {
+  background: var(--color-sand-light);
+}
+
+.receipt-thumb {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+}
+
+.receipt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.receipt-row-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-row-text b {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.receipt-row-text span {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.receipt-row > svg {
+  color: var(--color-muted);
+}
+
+/* A photo shown whole (Review's source): the press opens it, the expand mark says so. */
+.receipt-photo {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  cursor: zoom-in;
+}
+
+.receipt-expand {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .receipt-full {
+    transition: none;
+  }
+}

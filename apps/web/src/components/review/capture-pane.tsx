@@ -20,6 +20,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Select, type SelectOption } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
+import { ReceiptPhotoButton } from '@/components/receipt/receipt-row';
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { useReceiptPhoto } from '@/lib/receipt-photo';
@@ -223,10 +224,7 @@ export function CapturePane({
             (photo === undefined ? (
               <div className="source-photo" aria-busy="true" />
             ) : photo ? (
-              <a className="source-photo" href={photo} target="_blank" rel="noreferrer">
-                {/* eslint-disable-next-line @next/next/no-img-element -- a user's own photo from storage, any size */}
-                <img src={photo} alt={`Receipt from ${captureName(capture)}`} />
-              </a>
+              <ReceiptPhotoButton className="source-photo" src={photo} alt={`Receipt from ${captureName(capture)}`} />
             ) : (
               <div className="dashed-tile source-photo-missing">
                 <Glyph name="image-off-outline" size={22} />
