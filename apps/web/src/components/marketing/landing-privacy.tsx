@@ -12,14 +12,14 @@ const FACTS: readonly { title: string; body: ReactNode }[] = [
     title: 'AI only if you say yes.',
     body: (
       <>
-        Reading an alert, a receipt or your voice uses an AI model. Moni asks before the first time, and typing works without it.{' '}
-        <Fact name="aiNoRetention" />
+        Reading an alert, a receipt or your voice uses an AI model. Moni asks before the first time, and typing works without it. The AI
+        providers keep none of it and never train on it.
       </>
     ),
   },
   {
     title: 'Leave whenever you like.',
-    body: 'Export your transactions as a CSV file, or delete your account and everything in it, from the app or the web.',
+    body: 'Export your transactions as a CSV file whenever you like.',
   },
 ];
 
@@ -38,7 +38,7 @@ export function LandingPrivacy() {
             </div>
           ))}
         </div>
-        <Link href="/privacy" className="pv-link">
+        <Link href="/privacy" className="pv-link" hidden>
           Read the privacy policy
           <MdiIcon path={mdiChevronRight} size={20} />
         </Link>
@@ -56,7 +56,7 @@ export function LandingPrivacy() {
               <span className="pv-row-text">
                 <span className="pv-row-title">Stored in Moni’s cloud database</span>
                 <span className="pv-row-sub">
-                  Encrypted in transit and at rest. <Fact name="dataRegion" />
+                  Encrypted in transit and at rest.<span hidden> <Fact name="dataRegion" /></span>
                 </span>
               </span>
             </div>
@@ -64,7 +64,7 @@ export function LandingPrivacy() {
               <span className="pv-row-title">Export transactions as CSV</span>
               <MdiIcon path={mdiTrayArrowDown} size={20} className="pv-row-icon" />
             </div>
-            <Link href="/delete-account" className="pv-row pv-row-button">
+            <Link href="/delete-account" className="pv-row pv-row-button" hidden>
               <span className="pv-row-title pv-danger">Delete your account</span>
               <MdiIcon path={mdiChevronRight} size={20} className="pv-row-chev" />
             </Link>

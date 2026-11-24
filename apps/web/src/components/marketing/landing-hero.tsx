@@ -21,7 +21,7 @@ export function LandingHero() {
           <StorePill />
           <WebButton />
         </div>
-        <span className="hero-small">Android and the web. Any currency, you pick the main one.</span>
+        <span className="hero-small">On the web now, Android app coming soon. Any currency, you pick the main one.</span>
       </div>
       <Moment autoplay className="hero-stage">
         <div className="hero-scene" aria-hidden="true">

@@ -2,7 +2,7 @@ import { mdiEmailOutline } from '@mdi/js';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Cat, Wordmark } from '@/components/brand';
-import { Fact, SupportEmail } from '@/components/marketing/fact';
+import { SupportEmail } from '@/components/marketing/fact';
 import { LandingBento } from '@/components/marketing/landing-bento';
 import { LandingFaq } from '@/components/marketing/landing-faq';
 import { LandingHero } from '@/components/marketing/landing-hero';
@@ -37,7 +37,7 @@ export default function LandingPage() {
               <br />
               one payment.
             </h2>
-            <p className="lp-body">Get Moni on Android, or open it in your browser. It’s the same account on both.</p>
+            <p className="lp-body">Moni is still being built. Use it in your browser today, and the Android app is coming soon.</p>
             <div className="lp-actions">
               <StorePill />
               <WebButton />
@@ -67,12 +67,13 @@ export default function LandingPage() {
                   Google Play
                 </a>
               ) : (
-                <span className="lp-flink">
-                  Google Play <Fact name="googlePlayUrl" />
-                </span>
+                <span className="lp-flink">Android app, coming soon</span>
               )}
+              <a className="lp-flink" href="#faq">
+                FAQ
+              </a>
             </nav>
-            <nav className="lp-foot-col" aria-label="Legal">
+            <nav className="lp-foot-col" aria-label="Legal" hidden>
               <Link className="lp-flink" href="/privacy">
                 Privacy policy
               </Link>
@@ -87,14 +88,16 @@ export default function LandingPage() {
               </a>
             </nav>
             <div className="lp-foot-col">
-              <span className="lp-flink">
+              <span className="lp-flink" hidden>
                 <MdiIcon path={mdiEmailOutline} size={18} />
                 <SupportEmail />
               </span>
               <span className="lp-foot-small lp-foot-copy">
-                © 2026 <Fact name="legalEntity" />
+                © 2026 Moni
               </span>
-              <span className="lp-foot-small">Google Play is a trademark of Google LLC.</span>
+              <span className="lp-foot-small" hidden>
+                Google Play is a trademark of Google LLC.
+              </span>
             </div>
           </div>
         </div>

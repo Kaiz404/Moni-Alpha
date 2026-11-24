@@ -2,17 +2,6 @@
 // English and Malay, at every width in both themes, signed out; their links reachable without a session;
 // the language switch; every [CONFIRM] placeholder still marked; and a signed-in visitor's way into the app.
 
-const LANDING_FACTS = [
-  'domain',
-  'dataRegion',
-  'aiNoRetention',
-  'supportEmail',
-  'legalEntity',
-  'price',
-  'testedBankingApps',
-  'launchCountries',
-  'googlePlayUrl',
-];
 const LEGAL = [
   { path: '/privacy', title: 'Privacy policy', lang: 'en', draft: 'Draft, not yet reviewed' },
   { path: '/privacy/ms', title: 'Dasar Privasi', lang: 'ms', draft: 'Draf, belum disemak' },
@@ -59,11 +48,10 @@ export async function verifySite(t) {
         res?.status() === 200 && new URL(p.url()).pathname === '/' && h1 === HERO && (await ground(p)) === background[theme] && (await fitsWidth(p)),
         { status: res?.status(), url: p.url(), h1, ground: await ground(p) },
       );
-      check(
-        `the landing page ${where} marks every [CONFIRM] fact`,
-        LANDING_FACTS.every((name) => facts.includes(name)),
-        { missing: LANDING_FACTS.filter((name) => !facts.includes(name)) },
+      const shownFacts = await p.evaluate(() =>
+        [...document.querySelectorAll('[data-confirm]')].filter((m) => m.getClientRects().length > 0).map((m) => m.dataset.confirm),
       );
+      check(`the landing page ${where} shows no [CONFIRM] placeholder while Moni is unreleased`, shownFacts.length === 0, { shownFacts, facts });
       const iphone = await p.evaluate(() => /iPhone|App Store/.test(document.body.innerText));
       check(`the landing page ${where} says nothing about the iPhone or the App Store`, !iphone);
       const landing = await fullPage(p, `site-landing-${size.width}-${theme}`);
@@ -126,20 +114,15 @@ export async function verifySite(t) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const p = await ctx.newPage();
     await p.goto(`${base}/`);
-    const footer = p.locator('footer.lp-foot');
-    for (const [name, path] of [
-      ['Privacy policy', '/privacy'],
-      ['Terms', '/terms'],
-      ['Delete your account', '/delete-account'],
-    ]) {
-      await footer.getByRole('link', { name, exact: true }).click();
-      await p.waitForURL(`${base}${path}`, { timeout: 15_000 }).catch(() => {});
-      check(`the landing footer's ${name} opens ${path} signed out`, new URL(p.url()).pathname === path, p.url());
-      await p.goto(`${base}/`);
+    // While Moni is unreleased the landing hides its legal links; the pages still answer by address.
+    const shownLegal = await p.evaluate(() =>
+      ['/privacy', '/terms', '/delete-account'].filter((h) => [...document.querySelectorAll(`a[href="${h}"]`)].some((a) => a.getClientRects().length > 0)),
+    );
+    check('the landing page shows no Privacy policy, Terms or Delete your account link while Moni is unreleased', shownLegal.length === 0, shownLegal);
+    for (const path of ['/privacy', '/terms', '/delete-account']) {
+      const res = await ctx.request.get(`${base}${path}`, { maxRedirects: 0 });
+      check(`${path} still answers 200 signed out`, res.status() === 200, res.status());
     }
-    await p.locator('#privacy').getByRole('link', { name: 'Read the privacy policy' }).click();
-    await p.waitForURL(`${base}/privacy`, { timeout: 15_000 }).catch(() => {});
-    check('"Read the privacy policy" opens /privacy signed out', new URL(p.url()).pathname === '/privacy', p.url());
     await p.goto(`${base}/`);
     const hrefs = await p.evaluate(() => [...new Set([...document.querySelectorAll('a[href^="/"]')].map((a) => a.getAttribute('href')))]);
     const statuses = [];

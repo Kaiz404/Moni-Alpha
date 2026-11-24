@@ -39,7 +39,7 @@ export function HeroWindow() {
         <span className="hw-dot" />
         <span className="hw-dot" />
         <span className="hw-grow" />
-        <span className="hw-address">
+        <span className="hw-address" hidden>
           <MdiIcon path={mdiLockOutline} size={13} />
           <Fact name="domain" />
         </span>

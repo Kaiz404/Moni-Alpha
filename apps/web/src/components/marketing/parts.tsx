@@ -33,9 +33,10 @@ export function StorePill({ tone = 'ink', full = false, height = 56 }: { tone?: 
       {content}
     </a>
   ) : (
-    <a className={className} style={{ height }} aria-disabled="true" data-confirm="googlePlayUrl" title={factText('googlePlayUrl')}>
-      {content}
-    </a>
+    <span className={className.replace(' pr', '')} style={{ height }} aria-label="Android app, coming soon">
+      <span className="lp-store-small">Coming soon</span>
+      <span className="lp-store-big">Android app</span>
+    </span>
   );
 }
 

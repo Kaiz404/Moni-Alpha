@@ -516,3 +516,17 @@
     transform: none;
   }
 }
+
+/* Parts kept for launch but not shown while Moni is unreleased (their facts are still unconfirmed). */
+.lp [hidden] {
+  display: none !important;
+}
+
+/* "Coming soon": a label, not a button, so it has no solid outline to press. */
+.lp-store:not([href]) {
+  box-shadow: none;
+  outline: 1.5px dashed var(--color-border-strong, var(--color-hairline));
+  outline-offset: -1.5px;
+  color: var(--color-ink-2, var(--color-foreground));
+  cursor: default;
+}
