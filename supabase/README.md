@@ -48,7 +48,7 @@ It is on for the dev project. `node scripts/verify/ai-consent-live.mjs` proves t
 
 ## Storage
 
-Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations.
+Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations. The bucket is private (`20261124140000_receipts_private.sql`); both apps read photos through signed links only.
 
 ## Edge Functions
 
