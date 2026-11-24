@@ -124,6 +124,34 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
 
   return (
     <div className="places" data-screen="places">
+      <div className="map-filters">
+        <span className="map-float pseg-wrap">
+          <span className="pseg" role="radiogroup" aria-label="Range">
+            <span className="pseg-pill" aria-hidden="true" style={{ width: 'calc((100% - 6px) / 3)', transform: `translateX(${ranges.findIndex((each) => each.key === range.key) * 100}%)` }} />
+            {ranges.map((each) => (
+              <button key={each.key} type="button" role="radio" aria-checked={each.key === range.key} onClick={() => setParams({ range: each.key === '30d' ? null : (each.key as PlaceRangeKey) })}>
+                {each.label}
+              </button>
+            ))}
+          </span>
+        </span>
+        <span className="map-chips">
+          <FilterChip
+            label="Category"
+            options={data.categoryOptions}
+            value={query.categoryId}
+            onPick={(id) => setParams({ category: id })}
+            currency={ledger.currency}
+          />
+          <FilterChip
+            label="Wallets"
+            options={data.walletOptions}
+            value={query.walletId}
+            onPick={(id) => setParams({ wallet: id })}
+            currency={ledger.currency}
+          />
+        </span>
+      </div>
       <div className="places-stage">
         <PlaceMap
           ledger={ledger}
@@ -143,34 +171,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
           emptyLine={emptyLine}
           locationOff={data.locationOff}
         />
-        <div className="map-filters">
-          <span className="map-float pseg-wrap">
-            <span className="pseg" role="radiogroup" aria-label="Range">
-              <span className="pseg-pill" aria-hidden="true" style={{ width: 'calc((100% - 6px) / 3)', transform: `translateX(${ranges.findIndex((each) => each.key === range.key) * 100}%)` }} />
-              {ranges.map((each) => (
-                <button key={each.key} type="button" role="radio" aria-checked={each.key === range.key} onClick={() => setParams({ range: each.key === '30d' ? null : (each.key as PlaceRangeKey) })}>
-                  {each.label}
-                </button>
-              ))}
-            </span>
-          </span>
-          <span className="map-chips">
-            <FilterChip
-              label="Category"
-              options={data.categoryOptions}
-              value={query.categoryId}
-              onPick={(id) => setParams({ category: id })}
-              currency={ledger.currency}
-            />
-            <FilterChip
-              label="Wallets"
-              options={data.walletOptions}
-              value={query.walletId}
-              onPick={(id) => setParams({ wallet: id })}
-              currency={ledger.currency}
-            />
-          </span>
-        </div>
       </div>
       <PlaceSide
         ledger={ledger}

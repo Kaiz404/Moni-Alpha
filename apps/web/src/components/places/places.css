@@ -11,6 +11,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--side);
   grid-template-areas:
+    'filters filters'
     'stage side'
     'days loose';
   gap: 16px;
@@ -24,13 +25,13 @@ html[data-layout='rail'] .places {
 html[data-layout='rail-one-column'] .places {
   --map-h: clamp(320px, min(46dvh, 100cqw * 0.6), 480px);
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'stage' 'side' 'days' 'loose';
+  grid-template-areas: 'filters' 'stage' 'side' 'days' 'loose';
 }
 
 html[data-layout='phone'] .places {
   --map-h: 340px;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'stage' 'side';
+  grid-template-areas: 'filters' 'stage' 'side';
   margin: 4px calc(-1 * var(--spacing-screen)) 0;
   gap: 12px;
 }
@@ -1548,7 +1549,20 @@ html[data-layout='phone'] :is(.pseg button, .map-pin-big)::before {
 }
 
 /* Map or Satellite: one round button over Fit, pressed while the satellite photos show, as Google's layer button. */
+.map-layer {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 12;
+}
+
 .map-layer[aria-pressed='true'] {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
+}
+
+/* Range, Category and Wallets change the whole page, so they sit above the map, not on it. */
+.places > .map-filters {
+  grid-area: filters;
+  position: static;
 }

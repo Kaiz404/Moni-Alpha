@@ -433,8 +433,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
         </span>
         <span className="kbd">H</span>
       </div>
-      <div className="map-zoom">
-        {google ? (
+      {google ? (
           <button
             type="button"
             className="map-float map-btn map-layer press"
@@ -446,6 +445,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
             <Mdi name="layers-outline" size={22} />
           </button>
         ) : null}
+      <div className="map-zoom">
         <button type="button" className="map-float map-btn map-fit press" title="Fit every place" onClick={() => go(FIT, true)}>
           <Mdi name="fit-to-screen-outline" size={20} />
           <span>Fit</span>

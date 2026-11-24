@@ -1,11 +1,18 @@
 'use client';
 
 import { googleZoom, type Box, type FitFrame } from '@repo/core';
-import { mapStyles } from '@repo/design';
+import { mapStyles, type MapStyleRule } from '@repo/design';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/components/use-theme';
 import { loadMaps, MAPS_KEY, onKeyRejected, type GoogleMap } from '@/lib/google-maps';
 import type { MapView } from '@/lib/places-view';
+
+/** Over the satellite photos only place and area names show: no road lines, road names, shops or transit. */
+const SATELLITE_LABELS: readonly MapStyleRule[] = [
+  { featureType: 'road', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+];
 
 /** True while the Maps key is set and Google has not refused it. */
 export function useMapsUsable(): boolean {
@@ -52,7 +59,7 @@ export function MapGround({ frame, view, box, satellite = false }: { frame: FitF
 
   useEffect(() => {
     // Satellite photos take no styles; "hybrid" keeps Google's street and place names over them.
-    map?.setOptions({ styles: dark ? mapStyles.dark : mapStyles.light, mapTypeId: satellite ? 'hybrid' : 'roadmap' });
+    map?.setOptions({ styles: satellite ? SATELLITE_LABELS : dark ? mapStyles.dark : mapStyles.light, mapTypeId: satellite ? 'hybrid' : 'roadmap' });
   }, [map, dark, satellite]);
 
   useEffect(() => {
