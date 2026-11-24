@@ -24,6 +24,7 @@ Docs are lean and single-source-of-truth. When a change affects any area below, 
 | Web dashboard | `apps/web/README.md` |
 | Web app design handoff, board mapping, web build progress | `docs/WEB.md` (status line, tables) + `docs/web/PLAN.md` |
 | Supabase workflow/keys | `supabase/README.md` |
+| Promo videos: new clips, renders, Drive folders, takes | `marketing/promo/README.md` (asset table) |
 
 Also keep in sync:
 
