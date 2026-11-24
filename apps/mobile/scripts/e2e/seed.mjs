@@ -179,21 +179,39 @@ async function reset(request, userId, profile, today) {
 const select = (request, path) => request(path).then(({ json }) => json);
 
 /**
- * The web lane's receipt capture carries a photo in the receipts bucket, so web Review shows the
- * source beside the proposal. The phone's seed keeps none, which keeps its screenshots as they were.
+ * The web lane's receipt capture and its newest camera transaction carry a photo in the receipts bucket, so
+ * web Review shows the source beside the proposal and Activity's pane shows Receipt photo. The phone's seed
+ * keeps none, which keeps its screenshots as they were.
  */
-async function attachReceiptPhoto({ url, secret }, request, userId) {
-  const [receipt] = await select(request, `/rest/v1/proposed_transactions?user_id=eq.${userId}&source_type=eq.image&select=id`);
-  if (!receipt) return null;
-  const path = `${userId}/${receipt.id}.jpg`;
-  const upload = await fetch(`${url}/storage/v1/object/receipts/${path}`, {
-    method: 'POST',
-    headers: { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
-    body: readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'receipt.jpg')),
-  });
-  if (!upload.ok) throw new SeedError(`receipt upload failed with ${upload.status}: ${(await upload.text()).slice(0, 300)}`, 1);
-  await request(`/rest/v1/proposed_transactions?id=eq.${receipt.id}`, { method: 'PATCH', body: { source_image_uri: path }, prefer: 'return=minimal' });
-  return path;
+async function attachReceiptPhotos({ url, secret }, request, userId) {
+  const photo = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'receipt.jpg'));
+  const upload = async (id) => {
+    const path = `${userId}/${id}.jpg`;
+    const res = await fetch(`${url}/storage/v1/object/receipts/${path}`, {
+      method: 'POST',
+      headers: { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+      body: photo,
+    });
+    if (!res.ok) throw new SeedError(`receipt upload failed with ${res.status}: ${(await res.text()).slice(0, 300)}`, 1);
+    return path;
+  };
+  const paths = [];
+  const [capture] = await select(request, `/rest/v1/proposed_transactions?user_id=eq.${userId}&source_type=eq.image&select=id`);
+  if (capture) {
+    const path = await upload(capture.id);
+    await request(`/rest/v1/proposed_transactions?id=eq.${capture.id}`, { method: 'PATCH', body: { source_image_uri: path }, prefer: 'return=minimal' });
+    paths.push(path);
+  }
+  const [scanned] = await select(
+    request,
+    `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&metadata->>source=eq.camera&select=id&order=transaction_date.desc&limit=1`,
+  );
+  if (scanned) {
+    const path = await upload(scanned.id);
+    await request(`/rest/v1/transactions?id=eq.${scanned.id}`, { method: 'PATCH', body: { receipt_image_url: path }, prefer: 'return=minimal' });
+    paths.push(path);
+  }
+  return paths.join(', ') || null;
 }
 
 /**
@@ -229,6 +247,11 @@ export const QUERIES = {
       request,
       `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&select=id,type,amount,currency,merchant,description,transaction_date,metadata,created_at&order=created_at.desc&limit=1`,
     ))[0] ?? null,
+  receipts: (request, userId) =>
+    select(
+      request,
+      `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&receipt_image_url=not.is.null&select=id,merchant,receipt_image_url&order=transaction_date.desc`,
+    ),
   'pending-proposals': (request, userId) =>
     select(
       request,
@@ -279,7 +302,7 @@ async function main(argv) {
   console.log(`user ${config.email} ${user.id}${user.created ? ' created' : ''}`);
   console.log(`before ${JSON.stringify(await counts(request, user.id))}`);
   await reset(request, user.id, args.profile, today);
-  if (args.user === 'web' && args.profile === 'full') console.log(`receipt photo ${await attachReceiptPhoto(config, request, user.id)}`);
+  if (args.user === 'web' && args.profile === 'full') console.log(`receipt photos ${await attachReceiptPhotos(config, request, user.id)}`);
   console.log(`after  ${JSON.stringify(await counts(request, user.id))}`);
   console.log(`seeded profile ${args.profile} for ${today}`);
 }

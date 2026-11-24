@@ -19,6 +19,7 @@ import { verifyPhoneLayout } from './phone-layout.mjs';
 import { verifyPlaces } from './places.mjs';
 import { verifyPrimitives } from './primitives.mjs';
 import { verifyWallets } from './wallets.mjs';
+import { verifyReceipts } from './receipts.mjs';
 import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
 import { verifySite } from './site.mjs';
@@ -916,6 +917,8 @@ try {
   else if (runs('debt-flows')) await verifyDebtFlows({ browser, base, storage, shot, open, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
+  if (runs('receipts')) await verifyReceipts({ browser, base, storage, check, shot, settle, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();

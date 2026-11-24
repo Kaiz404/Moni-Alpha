@@ -1,7 +1,7 @@
 // Review in web-verify (`--only review`): Home's Review drawer (#104) at every layout in both themes, the
 // numbers and the order against the web e2e user's captures, J, K, Space, A, X and Ctrl Z, the list with
 // bulk Approve, the source with the proposal (the bank alert, the chat line, the receipt photo from
-// storage), the rule preview for "Don't ask about similar", All caught up, Recently reviewed with Move
+// storage, opened full screen), the rule preview for "Don't ask about similar", All caught up, Recently reviewed with Move
 // back, the 700 crossing with a half-typed name, and reduced motion. Every decision is undone before the
 // part ends.
 
@@ -206,6 +206,15 @@ export async function verifyReview(t) {
     photo,
   );
   await shot(p, 'review-1440-receipt');
+  await p.getByRole('button', { name: 'Open the receipt full screen' }).click();
+  const viewer = p.getByRole('dialog', { name: 'Receipt photo' });
+  await viewer.waitFor({ timeout: 5000 }).catch(() => {});
+  check('the photo opens full screen in the app, not in a new tab', (await viewer.isVisible().catch(() => false)) && p.context().pages().length === 1);
+  await settle(p);
+  await shot(p, 'review-1440-receipt-full');
+  await p.keyboard.press('Escape');
+  const closed = await viewer.waitFor({ state: 'detached', timeout: 3000 }).then(() => true, () => false);
+  check('Esc closes the photo and leaves the drawer open', closed && (await drawer(p).isVisible()));
   await p.goto(`${base}/home?review=list`);
   await ready(p);
   await p.locator(`.inbox-row[data-capture="${chat.id}"]`).click();
