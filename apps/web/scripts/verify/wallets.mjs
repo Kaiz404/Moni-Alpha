@@ -112,10 +112,10 @@ export async function verifyWallets(t) {
   await p.getByRole('button', { name: 'New wallet' }).click();
   const form = p.getByRole('form', { name: 'New wallet' });
   await form.waitFor();
-  await form.getByRole('button', { name: /^Type: / }).click();
+  await form.getByRole('combobox', { name: /^Type: / }).click();
   await p.getByRole('listbox', { name: 'Type' }).getByRole('option', { name: 'Cash' }).click();
-  const typeShown = await form.getByRole('button', { name: /^Type: / }).getAttribute('aria-label');
-  await form.getByRole('button', { name: /^Currency: / }).click();
+  const typeShown = await form.getByRole('combobox', { name: /^Type: / }).getAttribute('aria-label');
+  await form.getByRole('combobox', { name: /^Currency: / }).click();
   const currencyList = p.getByRole('listbox', { name: 'Currency' });
   const currencyRows = await currencyList.getByRole('option').count();
   await p.keyboard.press('Escape');

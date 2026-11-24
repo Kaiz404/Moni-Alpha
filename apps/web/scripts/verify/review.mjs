@@ -216,7 +216,7 @@ export async function verifyReview(t) {
   await shot(p, 'review-1440-chat');
 
   // Esc shuts an open picker, not the drawer; a picked wallet outlives the drawer closing.
-  const walletField = drawer(p).getByRole('button', { name: /^Wallet: / });
+  const walletField = drawer(p).getByRole('combobox', { name: /^Wallet: / });
   await walletField.click();
   const walletList = drawer(p).getByRole('listbox', { name: 'Wallet' });
   await walletList.waitFor({ timeout: 3000 });

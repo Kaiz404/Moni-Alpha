@@ -1,9 +1,16 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import {
+  Select as Root,
+  SelectContent,
+  SelectItem,
+  SelectItemIndicator,
+  SelectTrigger,
+} from '@ui-sdk/react/select';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Icon } from '@/components/icon';
 import type { Align, Side } from '@/lib/floating';
-import { Floating } from './floating';
+import './controls.css';
 
 export type SelectOption<T extends string> = {
   value: T;
@@ -12,6 +19,11 @@ export type SelectOption<T extends string> = {
   /** Shown at the row's end, as an amount or a budget left. */
   side?: ReactNode;
 };
+
+/** A letter on the closed trigger stays a screen key (J, K, E), as on the button this was, and never picks an option. */
+function letter(event: KeyboardEvent) {
+  return event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey;
+}
 
 /**
  * Moni's dropdown: the whole trigger (chevron included) opens a listbox of full-width rows, the chosen
@@ -54,30 +66,32 @@ export function Select<T extends string>({
   invalid?: boolean;
   children?: ReactNode;
 }) {
-  const anchor = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
   const chosen = options.find((option) => option.value === value);
   const shown = text ?? chosen?.label ?? placeholder;
   return (
-    <>
-      <button
-        ref={anchor}
-        type="button"
+    <Root<T>
+      value={value}
+      disabled={disabled}
+      onValueChange={(next) => {
+        if (next !== null && next !== value) onChange(next as T);
+      }}
+    >
+      <SelectTrigger
         className={`select-trigger ${className}`}
-        aria-haspopup="listbox"
-        aria-expanded={open}
         aria-label={triggerLabel ?? `${label}: ${typeof shown === 'string' ? shown : (chosen?.label ?? placeholder)}`}
-        disabled={disabled}
         aria-invalid={invalid || undefined}
         data-invalid={invalid ? 'true' : undefined}
         data-empty={chosen ? undefined : true}
-        onClick={() => setOpen(!open)}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            setOpen(true);
-          }
-        }}
+        render={(props, state) => (
+          <button
+            {...props}
+            type="button"
+            onKeyDown={(event) => {
+              if (!state.open && letter(event)) return;
+              props.onKeyDown?.(event);
+            }}
+          />
+        )}
       >
         {children ?? (
           <>
@@ -89,48 +103,35 @@ export function Select<T extends string>({
             />
           </>
         )}
-      </button>
-      {open && (
-        <Floating
-          anchor={anchor}
-          role="listbox"
-          label={label}
-          matchWidth
-          side={side}
-          align={align}
-          className={listClassName}
-          onClose={() => setOpen(false)}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className="popover-row"
-              onClick={() => {
-                setOpen(false);
-                if (option.value !== value) onChange(option.value);
-              }}
-            >
-              {option.lead}
-              <span className="popover-row-text">{option.label}</span>
-              {option.side}
-              {option.value === value && (
-                <span
-                  className="popover-tick"
-                  aria-hidden="true"
-                >
-                  <Icon
-                    name="check"
-                    size={18}
-                  />
-                </span>
-              )}
-            </button>
-          ))}
-        </Floating>
-      )}
-    </>
+      </SelectTrigger>
+      <SelectContent
+        aria-label={label}
+        side={side}
+        align={align ?? 'start'}
+        sideOffset={6}
+        collisionPadding={8}
+        className={`popover popover-select${listClassName ? ` ${listClassName}` : ''}`}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        {options.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            label={option.label}
+            className="popover-row"
+          >
+            {option.lead}
+            <span className="popover-row-text">{option.label}</span>
+            {option.side}
+            <SelectItemIndicator className="popover-tick">
+              <Icon
+                name="check"
+                size={18}
+              />
+            </SelectItemIndicator>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Root>
   );
 }

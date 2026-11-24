@@ -237,7 +237,7 @@ export async function verifyPlaces(t) {
   check('Visits sorts by visits', visitCounts.length > 0 && visitCounts.every((count, index) => Number.isInteger(count) && (index === 0 || visitCounts[index - 1] >= count)), visitCounts);
   await p.getByRole('radio', { name: 'Spent' }).click();
 
-  await p.getByRole('button', { name: /^Category/ }).click();
+  await p.getByRole('combobox', { name: /^Category/ }).click();
   const option = p.locator('.map-popover [role="option"]').nth(1);
   const optionAmount = ringgit(await option.locator('.num').textContent());
   await option.click();
@@ -245,7 +245,7 @@ export async function verifyPlaces(t) {
   const filtered = await summary();
   check('a category keeps only its spending, and the total is what its option said', Math.abs(filtered.total - optionAmount) < 0.005 && filtered.total < s30.total, { optionAmount, filtered });
   await p.keyboard.press('Escape');
-  await p.getByRole('button', { name: /^Category/ }).click();
+  await p.getByRole('combobox', { name: /^Category/ }).click();
   await p.locator('.map-popover [role="option"]').first().click();
   await p.waitForURL((url) => !url.search.includes('category='));
 

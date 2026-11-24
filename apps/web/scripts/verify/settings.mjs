@@ -334,7 +334,7 @@ export async function verifySettings(t) {
   await p.locator('[data-import-step="match"]').waitFor({ timeout: 10_000 }).catch(() => {});
   check('a CSV that is not a Moni export opens at Match columns', (await p.locator('[data-import-step="match"]').count()) === 1);
   check('Check the file waits for a wallet', await p.getByRole('button', { name: /^Check the file/ }).isDisabled());
-  await p.getByRole('button', { name: /^Wallet to add to/ }).click();
+  await p.getByRole('combobox', { name: /^Wallet to add to/ }).click();
   await p.getByRole('option', { name: wallet.name, exact: true }).click();
   const newCount = p.getByTestId('import-new');
   const hereCount = p.getByTestId('import-here');
