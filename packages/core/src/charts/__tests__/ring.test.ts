@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ringHit, ringSegments, type RingSegment } from '../ring';
+import { ringHit, ringSegments, spentCentre, type RingSegment } from '../ring';
 
 const options = {
   radius: 100,
@@ -135,5 +135,17 @@ describe('ringHit', () => {
   it('has nothing but the middle to hit on an empty ring', () => {
     expect(ringHit([], 100, 0, band)).toBeNull();
     expect(ringHit([], 0, 0, band)).toEqual({ kind: 'centre' });
+  });
+});
+
+describe('spentCentre', () => {
+  it.each([
+    ['under the budget', 111620, 180000, { total: 'RM1,116.20', whole: false, line: 'of RM1,800', over: false }],
+    ['over the budget, never "of" it', 66789, 10000, { total: 'RM667.89', whole: false, line: 'RM567 over', over: true }],
+    ['right on the budget', 180000, 180000, { total: 'RM1,800.00', whole: false, line: 'of RM1,800', over: false }],
+    ['with no budget', 2000, null, { total: 'RM20.00', whole: false, line: 'spent', over: false }],
+    ['nothing spent', 0, 180000, { total: 'RM0', whole: true, line: 'of RM1,800', over: false }],
+  ])('%s', (_name, total, budget, expected) => {
+    expect(spentCentre(total, budget, 'MYR')).toEqual(expected);
   });
 });

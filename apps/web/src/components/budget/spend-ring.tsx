@@ -1,11 +1,13 @@
 'use client';
 
-import { formatMoney, monthName, ringSegments, type RingOptions, type SpendSlice } from '@repo/core';
-import { Bubble } from '@/components/ledger/glyph';
+import { monthName, ringSegments, spentCentre, type RingOptions, type SpendSlice } from '@repo/core';
+import { Glyph } from '@/components/ledger/glyph';
 
 const SIZE = 200;
 /** The phone's ring (284 wide) scaled to 200, so both draw the same arcs and gaps. */
 const RING = { radius: 87, strokeWidth: 24, gap: 7, minSweep: 2, maxSegments: 8 } as const satisfies RingOptions;
+/** The phone's 20 glyph on its 284 ring, at 200. */
+const GLYPH = 14;
 
 function point(angle: number): [number, number] {
   const rad = (angle * Math.PI) / 180;
@@ -45,11 +47,10 @@ export function SpendRing({
       categoryId: slice?.categoryId ?? null,
     };
   });
-  const [whole, cents] = formatMoney(spentMinor, currency).split('.');
+  const centre = spentCentre(spentMinor, budgetMinor, currency);
+  const [whole, cents] = centre.total.split('.');
   const symbolEnd = whole!.search(/\d/);
-  const label = `Spent in ${monthName(month)}, ${formatMoney(spentMinor, currency)}${
-    budgetMinor ? ` of ${formatMoney(budgetMinor, currency, { whole: true })}` : ''
-  }, by category. Pick a slice to open its category.`;
+  const label = `Spent in ${monthName(month)}, ${centre.total}${centre.line === 'spent' ? '' : `${centre.over ? ',' : ''} ${centre.line}`}, by category. Pick a slice to open its category.`;
   return (
     <div className="spend-ring" role="img" aria-label={label}>
       <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
@@ -78,8 +79,8 @@ export function SpendRing({
       {arcs.map((arc) => {
         const [x, y] = point(arc.start + arc.sweep / 2);
         return (
-          <span key={arc.key} className="ring-glyph" style={{ left: x - 9, top: y - 9 }}>
-            <Bubble icon={arc.icon} color="transparent" size={18} glyph={10} />
+          <span key={arc.key} className="ring-glyph" style={{ left: x - GLYPH / 2, top: y - GLYPH / 2 }}>
+            <Glyph name={arc.icon} size={GLYPH} />
           </span>
         );
       })}
@@ -87,9 +88,11 @@ export function SpendRing({
         <span className="num ring-total">
           <small>{whole!.slice(0, symbolEnd)}</small>
           {whole!.slice(symbolEnd)}
-          <small>.{cents}</small>
+          {cents && <small>.{cents}</small>}
         </span>
-        {budgetMinor ? <span className="num ring-of">of {formatMoney(budgetMinor, currency, { whole: true })}</span> : null}
+        <span className="num ring-of" data-over={centre.over || undefined}>
+          {centre.line}
+        </span>
       </div>
     </div>
   );

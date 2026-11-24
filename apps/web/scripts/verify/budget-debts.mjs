@@ -174,13 +174,15 @@ export async function verifyBudgetDebts(t) {
     const rowSpent = rows.reduce((sum, row) => sum + ringgit(row.spent), 0);
     const rowLast = rows.reduce((sum, row) => sum + ringgit(row.last), 0);
     const ring = await p.locator('.ring-total').textContent();
-    const ringOf = await p.locator('.ring-of').textContent().catch(() => null);
+    const ringOf = await p.locator('.ring-of').textContent();
+    const over = (Math.round(ringgit(total.spent) * 100) - Math.round(ringgit(total.budget) * 100)) / 100;
+    const ringLine = Number.isNaN(over) ? 'spent' : over > 0 ? `${whole(over)} over` : `of ${total.budget}`;
     check(
       `Budget ${month}: the total adds up the rows (plus spending with no category), the ring shows the same total and budget`,
       ringgit(total.spent) + 0.005 >= rowSpent &&
         ringgit(total.last) + 0.005 >= rowLast &&
         near(ringgit(ring), ringgit(total.spent)) &&
-        (ringOf === null || ringOf === `of ${total.budget}`) &&
+        ringOf === ringLine &&
         total.inCats === `${whole(Object.values(shownBudgets).reduce((a, b) => a + b, 0))} of it in categories`,
       { total, rowSpent, rowLast, ring, ringOf },
     );

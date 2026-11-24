@@ -99,11 +99,9 @@ html[data-layout='phone'] .ring-card .spend-ring {
 
 .ring-glyph {
   position: absolute;
+  display: flex;
   pointer-events: none;
-}
-
-.ring-glyph .cat-bubble {
-  background: transparent !important;
+  color: var(--color-on-category);
 }
 
 .ring-centre {
@@ -133,6 +131,11 @@ html[data-layout='phone'] .ring-card .spend-ring {
   font-size: 13px;
   line-height: 18px;
   color: var(--color-muted);
+}
+
+.ring-of[data-over] {
+  font-weight: 700;
+  color: var(--color-over);
 }
 
 .ring-words {

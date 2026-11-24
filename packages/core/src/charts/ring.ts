@@ -1,3 +1,5 @@
+import { formatMoney } from '../glossary';
+
 export type RingOptions = {
   /** Centre line of the stroke. */
   radius: number;
@@ -112,4 +114,24 @@ export function ringHit(
     if (away(segment) < away(segments[nearest]!)) nearest = index;
   });
   return { kind: 'segment', index: nearest };
+}
+
+export type SpentCentre = {
+  /** The month's spending; nothing spent reads in whole ringgit. */
+  total: string;
+  whole: boolean;
+  /** "RM116 over" past the budget, "of RM1,800" under it, "spent" with none. */
+  line: string;
+  over: boolean;
+};
+
+/** What the Budget ring's middle reads at rest, the same on the phone and the web. */
+export function spentCentre(totalMinor: number, budgetMinor: number | null, currency: string): SpentCentre {
+  const whole = totalMinor === 0;
+  const total = formatMoney(totalMinor, currency, { whole });
+  if (budgetMinor === null) return { total, whole, line: 'spent', over: false };
+  const overMinor = totalMinor - budgetMinor;
+  return overMinor > 0
+    ? { total, whole, line: `${formatMoney(overMinor, currency, { whole: true })} over`, over: true }
+    : { total, whole, line: `of ${formatMoney(budgetMinor, currency, { whole: true })}`, over: false };
 }

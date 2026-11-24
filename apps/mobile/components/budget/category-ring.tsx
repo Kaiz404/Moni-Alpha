@@ -36,6 +36,7 @@ import {
   formatMoney,
   ringHit,
   ringSegments,
+  spentCentre,
   type RingOptions,
   type SpendSlice,
 } from '@repo/core';
@@ -610,35 +611,24 @@ export function SpentCentre({
   currency: string;
   monthName: string;
 }) {
-  const total = formatMoney(totalMinor, currency);
-  const spentNothing = Number(totalMinor) === 0;
-  const budgetWords =
-    budgetMinor === null
-      ? null
-      : `of ${formatMoney(budgetMinor, currency, { whole: true })}`;
-  const overMinor =
-    budgetMinor === null ? 0 : Number(totalMinor) - Number(budgetMinor);
-  const overWords =
-    overMinor > 0
-      ? `${formatMoney(overMinor, currency, { whole: true })} over`
-      : null;
+  const words = spentCentre(Number(totalMinor), budgetMinor === null ? null : Number(budgetMinor), currency);
   return (
     <View
       accessible
-      accessibilityLabel={`Spent in ${monthName}, ${total}${budgetWords ? ` ${budgetWords}` : ''}${overWords ? `, ${overWords}` : ''}`}
+      accessibilityLabel={`Spent in ${monthName}, ${words.total}${words.line === 'spent' ? '' : `${words.over ? ',' : ''} ${words.line}`}`}
       className="items-center"
     >
       <RingAmount
         testID={tid('budget', 'spend-ring', 'total')}
-        text={spentNothing ? formatMoney(0, currency, { whole: true }) : total}
-        whole={spentNothing}
+        text={words.total}
+        whole={words.whole}
       />
       <Text
         numberOfLines={1}
         maxFontSizeMultiplier={1.2}
-        className={`text-[13px] leading-[18px] ${overWords ? 'font-display-bold text-over' : 'text-muted'}`}
+        className={`text-[13px] leading-[18px] ${words.over ? 'font-display-bold text-over' : 'text-muted'}`}
       >
-        {overWords ?? budgetWords ?? 'spent'}
+        {words.line}
       </Text>
     </View>
   );
