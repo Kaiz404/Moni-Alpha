@@ -1,12 +1,13 @@
 import { useValue } from '@legendapp/state/react';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 
 import { TextTile } from '@/components/amount/text-tile';
 import { MoniGlyph } from '@/components/brand/mascot';
 import { WalletBubble } from '@/components/ui/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
+import { useReceiptFlight, type WindowFrame } from '@/components/capture/receipt-flight';
 import { HEADER_H, ReceiptPhoto } from '@/components/capture/receipt-photo';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +64,8 @@ type CaptureResultProps = {
   again: { label: string; icon: IconSymbolName; onPress: () => void };
   onApprove: () => void;
   approving: boolean;
+  /** Where the receipt sat while Moni read it, so it can fly into the header from there. */
+  receiptFrom?: WindowFrame | null;
 };
 
 
@@ -81,7 +84,10 @@ export function CaptureResult({
   again,
   onApprove,
   approving,
+  receiptFrom = null,
 }: CaptureResultProps) {
+  const reduceMotion = useReducedMotion();
+  const flight = useReceiptFlight(quote.source === 'camera' ? quote.imageUri : null, receiptFrom);
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const tokens = useThemeTokens();
@@ -201,7 +207,7 @@ export function CaptureResult({
     onEdit({ place: next.place, merchant: next.note });
   };
 
-  return (
+  return flight.stage(
     <Page
       screen="capture"
       kind="task"
@@ -212,7 +218,11 @@ export function CaptureResult({
         onEditingChange={setEditing}
       >
       <Animated.View
-        entering={FadeIn.duration(280)}
+        entering={
+          reduceMotion
+            ? FadeIn.duration(180).reduceMotion(ReduceMotion.Never)
+            : FadeIn.delay(flight.flying ? 200 : 0).duration(280)
+        }
         className="flex-1"
       >
       <ScrollView
@@ -243,7 +253,12 @@ export function CaptureResult({
             </Text>
           </View>
         ) : null}
-        {quote.source === 'camera' ? <ReceiptPhoto uri={quote.imageUri} /> : null}
+        {quote.source === 'camera' ? (
+          <ReceiptPhoto
+            uri={quote.imageUri}
+            {...flight.photo}
+          />
+        ) : null}
         <View className="min-h-16 justify-center py-1">
           <InPlaceField
             testID={tid('capture', 'amount')}
@@ -387,6 +402,6 @@ export function CaptureResult({
           onPress={onApprove}
         />
       </View>
-    </Page>
+    </Page>,
   );
 }

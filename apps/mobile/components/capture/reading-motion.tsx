@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Mascot } from '@/components/brand/mascot';
+import { measureFrame, type WindowFrame } from '@/components/capture/receipt-flight';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { springs } from '@repo/design';
@@ -142,7 +143,15 @@ function Corner({ x, y, breath }: { x: -1 | 1; y: -1 | 1; breath: SharedValue<nu
 const RECEIPT_RATIO = 1.3;
 
 /** The receipt large in a breathing viewfinder with a Lilac band sweeping down it, and the cat on top reading along. */
-export function ScanningReceipt({ imageUri }: { imageUri: string }) {
+export function ScanningReceipt({
+  imageUri,
+  onFrame,
+}: {
+  imageUri: string;
+  /** Where the receipt sits in the window, so the check page can carry it on from there. */
+  onFrame?: (frame: WindowFrame) => void;
+}) {
+  const receipt = useRef<View>(null);
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
@@ -156,7 +165,12 @@ export function ScanningReceipt({ imageUri }: { imageUri: string }) {
   return (
     <View className="items-center gap-6">
       <ReadingCat sweep={sweep} />
-      <View style={{ width, height }}>
+      <View
+        ref={receipt}
+        collapsable={false}
+        style={{ width, height }}
+        onLayout={onFrame ? () => measureFrame(receipt.current, onFrame) : undefined}
+      >
         <View
           className="overflow-hidden rounded-tile bg-sand"
           style={{ width, height }}

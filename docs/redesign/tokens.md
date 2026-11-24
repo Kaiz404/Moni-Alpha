@@ -160,6 +160,7 @@ Springs (mass 1):
 - A number is never hidden or moving for more than ~200 ms; no digit roll on first paint.
 - Lists: first 6 rows rise 8 + fade, 30 ms apart, on first load only.
 - Reduce motion: slides and scales become 150–200 ms fades, no bounce, 1:1 tracking kept.
+- Scan read (#123): when Moni finishes reading, the receipt flies from the reading viewfinder into the check page's photo header on `sheet` (box and position together, ~450 ms), the fields fade in from 200 ms over 280 ms, and the landed receipt fades into the header photo over 150 ms. Reduce Motion: no flight, the check page fades in over 180 ms.
 - Theme reveal (owner's direction, 12 Nov 2026): Profile's header has one 44 theme button (moon in light, sun in dark) in place of the Appearance control; a tap flips light and dark and opens the new theme as a circle from the finger, over a still of the old one, until it covers the farthest corner. 650 ms on an ease-in (0.5, 0, 0.75, 0): a small slow circle that gathers speed and sweeps the screen. The status bar keeps the old icons until it ends. One reveal at a time: a tap during one recolours under it. Animations off: the still fades in 180 ms. iOS switches at once. Duration and curve live in `lib/theme/reveal.ts`, so tuning them needs no native rebuild.
 
 ## Haptics (expo-haptics; Android constant, iOS equivalent)

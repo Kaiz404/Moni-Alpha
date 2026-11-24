@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { CaptureResult } from '@/components/capture/capture-result-card';
 import {
@@ -7,18 +7,21 @@ import {
   CaptureFailed,
   CaptureReading,
 } from '@/components/capture/scan-stages';
+import type { WindowFrame } from '@/components/capture/receipt-flight';
 import { useCaptureFlow } from '@/components/capture/use-capture-flow';
 import { Page } from '@/components/ui/page';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 
 /**
  * Scan a receipt: the ML Kit document scanner is the camera stage (D11), then
- * Moni reads the image and the check page approves it straight to the ledger.
+ * Moni reads the image and the check page approves it straight to the ledger. The receipt
+ * flies from the reading viewfinder into the check page's header (#123).
  */
 export default function ScanScreen() {
   const flow = useCaptureFlow('camera');
   const { stage, read, dispatch } = flow;
   const opened = useRef(false);
+  const [receiptFrom, setReceiptFrom] = useState<WindowFrame | null>(null);
 
   useEffect(() => {
     if (stage.name !== 'capture') {
@@ -47,7 +50,12 @@ export default function ScanScreen() {
         </Page>
       );
     case 'reading':
-      return <CaptureReading quote={stage.quote} />;
+      return (
+        <CaptureReading
+          quote={stage.quote}
+          onReceiptFrame={setReceiptFrom}
+        />
+      );
     case 'result':
       return (
         <CaptureResult
@@ -62,6 +70,7 @@ export default function ScanScreen() {
           }}
           onApprove={() => void flow.approve()}
           approving={flow.approving}
+          receiptFrom={receiptFrom}
         />
       );
     case 'approved':

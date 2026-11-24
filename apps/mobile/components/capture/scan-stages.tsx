@@ -17,9 +17,17 @@ import type { CaptureQuote } from '@/lib/capture/capture-stage';
 import { tid } from '@/lib/test-ids';
 
 import { HeardQuote, ScanningReceipt } from './reading-motion';
+import type { WindowFrame } from './receipt-flight';
 
 /** V2A-CaptureScan `reading`: what the user gave Moni, centred and moving while Moni reads it. */
-export function CaptureReading({ quote }: { quote: CaptureQuote }) {
+export function CaptureReading({
+  quote,
+  onReceiptFrame,
+}: {
+  quote: CaptureQuote;
+  /** Where the receipt sits while Moni reads it. */
+  onReceiptFrame?: (frame: WindowFrame) => void;
+}) {
   const camera = quote.source === 'camera';
   return (
     <Page
@@ -32,7 +40,12 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
         accessibilityLabel={camera ? 'Moni is reading the receipt' : 'Moni is reading what you said'}
         accessibilityRole="progressbar"
       >
-        {camera ? <ScanningReceipt imageUri={quote.imageUri} /> : <HeardQuote text={quote.text} />}
+        {camera ? (
+          <ScanningReceipt
+            imageUri={quote.imageUri}
+            onFrame={onReceiptFrame}
+          />
+        ) : <HeardQuote text={quote.text} />}
       </View>
     </Page>
   );

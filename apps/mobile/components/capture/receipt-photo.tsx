@@ -14,6 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { measureFrame, type WindowFrame } from '@/components/capture/receipt-flight';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -28,10 +29,20 @@ const DOUBLE_TAP_ZOOM = 2.5;
 const SETTLE = { damping: 32, stiffness: 240 } as const;
 const EXPAND = { duration: 280, easing: Easing.out(Easing.cubic) };
 
-type Frame = { x: number; y: number; width: number; height: number };
+type Frame = WindowFrame;
 
 /** The scanned receipt across the top of the check page, cropped to its middle, where the items and total sit; a press opens it full screen. */
-export function ReceiptPhoto({ uri }: { uri: string }) {
+export function ReceiptPhoto({
+  uri,
+  hidden = false,
+  onFrame,
+}: {
+  uri: string;
+  /** Kept invisible while the scanned receipt flies in to land here. */
+  hidden?: boolean;
+  /** Where the photo sits in the window, once it lays out. */
+  onFrame?: (frame: WindowFrame) => void;
+}) {
   const tokens = useThemeTokens();
   const frame = useRef<View>(null);
   const [origin, setOrigin] = useState<Frame | null>(null);
@@ -51,7 +62,8 @@ export function ReceiptPhoto({ uri }: { uri: string }) {
           ref={frame}
           collapsable={false}
           className="overflow-hidden rounded-tile bg-sand"
-          style={{ height: HEADER_H }}
+          style={{ height: HEADER_H, opacity: hidden ? 0 : 1 }}
+          onLayout={onFrame ? () => measureFrame(frame.current, onFrame) : undefined}
         >
           <Image
             source={{ uri }}
