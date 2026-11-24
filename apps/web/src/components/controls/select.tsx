@@ -7,7 +7,7 @@ import {
   SelectItemIndicator,
   SelectTrigger,
 } from '@ui-sdk/react/select';
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { ComponentPropsWithRef, KeyboardEvent, ReactNode } from 'react';
 import { Icon } from '@/components/icon';
 import type { Align, Side } from '@/lib/floating';
 import './controls.css';
@@ -82,13 +82,13 @@ export function Select<T extends string>({
         aria-invalid={invalid || undefined}
         data-invalid={invalid ? 'true' : undefined}
         data-empty={chosen ? undefined : true}
-        render={(props, state) => (
+        render={({ onKeyDown, ...props }: ComponentPropsWithRef<'button'>, state) => (
           <button
             {...props}
             type="button"
             onKeyDown={(event) => {
               if (!state.open && letter(event)) return;
-              props.onKeyDown?.(event);
+              onKeyDown?.(event);
             }}
           />
         )}
