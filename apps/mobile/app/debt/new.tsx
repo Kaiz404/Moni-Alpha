@@ -72,9 +72,7 @@ export default function NewDebtScreen() {
   const choice =
     (chosen === NO_WALLET || wallets.some((item) => item.id === chosen)
       ? chosen
-      : null) ??
-    wallets[0]?.id ??
-    NO_WALLET;
+      : null) ?? NO_WALLET;
   const walletId = choice === NO_WALLET ? null : choice;
   const amountMinor = readAmount(typed).minor;
   const amount = formatMoney(amountMinor, currency);

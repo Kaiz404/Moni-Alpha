@@ -184,7 +184,7 @@ describe('Record a debt', () => {
           counterpartyName: 'Hana',
           direction: 'owed_to_me',
           amountMinor: 5000,
-          walletId: MAYBANK,
+          walletId: null,
           currency: 'MYR',
           dueDate: null,
           note: 'Lunch',
