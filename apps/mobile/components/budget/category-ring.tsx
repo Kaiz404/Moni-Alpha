@@ -1,6 +1,15 @@
 import type { MinorAmount } from '@repo/types';
 import { glyphOn } from '@/lib/theme/glyph-on';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { View } from 'react-native';
 import {
   Gesture,
@@ -320,6 +329,54 @@ export function shareOf(share: number, whole: string): string {
   return `${Math.round(share * 100)}% of ${whole}`;
 }
 
+type RingBlurScope = {
+  /** The ring's own touch, so the page's touch that follows it keeps the pick. */
+  touchedRing: () => void;
+  /** Adds a ring's way to drop its pick; returns its removal. */
+  watch: (clear: () => void) => () => void;
+};
+
+/** The page round a ring, which drops the ring's pick when the user turns to anything else. */
+export const RingBlur = createContext<RingBlurScope | null>(null);
+
+/**
+ * A picked arc lasts only while the ring has the user's attention. Spread `pageProps` on the page's
+ * scroll view and provide `scope` round it: a touch anywhere else on the page, a scroll, or `blur`
+ * (the screen losing focus) puts every ring inside back to its total.
+ */
+export function useRingBlur() {
+  const clears = useRef(new Set<() => void>());
+  const onRing = useRef(false);
+  const blur = useCallback(() => {
+    for (const clear of clears.current) clear();
+  }, []);
+  const scope = useMemo<RingBlurScope>(
+    () => ({
+      touchedRing: () => {
+        onRing.current = true;
+      },
+      watch: (clear) => {
+        clears.current.add(clear);
+        return () => {
+          clears.current.delete(clear);
+        };
+      },
+    }),
+    [],
+  );
+  const pageProps = useMemo(
+    () => ({
+      onTouchStart: () => {
+        if (onRing.current) onRing.current = false;
+        else blur();
+      },
+      onScrollBeginDrag: blur,
+    }),
+    [blur],
+  );
+  return { scope, pageProps, blur };
+}
+
 type CategoryRingProps = {
   /** Parts are `<testID>.tap`, `.selected` and the caller's own in the middle. */
   testID: TestId;
@@ -338,7 +395,7 @@ type CategoryRingProps = {
 /**
  * Categories as separate round-capped arcs round a middle, biggest first: the month's spending on
  * the Budget tab and the budgets on Edit budgets. Tap an arc to read it in the middle; tap it
- * again, or the middle, to go back.
+ * again, or the middle, to go back. Inside a `RingBlur`, turning to anything else goes back too.
  */
 export function CategoryRing({
   testID,
@@ -383,6 +440,8 @@ export function CategoryRing({
   const [picked, setPicked] = useState<{ month: string; key: string } | null>(
     null,
   );
+  const blurScope = useContext(RingBlur);
+  useEffect(() => blurScope?.watch(() => setPicked(null)), [blurScope]);
   const selected =
     picked?.month === month
       ? (arcs.find((arc) => arc.key === picked.key) ?? null)
@@ -418,6 +477,7 @@ export function CategoryRing({
   return (
     <View
       testID={testID}
+      onTouchStart={blurScope?.touchedRing}
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       className="items-center justify-center"
       style={{ height: SIZE * scale }}

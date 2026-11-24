@@ -1,5 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { ScrollView, View } from 'react-native';
 import { State } from 'react-native-gesture-handler';
 import {
   fireGestureHandler,
@@ -8,8 +9,10 @@ import {
 
 import {
   CategoryRing,
+  RingBlur,
   shareOf,
   SpentCentre,
+  useRingBlur,
   type RingSlice,
 } from '@/components/budget/category-ring';
 import { scrubStep } from '@/lib/haptics';
@@ -204,6 +207,60 @@ describe('CategoryRing', () => {
     expect(screen.getByTestId('budget.edit.ring.selected')).toHaveTextContent(
       'RM600Food & Dining75% of budgets',
     );
+  });
+});
+
+function BlurPage({ onBlur }: { onBlur?: (blur: () => void) => void }) {
+  const ringBlur = useRingBlur();
+  onBlur?.(ringBlur.blur);
+  return (
+    <RingBlur.Provider value={ringBlur.scope}>
+      <ScrollView testID="page" {...ringBlur.pageProps}>
+        {renderRing()}
+        <View testID="elsewhere" />
+      </ScrollView>
+    </RingBlur.Provider>
+  );
+}
+
+const touch = (id: string) => fireEvent(screen.getByTestId(id), 'touchStart', {});
+
+describe('CategoryRing on a page', () => {
+  const picked = () => screen.queryByTestId('budget.spend-ring.selected');
+
+  it('keeps the pick while the ring is touched, and moves it to another arc', () => {
+    render(<BlurPage />);
+    activate('budget.slice.food-dining');
+    touch('budget.spend-ring');
+    touch('page');
+    expect(picked()).toHaveTextContent('RM349.80Food & Dining31% of spending');
+    activate('budget.slice.groceries');
+    expect(picked()).toHaveTextContent('RM235.30Groceries21% of spending');
+  });
+
+  it('goes back to the total on a touch anywhere else', () => {
+    render(<BlurPage />);
+    activate('budget.slice.food-dining');
+    touch('page');
+    expect(picked()).toBeNull();
+    expect(screen.getByTestId('budget.spend-ring.total')).toHaveTextContent('RM1,116.20');
+  });
+
+  it('goes back to the total when the page scrolls, even from a drag that began on the ring', () => {
+    render(<BlurPage />);
+    activate('budget.slice.food-dining');
+    touch('budget.spend-ring');
+    touch('page');
+    fireEvent(screen.getByTestId('page'), 'scrollBeginDrag', {});
+    expect(picked()).toBeNull();
+  });
+
+  it('goes back to the total when the screen loses focus', () => {
+    let blur = () => {};
+    render(<BlurPage onBlur={(next) => (blur = next)} />);
+    activate('budget.slice.food-dining');
+    act(() => blur());
+    expect(picked()).toBeNull();
   });
 });
 

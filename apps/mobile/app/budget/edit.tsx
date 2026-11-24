@@ -5,7 +5,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { AskMoniButton } from '@/components/budget/ask-moni-button';
-import { CategoryRing, RingAmount, type RingSlice } from '@/components/budget/category-ring';
+import {
+  CategoryRing,
+  RingAmount,
+  RingBlur,
+  useRingBlur,
+  type RingSlice,
+} from '@/components/budget/category-ring';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -47,6 +53,7 @@ const wholeOf = (minor: number) => Math.floor(minor / 100);
  */
 export default function EditBudgetsScreen() {
   const tokens = useThemeTokens();
+  const ringBlur = useRingBlur();
   const data = useBudgetData();
   const { currency } = data;
   const month = useBudgetMonth(data, deviceCalendar.monthKey(data.now));
@@ -194,7 +201,9 @@ export default function EditBudgetsScreen() {
         editing={editing}
         onEditingChange={setEditing}
       >
+      <RingBlur.Provider value={ringBlur.scope}>
       <PageScroll
+        {...ringBlur.pageProps}
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pb-8"
         keyboardShouldPersistTaps="handled"
@@ -435,6 +444,7 @@ export default function EditBudgetsScreen() {
           </View>
         ) : null}
       </PageScroll>
+      </RingBlur.Provider>
       </InPlaceGroup>
       <PageActions>
         <Button

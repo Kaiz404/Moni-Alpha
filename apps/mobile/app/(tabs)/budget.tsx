@@ -1,5 +1,5 @@
-import { router, useScrollToTop } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import {
@@ -11,7 +11,12 @@ import { CalendarView } from '@/components/budget/calendar-view';
 import { MerchantList } from '@/components/budget/merchant-list';
 import { openSpending } from '@/components/budget/open-spending';
 import { ReportRow } from '@/components/budget/report-row';
-import { CategoryRing, SpentCentre } from '@/components/budget/category-ring';
+import {
+  CategoryRing,
+  RingBlur,
+  SpentCentre,
+  useRingBlur,
+} from '@/components/budget/category-ring';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -54,6 +59,8 @@ const VIEWS = [
 export default function BudgetScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
+  const ringBlur = useRingBlur();
+  useFocusEffect(useCallback(() => ringBlur.blur, [ringBlur.blur]));
   const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
   const data = useBudgetData();
@@ -119,8 +126,10 @@ export default function BudgetScreen() {
         ) : null
       }
     >
+      <RingBlur.Provider value={ringBlur.scope}>
       <PageScroll
         ref={scroll}
+        {...ringBlur.pageProps}
         className="flex-1"
         contentContainerClassName="gap-3 px-5"
         contentContainerStyle={{ paddingBottom: clearance }}
@@ -169,6 +178,7 @@ export default function BudgetScreen() {
           </>
         )}
       </PageScroll>
+      </RingBlur.Provider>
     </Page>
   );
 }
