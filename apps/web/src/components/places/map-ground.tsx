@@ -58,7 +58,10 @@ export function MapGround({ frame, view, box }: { frame: FitFrame | null; view: 
     if (!map || !frame || !box) return;
     const middle = { x: box.width / 2, y: box.height / 2 };
     const centre = frame.unproject({ x: middle.x - view.x / view.zoom, y: middle.y - view.y / view.zoom });
-    map.moveCamera({ center: { lat: centre.latitude, lng: centre.longitude }, zoom: googleZoom(frame.pxPerLngDegree * view.zoom) });
+    const zoom = googleZoom(frame.pxPerLngDegree * view.zoom);
+    // Google throws on a camera that isn't finite, and the map would stop moving; skip such a frame.
+    if (![centre.latitude, centre.longitude, zoom].every(Number.isFinite)) return;
+    map.moveCamera({ center: { lat: Math.max(-85, Math.min(85, centre.latitude)), lng: centre.longitude }, zoom });
   }, [map, frame, box, view]);
 
   if (!usable || failed) {

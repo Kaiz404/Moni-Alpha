@@ -115,14 +115,15 @@ export function pinchView(start: MapView, from: readonly [Point, Point], to: rea
 }
 
 /**
- * How much one wheel event zooms, as Google's map does with every gesture on it: a mouse notch (100 px)
- * is one zoom level, a trackpad's scroll the same per pixel, and a trackpad pinch (which the browser
- * sends as a wheel with Ctrl held) twice as quick, since its deltas are small.
+ * How much one wheel event zooms, at the rates web maps settle on: a mouse notch (about 100 px) is half a
+ * zoom level and no event moves more than one, a trackpad's two-finger scroll a level per 450 px, and a
+ * trackpad pinch (which the browser sends as a wheel with Ctrl held) a level per 100 px, since its deltas
+ * are small. Without the cap a fast spin of the wheel jumps several levels at once.
  */
 export function wheelFactor(deltaY: number, deltaMode: number, pinch: boolean): number {
   const px = deltaMode === 1 ? deltaY * 40 : deltaMode === 2 ? deltaY * 800 : deltaY;
-  const capped = Math.max(-200, Math.min(200, px));
-  return 2 ** ((-capped * (pinch ? 2 : 1)) / 100);
+  const levels = pinch ? -px / 100 : wheelGlides(deltaY, deltaMode) ? -px / 200 : -px / 450;
+  return 2 ** Math.max(-1, Math.min(1, levels));
 }
 
 /** A mouse notch glides to its zoom; a trackpad's stream of small deltas is already smooth. */

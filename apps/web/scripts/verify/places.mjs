@@ -277,11 +277,17 @@ export async function verifyPlaces(t) {
   await p.waitForTimeout(700);
   const wheeled = await scale();
   const stayed = await pinAt(leadId);
-  check('a wheel notch over the map zooms one level about the pointer, the pin under it staying put', wheeled === '2' && Math.abs(stayed.x - under.x) <= 3 && Math.abs(stayed.y - under.y) <= 3, { wheeled, under, stayed });
+  check('a wheel notch over the map zooms half a level about the pointer, the pin under it staying put', Math.abs(Number(wheeled) - Math.SQRT2) < 0.001 && Math.abs(stayed.x - under.x) <= 3 && Math.abs(stayed.y - under.y) <= 3, { wheeled, under, stayed });
   for (let i = 0; i < 10; i += 1) await p.mouse.wheel(0, 8);
   await p.waitForTimeout(100);
   const pinched = Number(await scale());
   check('a trackpad\'s small wheel deltas zoom smoothly back out', pinched < 2 && pinched > 1, pinched);
+  // A fast spin both ways starts a glide on every notch; none may hand Google a camera that isn't a number.
+  for (let i = 0; i < 24; i += 1) await p.mouse.wheel(0, i % 6 < 3 ? -100 : 100);
+  await p.waitForTimeout(900);
+  const spun = Number(await scale());
+  const crashed = await p.evaluate(() => /went wrong/i.test(document.body.innerText));
+  check('a fast spin of the wheel both ways keeps the map up, at a real zoom', !crashed && Number.isFinite(spun) && spun > 0, { spun, crashed });
   await p.mouse.move(blank.x, blank.y);
   await p.mouse.dblclick(blank.x, blank.y);
   await p.waitForTimeout(700);

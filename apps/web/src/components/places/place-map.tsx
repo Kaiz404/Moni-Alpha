@@ -43,7 +43,8 @@ const SHEET = springCurve(springs.sheet);
 const SHEET_POINTS = [...SHEET.linear.matchAll(/-?[\d.]+/g)].map((match) => Number(match[0]));
 
 function sheetEase(t: number): number {
-  const at = t * (SHEET_POINTS.length - 1);
+  // A frame's timestamp can come before the glide's start, so t can be a hair under 0.
+  const at = Math.min(1, Math.max(0, t)) * (SHEET_POINTS.length - 1);
   const low = Math.floor(at);
   const high = Math.min(low + 1, SHEET_POINTS.length - 1);
   return SHEET_POINTS[low]! + (SHEET_POINTS[high]! - SHEET_POINTS[low]!) * (at - low);
@@ -71,7 +72,7 @@ function useSlidingView(target: MapView, glide: boolean): MapView {
     const start = performance.now();
     let frame = 0;
     const step = (now: number) => {
-      const t = Math.min(1, (now - start) / SHEET.durationMs);
+      const t = Math.max(0, Math.min(1, (now - start) / SHEET.durationMs));
       const k = sheetEase(t);
       const next = {
         zoom: from.zoom * (target.zoom / from.zoom) ** k,

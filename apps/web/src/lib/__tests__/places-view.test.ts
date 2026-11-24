@@ -118,15 +118,22 @@ describe('the map view', () => {
     expect(toView({ x: 400, y: 300 }, view, box)).toEqual({ x: 450, y: 320 });
   });
 
-  it('zooms a level a mouse notch, a trackpad pinch twice as quick, and glides only the notch', () => {
-    expect(wheelFactor(100, 0, false)).toBe(0.5);
-    expect(wheelFactor(-100, 0, false)).toBe(2);
-    expect(wheelFactor(3, 1, false)).toBeCloseTo(2 ** -1.2);
-    expect(wheelFactor(-10, 0, true)).toBeCloseTo(2 ** 0.2);
-    expect(wheelFactor(5000, 0, false)).toBe(0.25);
+  it('zooms half a level a mouse notch, never more than a level an event, and gently on a trackpad', () => {
+    expect(wheelFactor(100, 0, false)).toBeCloseTo(2 ** -0.5);
+    expect(wheelFactor(-100, 0, false)).toBeCloseTo(2 ** 0.5);
+    expect(wheelFactor(3, 1, false)).toBeCloseTo(2 ** -0.6);
+    expect(wheelFactor(-10, 0, true)).toBeCloseTo(2 ** 0.1);
+    expect(wheelFactor(-9, 0, false)).toBeCloseTo(2 ** (9 / 450));
+    expect(wheelFactor(5000, 0, false)).toBe(0.5);
+    expect(wheelFactor(-5000, 0, true)).toBe(2);
     expect(wheelGlides(100, 0)).toBe(true);
     expect(wheelGlides(4, 0)).toBe(false);
     expect(wheelGlides(1, 1)).toBe(true);
+  });
+
+  it('never hands the map a camera that is not a number when a glide frame lands before its start', () => {
+    const view = { zoom: 2, x: 10, y: -10 };
+    expect(Object.values(zoomView(view, wheelFactor(100, 0, false), { x: 100, y: 100 }, box)).every(Number.isFinite)).toBe(true);
   });
 
   it('centres a point at a zoom', () => {
