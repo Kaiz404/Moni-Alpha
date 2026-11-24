@@ -15,7 +15,7 @@ export function useMapsUsable(): boolean {
 }
 
 /**
- * The Google map under Where you spend's pins, styled like the phone's. It takes no gestures: its camera
+ * The Google map under Where you spend's pins, styled like the phone's. It takes no gestures (the layer over it does): its camera
  * follows the pins' own frame and the page's zoom and pan, so a pin sits on its real street. Without a
  * usable key the ground is plain, with Map unavailable, as on the phone.
  */

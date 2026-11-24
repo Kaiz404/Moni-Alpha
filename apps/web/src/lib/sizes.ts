@@ -11,7 +11,6 @@ export const PANE_SPANS = {
   transaction: DETAIL,
   category: DETAIL,
   person: DETAIL,
-  place: DETAIL,
   review: DETAIL,
   wallet: { initial: 560, min: 440, max: 1600 },
   chat: { initial: 420, min: 360, max: 720 },

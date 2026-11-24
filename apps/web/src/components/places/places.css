@@ -2,9 +2,12 @@
    Without a place. Every value comes from @repo/design's tokens.css; the map's paper colours are
    mixed from them, so dark mode redraws the art. */
 
+/* The map is a wide band, not a square: at most 58% of the window tall and 3:4 of its own width, so Day
+   by day shows its top under it and the page plainly goes on. */
 .places {
+  container-type: inline-size;
   --side: 408px;
-  --map-h: clamp(520px, calc(100dvh - 116px), 784px);
+  --map-h: clamp(340px, min(58dvh, (100cqw - var(--side) - 16px) * 0.75), 620px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--side);
   grid-template-areas:
@@ -19,7 +22,7 @@ html[data-layout='rail'] .places {
 }
 
 html[data-layout='rail-one-column'] .places {
-  --map-h: 560px;
+  --map-h: clamp(320px, min(46dvh, 100cqw * 0.6), 480px);
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'stage' 'side' 'days' 'loose';
 }
@@ -61,8 +64,10 @@ html[data-layout='phone'] .places-stage {
   overflow: hidden;
   border-radius: var(--radius-card);
   background: var(--color-sand);
-  touch-action: pan-y;
+  /* One finger scrolls the page; two move the map, in script. */
+  touch-action: pan-x pan-y;
   user-select: none;
+  cursor: grab;
 }
 
 html[data-layout='phone'] .places-map {
@@ -71,16 +76,33 @@ html[data-layout='phone'] .places-map {
   border-radius: 0;
 }
 
-.places-map[data-zoomed] {
-  cursor: grab;
-  touch-action: none;
-}
-
 .places-map[data-dragging] {
   cursor: grabbing;
 }
 
-/* The Google map under the pins: it takes no gestures, the page's zoom and pan move its camera. */
+/* Google's own words for a one-finger drag on a map in a page that scrolls. */
+.map-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--color-primary) 50%, transparent);
+  color: var(--color-primary-foreground);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+.map-hint[data-on] {
+  opacity: 1;
+}
+
+/* The Google map under the pins: it takes no gestures, the layer over it moves its camera. */
 .map-ground {
   position: absolute;
   inset: 0;
@@ -112,24 +134,14 @@ html[data-layout='phone'] .places-map {
   bottom: 34px;
 }
 
-/* The camera and the pins slide on one clock in script, so the pins' own slide is off. */
-.places-map[data-google] .map-pin-big {
-  transition:
-    transform var(--duration-control) var(--ease-control),
-    opacity 200ms ease;
-}
-
-.places-map[data-google] .heat-blob {
-  transition: opacity 240ms ease;
-}
-
 .places-map[data-faded] .map-pin-big,
 .places-map[data-faded] .heat-blob {
   filter: saturate(0.4);
   opacity: 0.7;
 }
 
-/* Pins sit on their coordinates and slide with the zoom; a merged member hides under its lead. */
+/* Pins sit on their coordinates; the camera and the pins move on one clock in script, so a pin's own
+   slide is off. A merged member hides under its lead. */
 .map-pin-big {
   position: absolute;
   z-index: 2;
@@ -137,15 +149,8 @@ html[data-layout='phone'] .places-map {
   opacity: 0;
   pointer-events: none;
   transition:
-    left var(--duration-sheet) var(--ease-sheet),
-    top var(--duration-sheet) var(--ease-sheet),
     transform var(--duration-control) var(--ease-control),
     opacity 200ms ease;
-}
-
-.places-map[data-dragging] .map-pin-big,
-.places-map[data-dragging] .heat-blob {
-  transition: none;
 }
 
 .map-pin-big[data-shown] {
@@ -234,10 +239,7 @@ html[data-layout='phone'] .places-map {
   mix-blend-mode: multiply;
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity 240ms ease,
-    left var(--duration-sheet) var(--ease-sheet),
-    top var(--duration-sheet) var(--ease-sheet);
+  transition: opacity 240ms ease;
 }
 
 .heat-blob[data-on] {
@@ -603,8 +605,14 @@ html[data-layout='phone'] .map-banner {
 
 .places-side {
   grid-area: side;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   height: var(--map-h);
+  box-sizing: border-box;
   padding: 20px 0 14px;
+  scroll-margin-top: 12px;
 }
 
 html[data-layout='rail-one-column'] .places-side,
@@ -621,7 +629,7 @@ html[data-layout='phone'] .places-side {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  height: 100%;
+  flex: 1 1 auto;
 }
 
 .side-summary {
@@ -738,6 +746,7 @@ html[data-layout='phone'] .places-side {
 }
 
 .no-place-foot {
+  flex-shrink: 0;
   margin: 10px 12px 0;
   min-height: 56px;
   padding: 0 14px 0 10px;
@@ -775,7 +784,56 @@ html[data-layout='phone'] .places-side {
 
 
 
-.pane-back {
+/* A picked place slides over the list inside the card, as Google Maps' side panel does; the panel going
+   away leaves the flow and fades, so the card takes the height of the one showing. */
+.side-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transition:
+    opacity 200ms ease,
+    transform var(--duration-sheet) var(--ease-sheet),
+    visibility 0s;
+}
+
+.places-side[data-detail] > .side-panel:first-child,
+.places-side:not([data-detail]) > .side-detail {
+  position: absolute;
+  inset: 20px 0 14px;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    transform var(--duration-sheet) var(--ease-sheet),
+    visibility 0s linear var(--duration-sheet);
+}
+
+.places-side[data-detail] > .side-panel:first-child {
+  transform: translateX(-32px);
+}
+
+.places-side:not([data-detail]) > .side-detail {
+  transform: translateX(48px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel,
+  .places-side[data-detail] > .side-panel:first-child,
+  .places-side:not([data-detail]) > .side-detail {
+    transform: none;
+  }
+}
+
+.side-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px 4px;
+}
+
+.side-back {
   height: 36px;
   padding: 0 12px 0 6px;
   border-radius: 9999px;
@@ -784,18 +842,65 @@ html[data-layout='phone'] .places-side {
   gap: 4px;
   font-size: 14px;
   font-weight: 600;
+  color: var(--color-foreground);
 }
 
-.pane-back:hover {
+.side-back:hover {
   background: var(--color-sand-light);
 }
 
+.side-back .kbd {
+  margin-left: 4px;
+}
+
+.side-steps {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-steps .meta {
+  padding-right: 4px;
+}
+
+.side-step {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+}
+
+.side-step:hover:not(:disabled) {
+  background: var(--color-sand-light);
+}
+
+.side-step:disabled {
+  opacity: 0.4;
+}
+
+.side-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 22px 8px;
+  animation: fade-in 180ms ease both;
+}
+
+html[data-layout='phone'] :is(.side-back, .side-step) {
+  height: 44px;
+}
+
+html[data-layout='phone'] .side-step {
+  width: 44px;
+}
 
 .pane-title-row {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: 14px;
+  margin-top: 6px;
 }
 
 .pane-title-text {
@@ -988,8 +1093,8 @@ html[data-layout='phone'] .places-side {
   background: var(--color-sand-light);
 }
 
-/* A place is the pushed page on the phone layout, where every control takes a 44 finger. */
-html[data-layout='phone'] :is(.pay-row, .place-pane .pane-back) {
+/* On the phone layout every control takes a 44 finger. */
+html[data-layout='phone'] .pay-row {
   height: 44px;
 }
 

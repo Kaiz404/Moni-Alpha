@@ -1,8 +1,9 @@
-// Where you spend in web-verify (`--only places`): every layout in both themes with a place open, the
-// numbers against the e2e user's expenses, the keys, hover linking a row and its pin, zoom and Fit,
-// Pins | Heat, the filters, Add a place undone with Ctrl Z, the 700 crossing keeping the place, and
-// reduced motion on the pane, and Home's tile covered edge to edge at 1000, 1440 and 2400 wide. The one write is
-// undone before the part ends.
+// Where you spend in web-verify (`--only places`): every layout in both themes with a place open in the
+// side card, the numbers against the e2e user's expenses, the keys, hover linking a row and its pin, zoom
+// and Fit, a mouse drag, the wheel, a double click and touch (one finger scrolls, two pinch), ‹ All places
+// keeping the list's scroll and Back, Pins | Heat, the filters, Add a place undone with Ctrl Z, the 700
+// crossing keeping the place, reduced motion on the swap, and Home's tile covered edge to edge at 1000,
+// 1440 and 2400 wide. The one write is undone before the part ends.
 import { join } from 'node:path';
 
 function ringgit(text) {
@@ -97,14 +98,29 @@ export async function verifyPlaces(t) {
         { ...state, nav, back, mapActive, lower },
       );
       check(`${where}: the map's land is not the light paper in dark`, theme === 'light' || state.land !== 'rgb(242, 236, 224)', state.land);
+      const band = await p.evaluate(() => {
+        const map = document.querySelector('.places-map').getBoundingClientRect();
+        const below = document.querySelector('section[aria-label="Day by day"]')?.getBoundingClientRect();
+        return { width: Math.round(map.width), height: Math.round(map.height), belowTop: below ? Math.round(below.top) : null, view: innerHeight };
+      });
+      if (size.layout === 'sidebar' || size.layout === 'rail') {
+        check(`${where}: the map is a wide band (${band.width}x${band.height}), and Day by day starts on the first screen, so the page plainly goes on`, band.width > band.height * 1.2 && band.belowTop !== null && band.belowTop < band.view, band);
+      }
       await shot(p, `places-${size.width}-${theme}`);
       const first = p.locator('.place-row').first();
       const name = await first.locator('.row-title').textContent();
       await first.click();
       await p.waitForURL(/place=/);
       await settle(p);
-      const pane = await p.locator('aside.slide-over .place-pane h2').textContent();
-      check(`${where}: a picked row opens its place in the slide-over${phone ? ', the pushed page' : ' with ‹ Where you spend'}`, pane === name && (phone || (await p.getByRole('button', { name: 'Back to Where you spend (Esc)' }).isVisible())), { pane, name });
+      await p.waitForTimeout(500);
+      const pane = await p.locator('.places-side .side-detail .place-pane h2').textContent();
+      const opened = {
+        back: await p.getByRole('button', { name: 'Back to all places (Esc)' }).isVisible(),
+        slideOver: await p.locator('aside.slide-over').count(),
+        mapShown: await p.locator('.places-map').isVisible(),
+        list: await p.locator('.places-side .side-places').evaluate((el) => getComputedStyle(el).visibility),
+      };
+      check(`${where}: a picked row swaps the side card for its place with ‹ All places, no slide-over, the map still showing`, pane === name && opened.back && opened.slideOver === 0 && opened.mapShown && opened.list === 'hidden', { pane, name, ...opened });
       await shot(p, `places-${size.width}-${theme}-pane`);
       if (!phone) {
         await p.locator('section[aria-label="Day by day"]').scrollIntoViewIfNeeded();
@@ -183,7 +199,7 @@ export async function verifyPlaces(t) {
   await p.keyboard.press('j');
   await p.waitForURL((url) => url.searchParams.get('place') === order[1]).catch(() => {});
   check('J moves to the next place', new URL(p.url()).searchParams.get('place') === order[1], p.url());
-  check('the slide-over counts where it is', (await p.locator('.slide-over-steps .meta').textContent()) === `2 of ${order.length}`);
+  check('the side card counts where it is', (await p.locator('.side-steps .meta').textContent()) === `2 of ${order.length}`);
   check(
     'K sits on the up chevron and J on the down chevron, and the list has no loose J K',
     (await p.getByRole('button', { name: 'Previous place (K)' }).locator('.kbd').textContent()) === 'K' &&
@@ -216,20 +232,103 @@ export async function verifyPlaces(t) {
 
   const shownAt = () => p.locator('.map-pin-big[data-shown]').count();
   const scale = () => p.locator('.places-map').getAttribute('data-zoom');
+  // A picked place may have zoomed the map to part its pin; the map stays there after Esc, as Google's does.
+  await p.keyboard.press('f');
+  await p.waitForTimeout(700);
   const fitPins = await shownAt();
   const fitCount = await p.locator('.map-pin-big[data-shown] .pin-count').count();
   await p.getByRole('button', { name: 'Zoom in' }).click();
   await p.getByRole('button', { name: 'Zoom in' }).click();
   await p.getByRole('button', { name: 'Zoom in' }).click();
-  await settle(p);
+  await p.waitForTimeout(700);
   const zoomed = await scale();
   const zoomPins = await shownAt();
   check('+ zooms the map, and merged pins come apart', zoomed === '3.375' && zoomPins >= fitPins && (fitCount === 0 || zoomPins > fitPins), { zoomed, fitPins, fitCount, zoomPins });
   await shot(p, 'places-1440-light-zoomed');
   await p.keyboard.press('f');
-  await settle(p);
+  await p.waitForTimeout(700);
   await p.waitForFunction((count) => document.querySelectorAll('.map-pin-big[data-shown]').length === count, fitPins, { timeout: 3_000 }).catch(() => {});
   check('F fits every place again', (await scale()) === '1' && (await shownAt()) === fitPins, await scale());
+
+  // ---------- the map moves like Google's: drag, wheel, double click, and the page still scrolls ----------
+  const mapBox = await p.locator('.places-map').boundingBox();
+  const blank = { x: mapBox.x + 40, y: mapBox.y + mapBox.height / 2 };
+  const pinAt = async (id) => {
+    const r = await p.locator(`.map-pin-big[data-place="${id}"]`).boundingBox();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  };
+  const leadId = await p.locator('.map-pin-big[data-shown]').first().getAttribute('data-place');
+  const before = await pinAt(leadId);
+  await p.mouse.move(blank.x, blank.y);
+  await p.mouse.down();
+  await p.mouse.move(blank.x + 60, blank.y + 30, { steps: 4 });
+  await p.mouse.move(blank.x + 120, blank.y + 60, { steps: 4 });
+  await p.waitForTimeout(150);
+  await p.mouse.up();
+  await p.waitForTimeout(100);
+  const dragged = await pinAt(leadId);
+  const moved = { x: Math.round(dragged.x - before.x), y: Math.round(dragged.y - before.y) };
+  check('a mouse drag pans the map at Fit, pins and ground together, and opens nothing', Math.abs(moved.x - 120) <= 2 && Math.abs(moved.y - 60) <= 2 && (await scale()) === '1' && !p.url().includes('place='), moved);
+  await shot(p, 'places-1440-light-dragged');
+
+  const under = await pinAt(leadId);
+  await p.mouse.move(under.x, under.y);
+  await p.mouse.wheel(0, -100);
+  await p.waitForTimeout(700);
+  const wheeled = await scale();
+  const stayed = await pinAt(leadId);
+  check('a wheel notch over the map zooms one level about the pointer, the pin under it staying put', wheeled === '2' && Math.abs(stayed.x - under.x) <= 3 && Math.abs(stayed.y - under.y) <= 3, { wheeled, under, stayed });
+  for (let i = 0; i < 10; i += 1) await p.mouse.wheel(0, 8);
+  await p.waitForTimeout(100);
+  const pinched = Number(await scale());
+  check('a trackpad\'s small wheel deltas zoom smoothly back out', pinched < 2 && pinched > 1, pinched);
+  await p.mouse.move(blank.x, blank.y);
+  await p.mouse.dblclick(blank.x, blank.y);
+  await p.waitForTimeout(700);
+  check('a double click zooms in about where it was clicked', Math.abs(Number(await scale()) - pinched * 2) < 0.01, await scale());
+  await shot(p, 'places-1440-light-wheel');
+  await p.keyboard.press('f');
+  await p.waitForTimeout(700);
+
+  const day = p.locator('section[aria-label="Day by day"]');
+  const dayBox = await day.boundingBox();
+  const scrollBefore = await p.evaluate(() => document.documentElement.scrollTop);
+  await p.mouse.move(dayBox.x + dayBox.width / 2, Math.min(dayBox.y + 40, 880));
+  await p.mouse.wheel(0, 300);
+  await p.waitForFunction((y) => document.documentElement.scrollTop > y, scrollBefore, { timeout: 2_000 }).catch(() => {});
+  check('the wheel off the map scrolls the page, and the map keeps its zoom', (await p.evaluate(() => document.documentElement.scrollTop)) > scrollBefore && (await scale()) === '1', { scrollBefore, after: await p.evaluate(() => document.documentElement.scrollTop) });
+  await p.evaluate(() => document.documentElement.scrollTo(0, 0));
+
+  // ---------- a place opens in the side card, and back keeps the list where it was ----------
+  await p.locator('.place-rows').evaluate((el) => (el.scrollTop = el.scrollHeight));
+  const listScroll = await p.locator('.place-rows').evaluate((el) => el.scrollTop);
+  const pinId = await p.locator('.map-pin-big[data-shown]').first().getAttribute('data-place');
+  await p.locator(`.map-pin-big[data-place="${pinId}"]`).click();
+  await p.waitForURL((url) => url.searchParams.has('place'));
+  await p.waitForTimeout(600);
+  const pinOn = await p.locator('.map-pin-big[data-on]').getAttribute('data-place');
+  check('a pin opens its place in the side card and turns Ink', (await p.locator('.side-detail .place-pane h2').isVisible()) && pinOn === new URL(p.url()).searchParams.get('place'), { pinOn, url: p.url() });
+  const stillPin = await pinAt(pinOn);
+  await p.mouse.move(blank.x, blank.y);
+  await p.mouse.down();
+  await p.mouse.move(blank.x + 80, blank.y, { steps: 6 });
+  await p.waitForTimeout(150);
+  await p.mouse.up();
+  await p.waitForTimeout(100);
+  const afterPin = await pinAt(pinOn);
+  check('with a place open the map still drags, and the place stays open', Math.abs(afterPin.x - stillPin.x - 80) <= 2 && (await p.locator('.side-detail .place-pane h2').isVisible()) && p.url().includes('place='), { stillPin, afterPin });
+  await shot(p, 'places-1440-light-place-dragged');
+  await p.getByRole('button', { name: 'Back to all places (Esc)' }).click();
+  await p.waitForURL((url) => !url.searchParams.has('place'));
+  await p.waitForTimeout(500);
+  const keptScroll = await p.locator('.place-rows').evaluate((el) => el.scrollTop);
+  check('‹ All places goes back to the list, scrolled where it was', (await p.locator('.place-row').first().isVisible()) && keptScroll === listScroll && listScroll > 0, { listScroll, keptScroll });
+  await p.locator('.place-row').nth(2).click();
+  await p.waitForURL((url) => url.searchParams.has('place'));
+  await p.goBack();
+  await p.waitForURL((url) => !url.searchParams.has('place')).catch(() => {});
+  check("the browser's Back closes the place too, and stays on Where you spend", new URL(p.url()).pathname === '/home/places' && !p.url().includes('place='), p.url());
+  await p.keyboard.press('f');
 
   await p.getByRole('radio', { name: 'Visits' }).click();
   await p.waitForURL(/sort=visits/);
@@ -294,6 +393,45 @@ export async function verifyPlaces(t) {
   check('and back across 700 it is still open', (await c.locator('.place-pane h2').textContent()) === keptName);
   await cross.close();
 
+  // ---------- touch: one finger scrolls the page, two move the map ----------
+  const touch = await pinned({ viewport: { width: 390, height: 844 }, storageState: storage, hasTouch: true, isMobile: true });
+  const tp = await touch.newPage();
+  await open(tp, '/home/places');
+  await ready(tp);
+  const cdp = await touch.newCDPSession(tp);
+  const tmap = await tp.locator('.places-map').boundingBox();
+  const mid = { x: tmap.x + tmap.width / 2, y: tmap.y + tmap.height / 2 };
+  const fingers = async (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y], id) => ({ x, y, id })) });
+  const zoomBefore = await tp.locator('.places-map').getAttribute('data-zoom');
+  await fingers('touchStart', [[mid.x, mid.y + 60]]);
+  for (let i = 1; i <= 6; i += 1) await fingers('touchMove', [[mid.x, mid.y + 60 - i * 20]]);
+  const hintShown = await tp.locator('.map-hint[data-on]').count();
+  await fingers('touchEnd', []);
+  await tp.waitForTimeout(1200);
+  const oneFinger = { scrollY: await tp.evaluate(() => document.documentElement.scrollTop), zoom: await tp.locator('.places-map').getAttribute('data-zoom'), hintShown };
+  check('at 390 one finger on the map scrolls the page, says to use two fingers, and leaves the map', oneFinger.scrollY > 0 && oneFinger.zoom === zoomBefore && hintShown === 1, oneFinger);
+  await tp.evaluate(() => document.documentElement.scrollTo(0, 0));
+  await tp.waitForTimeout(300);
+  const tmap2 = await tp.locator('.places-map').boundingBox();
+  const spot = { x: tmap2.x + tmap2.width / 2, y: tmap2.y + tmap2.height / 2 };
+  await fingers('touchStart', [[spot.x - 30, spot.y], [spot.x + 30, spot.y]]);
+  for (let i = 1; i <= 6; i += 1) await fingers('touchMove', [[spot.x - 30 - i * 10, spot.y], [spot.x + 30 + i * 10, spot.y]]);
+  await fingers('touchEnd', []);
+  await tp.waitForTimeout(200);
+  const twoFingers = { zoom: Number(await tp.locator('.places-map').getAttribute('data-zoom')), scrollY: await tp.evaluate(() => document.documentElement.scrollTop) };
+  check('two fingers pinch the map open (60 px apart to 180) and the page stays still', Math.abs(twoFingers.zoom - 3) < 0.05 && twoFingers.scrollY === 0, twoFingers);
+  await tp.locator('.place-row').nth(1).click();
+  await tp.waitForURL(/place=/);
+  await tp.waitForTimeout(600);
+  const stacked = await tp.evaluate(() => {
+    const map = document.querySelector('.places-map').getBoundingClientRect();
+    const card = document.querySelector('.places-side').getBoundingClientRect();
+    return { below: card.top >= map.bottom, cardTop: Math.round(card.top), view: innerHeight };
+  });
+  check('at 390 the place stacks below the map in the card, its top in view', stacked.below && stacked.cardTop >= 0 && stacked.cardTop < stacked.view && (await tp.getByRole('button', { name: 'Back to all places (Esc)' }).isVisible()), stacked);
+  await shot(tp, 'places-390-touch-place');
+  await touch.close();
+
   // ---------- Home links here ----------
   const home = await pinned({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const h = await home.newPage();
@@ -339,9 +477,11 @@ export async function verifyPlaces(t) {
     await open(m, '/home/places');
     await ready(m);
     await m.locator('.place-row').first().click();
-    const names = await m.locator('aside.slide-over').evaluate((el) => getComputedStyle(el).animationName);
-    const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
-    check(`the place's slide-over ${reducedMotion === 'reduce' ? 'fades under reduced motion' : 'slides in'}`, names.split(',')[0].trim() === expected, names);
+    await m.waitForURL(/place=/);
+    await m.waitForTimeout(600);
+    const motion = await m.locator('.places-side .side-places').evaluate((el) => ({ transform: getComputedStyle(el).transform, opacity: getComputedStyle(el).opacity }));
+    const slid = motion.transform !== 'none';
+    check(`the place ${reducedMotion === 'reduce' ? 'only fades over the list under reduced motion' : 'slides over the list in the card'}`, motion.opacity === '0' && slid === (reducedMotion !== 'reduce'), motion);
     await mctx.close();
   }
 }

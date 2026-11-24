@@ -3,6 +3,7 @@
 import { formatMoney, merchantName, placeByDay, placesTotal, sharePercent, type Place } from '@repo/core';
 import { legacyColor, type MinorAmount } from '@repo/types';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { Bubble } from '@/components/ledger/glyph';
 import { rowDay } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
@@ -21,11 +22,79 @@ type SideProps = {
   categoryWords: string;
 };
 
-/** The places list beside the map (W2-Places). A picked place opens in the slide-over (#106). */
-export function PlaceSide(props: SideProps) {
+type CardProps = SideProps & {
+  selected: Place | null;
+  onClose: () => void;
+  onStep: (by: 1 | -1) => void;
+};
+
+/**
+ * The card beside the map (W2-Places), as Google Maps' side panel: the places list, or a picked place in
+ * its place, sliding over the list on the sheet spring while the map stays live. "‹ All places" and Esc
+ * go back to the list where it was scrolled; the chevrons, J and K step through the places. The list
+ * stays mounted under the place, so its scroll and filters wait for the way back.
+ */
+export function PlaceSide({ selected, onClose, onStep, ...props }: CardProps) {
+  const [last, setLast] = useState(selected);
+  if (selected && selected !== last) setLast(selected);
+  const shown = selected ?? last;
+  const card = useRef<HTMLElement>(null);
+  const { places } = props.data;
+  const index = shown ? places.indexOf(shown) : -1;
+
+  // A place picked from lower down (a long list under the map, Day by day) opens with the card's top in
+  // view, and going back returns the page to where the pick was made.
+  const pickedAt = useRef<number | null>(null);
+  const open = Boolean(selected);
+  useEffect(() => {
+    const element = card.current;
+    if (!element) return;
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    if (open) {
+      pickedAt.current ??= window.scrollY;
+      if (element.getBoundingClientRect().top < 0) element.scrollIntoView({ block: 'start', behavior });
+    } else if (pickedAt.current !== null) {
+      window.scrollTo({ top: pickedAt.current, behavior: 'auto' });
+      pickedAt.current = null;
+    }
+  }, [open, selected]);
+
   return (
-    <aside aria-label="Places" className="card places-side">
-      <PlacesList {...props} />
+    <aside ref={card} aria-label="Places" className="card places-side" data-detail={selected ? true : undefined}>
+      <div className="side-panel side-places" inert={Boolean(selected)}>
+        <PlacesList {...props} />
+      </div>
+      {shown && (
+        <section className="side-panel side-detail" aria-label={shown.name} inert={!selected}>
+          <div className="side-detail-head">
+            <button type="button" className="side-back press" aria-label="Back to all places (Esc)" onClick={onClose}>
+              <Mdi name="chevron-left" size={20} />
+              All places
+              <span className="kbd" data-only="sidebar rail rail-one-column">
+                Esc
+              </span>
+            </button>
+            {index >= 0 && places.length > 1 && (
+              <span className="side-steps">
+                <span className="meta num">
+                  {index + 1} of {places.length}
+                </span>
+                <button type="button" className="icon-round icon-round-key side-step press" aria-label="Previous place (K)" disabled={index === 0} onClick={() => onStep(-1)}>
+                  <Mdi name="chevron-up" size={20} />
+                  <span className="kbd kbd-inline">K</span>
+                </button>
+                <button type="button" className="icon-round icon-round-key side-step press" aria-label="Next place (J)" disabled={index === places.length - 1} onClick={() => onStep(1)}>
+                  <Mdi name="chevron-down" size={20} />
+                  <span className="kbd kbd-inline">J</span>
+                </button>
+              </span>
+            )}
+          </div>
+          <div className="side-detail-body" key={shown.id}>
+            <PlacePane ledger={props.ledger} data={props.data} place={shown} categoryWords={props.categoryWords} />
+          </div>
+        </section>
+      )}
     </aside>
   );
 }
@@ -112,8 +181,8 @@ function PlacesList({ ledger, data, hoverId, onPick, onHover, onSort, categoryWo
   );
 }
 
-/** A place in the slide-over: what it cost, by day, what you bought and each payment. */
-export function PlacePane({ ledger, data, place, categoryWords, onClose }: { ledger: Ledger; data: PlacesData; place: Place; categoryWords: string; onClose: () => void }) {
+/** A place in the side card: what it cost, by day, what you bought and each payment. */
+function PlacePane({ ledger, data, place, categoryWords }: { ledger: Ledger; data: PlacesData; place: Place; categoryWords: string }) {
   const { places, days, range, query } = data;
   const { currency, calendar, now } = ledger;
   const index = places.indexOf(place);
@@ -125,11 +194,7 @@ export function PlacePane({ ledger, data, place, categoryWords, onClose }: { led
   const top = query.sort === 'spent' && index === 0 && places.length > 1;
   const maps = `https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}${place.id.includes(',') ? '' : `&query_place_id=${encodeURIComponent(place.id)}`}`;
   return (
-    <div className="place-pane" key={place.id}>
-      <button type="button" className="pane-back press" data-only="phone" onClick={onClose}>
-        <Mdi name="chevron-left" size={20} />
-        Where you spend
-      </button>
+    <div className="place-pane">
       <div className="pane-title-row">
         <Bubble icon={lead?.icon} color={lead?.color ?? null} size={48} glyph={24} />
         <div className="pane-title-text">

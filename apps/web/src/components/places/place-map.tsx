@@ -1,13 +1,29 @@
 'use client';
 
-import { clusterPins, fitFrame, formatMoney, type Box, type Insets, type Place } from '@repo/core';
+import { clusterPins, fitFrame, formatMoney, googleZoom, type Box, type Insets, type Place, type Point } from '@repo/core';
 import { springCurve, springs } from '@repo/design';
 import type { CurrencyCode } from '@repo/types';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Bubble } from '@/components/ledger/glyph';
 import type { LayoutKind } from '@/lib/layout';
-import { FIT, heatSize, panView, pinWidth, toView, zoomView, type MapView } from '@/lib/places-view';
+import {
+  DEFAULT_LIMITS,
+  FIT,
+  flingSpeed,
+  heatSize,
+  panView,
+  pinchView,
+  pinWidth,
+  toView,
+  viewForPick,
+  wheelFactor,
+  wheelGlides,
+  zoomLimits,
+  zoomView,
+  type MapView,
+  type ZoomLimits,
+} from '@/lib/places-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { MapGround, useMapsUsable } from './map-ground';
 import { Mdi } from './mdi';
@@ -15,9 +31,12 @@ import { Mdi } from './mdi';
 /** W2-Places' 40-tall capsules with a little air: closer than this up and down, they merge. */
 const PIN_ROW = 44;
 
+/** A press that moves less than this is a click, not a drag. */
+const DRAG_SLOP = 4;
+
 /** Room for the controls floating on the map, so no pin sits under them. */
 function insetsFor(layout: LayoutKind | null): Insets {
-  return layout === 'phone' ? { top: 36, right: 64, bottom: 64, left: 64 } : { top: 96, right: 80, bottom: 96, left: 80 };
+  return layout === 'phone' ? { top: 36, right: 64, bottom: 64, left: 64 } : { top: 96, right: 80, bottom: 88, left: 80 };
 }
 
 const SHEET = springCurve(springs.sheet);
@@ -30,17 +49,21 @@ function sheetEase(t: number): number {
   return SHEET_POINTS[low]! + (SHEET_POINTS[high]! - SHEET_POINTS[low]!) * (at - low);
 }
 
+const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Where the map is going, and whether it glides there (a button, a pick) or is already under a finger (a drag, a pinch, a trackpad). */
+export type MapMove = { view: MapView; glide: boolean };
+
 /**
  * The view the map shows, sliding to `target` on the sheet spring, so the Google camera and the pins
- * move on one clock. A drag, reduced motion, or `slide` off jump straight there.
+ * move on one clock. A gesture or reduced motion jumps straight there.
  */
-function useSlidingView(target: MapView, slide: boolean): MapView {
+function useSlidingView(target: MapView, glide: boolean): MapView {
   const [shown, setShown] = useState(target);
   const current = useRef(target);
   useEffect(() => {
-    const jump = !slide || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const from = current.current;
-    if (jump || (from.zoom === target.zoom && from.x === target.x && from.y === target.y)) {
+    if (!glide || reduced() || (from.zoom === target.zoom && from.x === target.x && from.y === target.y)) {
       current.current = target;
       setShown(target);
       return;
@@ -62,7 +85,7 @@ function useSlidingView(target: MapView, slide: boolean): MapView {
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the target's three numbers are the dependency
-  }, [target.zoom, target.x, target.y, slide]);
+  }, [target.zoom, target.x, target.y, glide]);
   return shown;
 }
 
@@ -81,6 +104,11 @@ function useBox() {
   return [ref, box] as const;
 }
 
+const pairOf = (touches: TouchList, rect: DOMRect): [Point, Point] => [
+  { x: touches[0]!.clientX - rect.left, y: touches[0]!.clientY - rect.top },
+  { x: touches[1]!.clientX - rect.left, y: touches[1]!.clientY - rect.top },
+];
+
 export type MapProps = {
   ledger: Ledger;
   layout: LayoutKind | null;
@@ -89,8 +117,8 @@ export type MapProps = {
   selectedId: string | null;
   hoverId: string | null;
   heat: boolean;
-  view: MapView;
-  onView: (view: MapView) => void;
+  move: MapMove;
+  onView: (view: MapView, glide: boolean) => void;
   onPick: (id: string) => void;
   onHover: (id: string | null) => void;
   onHeat: (heat: boolean) => void;
@@ -99,47 +127,173 @@ export type MapProps = {
 };
 
 /**
- * The Google map with a pin per place by its coordinates. Zoom and Fit move the map's camera and the pins
+ * The Google map with a pin per place by its coordinates. It moves the way Google's own map does: a mouse
+ * drags it anywhere and a fling keeps it sliding, the wheel and a trackpad pinch zoom about the pointer, a
+ * double click zooms in (Shift out), and on touch two fingers pan and pinch while one finger scrolls the
+ * page, so the page below never traps a thumb. Gestures, Zoom and Fit move the map's camera and the pins
  * together; pins whose capsules touch at the current zoom merge into one with a count.
  */
-export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, view: target, onView, onPick, onHover, onHeat, emptyLine, locationOff }: MapProps) {
+export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, move, onView, onPick, onHover, onHeat, emptyLine, locationOff }: MapProps) {
   const [ref, box] = useBox();
   const currency = ledger.currency as CurrencyCode;
   const frame = useMemo(() => (box ? fitFrame(everywhere, box, insetsFor(layout)) : null), [box, everywhere, layout]);
   const fitted = frame?.project;
+  const limits: ZoomLimits = frame ? zoomLimits(googleZoom(frame.pxPerLngDegree)) : DEFAULT_LIMITS;
   const google = useMapsUsable();
   const [dragging, setDragging] = useState(false);
-  const view = useSlidingView(target, google && !dragging);
+  const [hint, setHint] = useState(false);
+  const target = move.view;
+  const view = useSlidingView(target, move.glide);
   const at = (place: Place) => (fitted && box ? toView(fitted(place), view, box) : { x: 0, y: 0 });
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
-  const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), view, box), (total, members) => pinWidth(whole(total), members), PIN_ROW) : [];
+  const widthOf = (total: number, members: number) => pinWidth(whole(total), members);
+  const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), view, box), widthOf, PIN_ROW) : [];
   const leadOf = new Map(clusters.flatMap((cluster) => cluster.members.map((member) => [member.id, cluster] as const)));
   const max = places.reduce((top, place) => Math.max(top, place.totalMinor), 0);
-  const drag = useRef<{ x: number; y: number; view: MapView } | null>(null);
-  const endDrag = () => {
-    drag.current = null;
-    setDragging(false);
+
+  // The native listeners (a wheel and touches the page must not also take) read the latest of these. A
+  // gesture writes its view here at once, so a second event before React renders builds on the first.
+  const live = useRef({ target, box, limits, onView });
+  useLayoutEffect(() => {
+    live.current = { target, box, limits, onView };
+  });
+  const go = (next: MapView, glide: boolean) => {
+    live.current.target = next;
+    live.current.onView(next, glide);
   };
 
+  const fling = useRef(0);
+  const startFling = (speed: Point) => {
+    if (reduced() || Math.hypot(speed.x, speed.y) < 0.3) return;
+    let last = performance.now();
+    let now = speed;
+    const step = (time: number) => {
+      const ms = Math.min(48, time - last);
+      last = time;
+      now = flingSpeed(now, ms);
+      const size = live.current.box;
+      if (!size || Math.hypot(now.x, now.y) < 0.02) return;
+      go(panView(live.current.target, { x: now.x * ms, y: now.y * ms }, size), false);
+      fling.current = requestAnimationFrame(step);
+    };
+    fling.current = requestAnimationFrame(step);
+  };
+  useEffect(() => () => cancelAnimationFrame(fling.current), []);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      const { box: size, limits: range } = live.current;
+      if (!size || event.deltaY === 0) return;
+      event.preventDefault();
+      cancelAnimationFrame(fling.current);
+      const rect = element.getBoundingClientRect();
+      const focus = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      go(zoomView(live.current.target, wheelFactor(event.deltaY, event.deltaMode, event.ctrlKey), focus, size, range), wheelGlides(event.deltaY, event.deltaMode));
+    };
+    let pinch: { from: [Point, Point]; view: MapView } | null = null;
+    let hintTimer = 0;
+    // Fingers land one at a time, and a touchstart can't be cancelled while the page still glides, so
+    // the pinch also starts on the first move that has two fingers.
+    const startPinch = (event: TouchEvent) => {
+      cancelAnimationFrame(fling.current);
+      setHint(false);
+      pinch = { from: pairOf(event.touches, element.getBoundingClientRect()), view: live.current.target };
+    };
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length < 2) return;
+      if (event.cancelable) event.preventDefault();
+      startPinch(event);
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const { box: size, limits: range } = live.current;
+      if (event.touches.length >= 2 && size && event.cancelable) {
+        event.preventDefault();
+        if (!pinch) startPinch(event);
+        go(pinchView(pinch!.view, pinch!.from, pairOf(event.touches, element.getBoundingClientRect()), size, range), false);
+      } else if (!pinch && event.touches.length === 1) {
+        setHint(true);
+        window.clearTimeout(hintTimer);
+        hintTimer = window.setTimeout(() => setHint(false), 1400);
+      }
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length < 2) pinch = null;
+    };
+    element.addEventListener('wheel', onWheel, { passive: false });
+    element.addEventListener('touchstart', onTouchStart, { passive: false });
+    element.addEventListener('touchmove', onTouchMove, { passive: false });
+    element.addEventListener('touchend', onTouchEnd);
+    element.addEventListener('touchcancel', onTouchEnd);
+    return () => {
+      window.clearTimeout(hintTimer);
+      element.removeEventListener('wheel', onWheel);
+      element.removeEventListener('touchstart', onTouchStart);
+      element.removeEventListener('touchmove', onTouchMove);
+      element.removeEventListener('touchend', onTouchEnd);
+      element.removeEventListener('touchcancel', onTouchEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the listeners read `live`, so they bind once
+  }, []);
+
+  const ready = Boolean(fitted && box);
+  // A picked place (a pin, a row, J or K, Back) comes into view: the map stays put when its pin already
+  // sits well inside on its own, else it glides to centre it, zooming in until a merged pin comes apart.
+  useEffect(() => {
+    const place = places.find((each) => each.id === selectedId);
+    if (!place || !fitted || !box) return;
+    const alone = (zoom: number) =>
+      clusterPins(places, (point) => toView(fitted(point), { zoom, x: 0, y: 0 }, box), widthOf, PIN_ROW).find((cluster) => cluster.members.some((member) => member.id === place.id))?.members.length === 1;
+    const current = live.current.target;
+    const next = viewForPick(current, fitted(place), box, alone, live.current.limits);
+    if (next !== current) go(next, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new pick moves the map
+  }, [selectedId, ready]);
+
+  const drag = useRef<{ id: number; x: number; y: number; view: MapView; moved: boolean; trail: { t: number; x: number; y: number }[] } | null>(null);
+  const swallowClick = useRef(false);
   const zoom = (factor: number) => {
     if (!box) return;
     const selected = places.find((place) => place.id === selectedId);
-    onView(zoomView(target, factor, selected ? at(selected) : { x: box.width / 2, y: box.height / 2 }, box));
+    go(zoomView(target, factor, selected ? at(selected) : { x: box.width / 2, y: box.height / 2 }, box, limits), true);
   };
-  const pick = (id: string) => {
-    const cluster = leadOf.get(id);
-    if (cluster && cluster.members.length > 1 && box) onView(zoomView(target, 2, at(cluster.lead), box));
-    onPick(cluster?.lead.id ?? id);
-  };
+  const pick = (id: string) => onPick(leadOf.get(id)?.lead.id ?? id);
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (target.zoom === 1 || (event.target as HTMLElement).closest('button')) return;
-    drag.current = { x: event.clientX, y: event.clientY, view: target };
-    setDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    swallowClick.current = false;
+    if (event.pointerType === 'touch' || event.button !== 0 || (event.target as HTMLElement).closest('.map-float, .map-banner, .map-note, a')) return;
+    cancelAnimationFrame(fling.current);
+    // From where the map shows now: a press during a glide stops it there, as Google's map does.
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, view, moved: false, trail: [{ t: event.timeStamp, x: event.clientX, y: event.clientY }] };
   };
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current || !box) return;
-    onView(panView(drag.current.view, { x: event.clientX - drag.current.x, y: event.clientY - drag.current.y }, box));
+    const start = drag.current;
+    if (!start || start.id !== event.pointerId || !box) return;
+    const by = { x: event.clientX - start.x, y: event.clientY - start.y };
+    if (!start.moved) {
+      if (Math.hypot(by.x, by.y) < DRAG_SLOP) return;
+      start.moved = true;
+      setDragging(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    start.trail = [...start.trail.filter((point) => event.timeStamp - point.t < 80), { t: event.timeStamp, x: event.clientX, y: event.clientY }];
+    go(panView(start.view, by, box), false);
+  };
+  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = drag.current;
+    if (!start || start.id !== event.pointerId) return;
+    drag.current = null;
+    if (!start.moved) return;
+    swallowClick.current = true;
+    setDragging(false);
+    const first = start.trail[0]!;
+    const ms = event.timeStamp - first.t;
+    if (event.type === 'pointerup' && ms > 0 && ms < 120) startFling({ x: (event.clientX - first.x) / ms, y: (event.clientY - first.y) / ms });
+  };
+  const onDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!box || (event.target as HTMLElement).closest('button, a')) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    go(zoomView(live.current.target, event.shiftKey ? 0.5 : 2, { x: event.clientX - rect.left, y: event.clientY - rect.top }, box, limits), true);
   };
 
   return (
@@ -147,7 +301,6 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
       ref={ref}
       className="places-map"
       data-heat={heat || undefined}
-      data-zoomed={target.zoom > 1 || undefined}
       data-zoom={target.zoom}
       data-faded={locationOff || undefined}
       data-dragging={dragging || undefined}
@@ -156,6 +309,13 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
+      onDoubleClick={onDoubleClick}
+      onClickCapture={(event) => {
+        if (!swallowClick.current) return;
+        swallowClick.current = false;
+        event.stopPropagation();
+        event.preventDefault();
+      }}
     >
       <MapGround frame={frame} view={view} box={box} />
       {box &&
@@ -204,6 +364,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
               data-hot={(shown && hot && !on) || undefined}
               data-dim={(shown && selectedId !== null && !on && !hot) || undefined}
               aria-hidden={!shown}
+              aria-pressed={shown ? on : undefined}
               tabIndex={shown ? 0 : -1}
               aria-label={`${names}, ${formatMoney(cluster?.totalMinor ?? place.totalMinor, currency)}`}
               style={{ left: x, top: y }}
@@ -219,6 +380,9 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
             </button>
           );
         })}
+      <div className="map-hint" data-on={hint || undefined} aria-hidden="true">
+        Use two fingers to move the map
+      </div>
       {everywhere.length === 0 ? (
         <div className="map-note map-empty-card motion-rise">
           <span className="map-empty-icon">
@@ -262,7 +426,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
         <span className="kbd">H</span>
       </div>
       <div className="map-zoom">
-        <button type="button" className="map-float map-btn map-fit press" title="Fit every place" onClick={() => onView(FIT)}>
+        <button type="button" className="map-float map-btn map-fit press" title="Fit every place" onClick={() => go(FIT, true)}>
           <Mdi name="fit-to-screen-outline" size={20} />
           <span>Fit</span>
           <span className="kbd" data-only="sidebar rail rail-one-column">
@@ -270,11 +434,11 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
           </span>
         </button>
         <span className="map-float map-zoom-pair">
-          <button type="button" className="map-btn" aria-label="Zoom in" disabled={target.zoom >= 4} onClick={() => zoom(1.5)}>
+          <button type="button" className="map-btn" aria-label="Zoom in" disabled={target.zoom >= limits.max} onClick={() => zoom(1.5)}>
             <Mdi name="plus" size={22} />
           </button>
           <span className="map-zoom-rule" aria-hidden="true" />
-          <button type="button" className="map-btn" aria-label="Zoom out" disabled={target.zoom <= 1} onClick={() => zoom(1 / 1.5)}>
+          <button type="button" className="map-btn" aria-label="Zoom out" disabled={target.zoom <= limits.min} onClick={() => zoom(1 / 1.5)}>
             <Mdi name="minus" size={22} />
           </button>
         </span>

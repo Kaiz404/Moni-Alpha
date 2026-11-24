@@ -4,7 +4,6 @@ import { formatMoney, placeRanges, type PlaceRangeKey } from '@repo/core';
 import { useState, type ReactNode } from 'react';
 import { Select } from '@/components/controls/select';
 import { Bubble } from '@/components/ledger/glyph';
-import { SlideOver } from '@/components/ledger/slide-over';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
 import { useLayout } from '@/components/shell/use-layout';
@@ -13,8 +12,8 @@ import { FIT, type MapView } from '@/lib/places-view';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { DayGrid } from './day-grid';
 import { Mdi } from './mdi';
-import { PlaceMap } from './place-map';
-import { PlacePane, PlaceSide } from './place-side';
+import { PlaceMap, type MapMove } from './place-map';
+import { PlaceSide } from './place-side';
 import { usePlaces, type FilterOption } from './use-places';
 import { WithoutPlace } from './without-place';
 import '@/components/ledger/ledger.css';
@@ -28,7 +27,7 @@ function Frame({ children }: { children: ReactNode }) {
   );
 }
 
-/** Where you spend (W2-Places), pushed from Home's card: the map, the places list or a place, Day by day, Without a place. */
+/** Where you spend (W2-Places), pushed from Home's card: the map, the side card with the places or a place, Day by day, Without a place. */
 export function PlacesScreen() {
   const ledger = useLedger();
   if (!ledger.loaded) {
@@ -87,7 +86,8 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
   const data = usePlaces(ledger, params);
   const { query, places, selected, range } = data;
   const [hoverId, setHoverId] = useState<string | null>(null);
-  const [view, setView] = useState<MapView>(FIT);
+  const [move, setMove] = useState<MapMove>({ view: FIT, glide: true });
+  const setView = (view: MapView, glide = true) => setMove({ view, glide });
   const [picked, setPicked] = useState<string[]>([]);
   const [choosing, setChoosing] = useState(false);
   const ranges = placeRanges(ledger.now, ledger.calendar);
@@ -97,7 +97,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
 
   const pick = (id: string | null) => setParams({ place: id }, id && !selected ? 'push' : 'replace');
   const close = useStepBack(Boolean(selected), () => pick(null));
-  const selectedIndex = selected ? places.indexOf(selected) : -1;
   const step = (by: number) => {
     if (!places.length) return;
     const at = selected ? places.indexOf(selected) : -1;
@@ -133,7 +132,7 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
           selectedId={selected?.id ?? null}
           hoverId={hoverId}
           heat={query.view === 'heat'}
-          view={view}
+          move={move}
           onView={setView}
           onPick={pick}
           onHover={setHoverId}
@@ -178,6 +177,9 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
         onHover={setHoverId}
         onSort={(sort) => setParams({ sort: sort === 'spent' ? null : sort })}
         categoryWords={categoryWords}
+        selected={selected}
+        onClose={close}
+        onStep={step}
       />
       <DayGrid
         ledger={ledger}
@@ -198,16 +200,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
         choosing={choosing}
         onChoosing={setChoosing}
       />
-      <SlideOver
-        label="Place"
-        name="place"
-        back="Where you spend"
-        steps={selectedIndex >= 0 ? { noun: 'place', position: `${selectedIndex + 1} of ${places.length}`, onMove: step, first: selectedIndex === 0, last: selectedIndex === places.length - 1 } : undefined}
-        open={Boolean(selected)}
-        onClose={close}
-      >
-        {selected && <PlacePane ledger={ledger} data={data} place={selected} categoryWords={categoryWords} onClose={close} />}
-      </SlideOver>
     </div>
   );
 }

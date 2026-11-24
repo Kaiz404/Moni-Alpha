@@ -2,16 +2,23 @@ import type { Place } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 import {
+  centreOn,
   FIT,
+  flingSpeed,
   heatSize,
   hotSpot,
   panView,
+  pinchView,
   pinWidth,
   placeMeta,
   placeSub,
   readPlacesQuery,
   sortPlaces,
   toView,
+  viewForPick,
+  wheelFactor,
+  wheelGlides,
+  zoomLimits,
   zoomView,
 } from '../places-view';
 
@@ -91,11 +98,60 @@ describe('the map view', () => {
     expect(toView({ x: 500, y: 400 }, view, box)).toEqual({ x: 500, y: 400 });
   });
 
-  it('stays between 1 and 4, and never pans past the art', () => {
-    expect(zoomView(FIT, 0.5, { x: 0, y: 0 }, box)).toEqual(FIT);
-    expect(zoomView({ zoom: 3, x: 0, y: 0 }, 2, { x: 400, y: 300 }, box).zoom).toBe(4);
-    expect(panView(FIT, { x: 50, y: 50 }, box)).toEqual(FIT);
-    expect(panView({ zoom: 2, x: 0, y: 0 }, { x: 900, y: -20 }, box)).toEqual({ zoom: 2, x: 400, y: -20 });
+  it('pans at Fit too, as far as keeping the middle over the places', () => {
+    expect(panView(FIT, { x: 50, y: -30 }, box)).toEqual({ zoom: 1, x: 50, y: -30 });
+    expect(panView(FIT, { x: 900, y: -900 }, box)).toEqual({ zoom: 1, x: 400, y: -300 });
+    expect(panView({ zoom: 2, x: 0, y: 0 }, { x: 900, y: -20 }, box)).toEqual({ zoom: 2, x: 800, y: -20 });
+  });
+
+  it('zooms out past Fit and in to the street, within the limits the ground can follow', () => {
+    expect(zoomView(FIT, 0.5, { x: 400, y: 300 }, box)).toEqual({ zoom: 0.5, x: 0, y: 0 });
+    expect(zoomView({ zoom: 3, x: 0, y: 0 }, 2, { x: 400, y: 300 }, box, { min: 1, max: 4 }).zoom).toBe(4);
+    expect(zoomView(FIT, 0.01, { x: 400, y: 300 }, box, { min: 0.25, max: 4 }).zoom).toBe(0.25);
+    expect(zoomLimits(12)).toEqual({ min: 2 ** -7, max: 2 ** 8 });
+    expect(zoomLimits(21)).toEqual({ min: 2 ** -16, max: 1 });
+  });
+
+  it('pinches about where the fingers started and follows their middle', () => {
+    const view = pinchView(FIT, [{ x: 300, y: 300 }, { x: 500, y: 300 }], [{ x: 250, y: 320 }, { x: 650, y: 320 }], box);
+    expect(view.zoom).toBe(2);
+    expect(toView({ x: 400, y: 300 }, view, box)).toEqual({ x: 450, y: 320 });
+  });
+
+  it('zooms a level a mouse notch, a trackpad pinch twice as quick, and glides only the notch', () => {
+    expect(wheelFactor(100, 0, false)).toBe(0.5);
+    expect(wheelFactor(-100, 0, false)).toBe(2);
+    expect(wheelFactor(3, 1, false)).toBeCloseTo(2 ** -1.2);
+    expect(wheelFactor(-10, 0, true)).toBeCloseTo(2 ** 0.2);
+    expect(wheelFactor(5000, 0, false)).toBe(0.25);
+    expect(wheelGlides(100, 0)).toBe(true);
+    expect(wheelGlides(4, 0)).toBe(false);
+    expect(wheelGlides(1, 1)).toBe(true);
+  });
+
+  it('centres a point at a zoom', () => {
+    const view = centreOn({ x: 500, y: 400 }, 2, box);
+    expect(toView({ x: 500, y: 400 }, view, box)).toEqual({ x: 400, y: 300 });
+  });
+
+  it('leaves the map alone for a picked pin already well inside it', () => {
+    const view = { zoom: 2, x: -100, y: 0 };
+    expect(viewForPick(view, { x: 450, y: 300 }, box, () => true)).toBe(view);
+  });
+
+  it('centres a picked place near the edge, and zooms in until its pin stands alone', () => {
+    const edge = viewForPick(FIT, { x: 780, y: 300 }, box, () => true);
+    expect(edge.zoom).toBe(1);
+    expect(toView({ x: 780, y: 300 }, edge, box)).toEqual({ x: 400, y: 300 });
+    const merged = viewForPick(FIT, { x: 400, y: 300 }, box, (zoom) => zoom >= 2);
+    expect(merged.zoom).toBe(2.25);
+    expect(toView({ x: 400, y: 300 }, merged, box)).toEqual({ x: 400, y: 300 });
+  });
+
+  it('slows a fling down', () => {
+    const later = flingSpeed({ x: 1, y: -2 }, 100);
+    expect(later.x).toBeCloseTo(0.548, 3);
+    expect(later.y).toBeCloseTo(-1.096, 3);
   });
 });
 

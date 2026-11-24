@@ -19,7 +19,7 @@ export type SlideOverSteps = {
 
 /**
  * The slide-over every item without a page of its own opens in (#106): a transaction, a category, a person,
- * a place, Home's Review and the wallet forms. It slides in from the right over most of the page on the sheet
+ * Home's Review and the wallet forms. It slides in from the right over most of the page on the sheet
  * spring and dims the page behind, which goes inert while focus moves in. "‹ <page>" and Esc close it, and
  * the screen keeps what is open in the URL, so Back and a shared link work. Its left edge drags it wider or
  * narrower, kept per pane in this browser (#95). On the phone layout it is the pushed page.

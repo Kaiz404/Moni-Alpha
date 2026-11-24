@@ -56,8 +56,19 @@ export function hotSpot(places: readonly Place[]): string {
 export type MapView = { zoom: number; x: number; y: number };
 
 export const FIT: MapView = { zoom: 1, x: 0, y: 0 };
-export const MIN_ZOOM = 1;
-export const MAX_ZOOM = 4;
+
+/** How far the view may zoom out and in from Fit. */
+export type ZoomLimits = { min: number; max: number };
+
+export const DEFAULT_LIMITS: ZoomLimits = { min: 1 / 16, max: 64 };
+
+/**
+ * The zooms the Google map under the pins can follow from a Fit at Google zoom `fitZoom`: out to a
+ * country (Google 5) and in to the street (Google 20), so the ground never stops while the pins move.
+ */
+export function zoomLimits(fitZoom: number): ZoomLimits {
+  return { min: Math.min(1, 2 ** (5 - fitZoom)), max: Math.max(1, 2 ** (20 - fitZoom)) };
+}
 
 /** Where a fitted point lands on screen under a view: scaled about the box's centre, then panned. */
 export function toView(point: Point, view: MapView, box: Box): Point {
@@ -67,16 +78,15 @@ export function toView(point: Point, view: MapView, box: Box): Point {
   };
 }
 
-/** Keeps the art over the whole box: the pan never shows past its edge. */
+/** Keeps the box's centre over the fitted art, so a pan can never lose every place. */
 function clampPan(view: MapView, box: Box): MapView {
-  const room = (size: number) => ((view.zoom - 1) * size) / 2;
   const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value)) || 0;
-  return { zoom: view.zoom, x: clamp(view.x, room(box.width)), y: clamp(view.y, room(box.height)) };
+  return { zoom: view.zoom, x: clamp(view.x, (view.zoom * box.width) / 2), y: clamp(view.y, (view.zoom * box.height) / 2) };
 }
 
-/** Zooms by `factor` and keeps `focus` (a screen point) where it is, as a map does under its controls. */
-export function zoomView(view: MapView, factor: number, focus: Point, box: Box): MapView {
-  const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.zoom * factor));
+/** Zooms by `factor` and keeps `focus` (a screen point) where it is, as a map does under a wheel or a pinch. */
+export function zoomView(view: MapView, factor: number, focus: Point, box: Box, limits: ZoomLimits = DEFAULT_LIMITS): MapView {
+  const zoom = Math.max(limits.min, Math.min(limits.max, view.zoom * factor));
   const centre = { x: box.width / 2, y: box.height / 2 };
   const ratio = zoom / view.zoom;
   return clampPan(
@@ -91,6 +101,61 @@ export function zoomView(view: MapView, factor: number, focus: Point, box: Box):
 
 export function panView(view: MapView, by: Point, box: Box): MapView {
   return clampPan({ zoom: view.zoom, x: view.x + by.x, y: view.y + by.y }, box);
+}
+
+/**
+ * Two fingers moving from `from` to `to`: the map zooms by how far apart they went about where they
+ * started, then follows their middle, so the ground stays under both fingers.
+ */
+export function pinchView(start: MapView, from: readonly [Point, Point], to: readonly [Point, Point], box: Box, limits: ZoomLimits = DEFAULT_LIMITS): MapView {
+  const apart = (pair: readonly [Point, Point]) => Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1;
+  const middle = (pair: readonly [Point, Point]) => ({ x: (pair[0].x + pair[1].x) / 2, y: (pair[0].y + pair[1].y) / 2 });
+  const [a, b] = [middle(from), middle(to)];
+  return panView(zoomView(start, apart(to) / apart(from), a, box, limits), { x: b.x - a.x, y: b.y - a.y }, box);
+}
+
+/**
+ * How much one wheel event zooms, as Google's map does with every gesture on it: a mouse notch (100 px)
+ * is one zoom level, a trackpad's scroll the same per pixel, and a trackpad pinch (which the browser
+ * sends as a wheel with Ctrl held) twice as quick, since its deltas are small.
+ */
+export function wheelFactor(deltaY: number, deltaMode: number, pinch: boolean): number {
+  const px = deltaMode === 1 ? deltaY * 40 : deltaMode === 2 ? deltaY * 800 : deltaY;
+  const capped = Math.max(-200, Math.min(200, px));
+  return 2 ** ((-capped * (pinch ? 2 : 1)) / 100);
+}
+
+/** A mouse notch glides to its zoom; a trackpad's stream of small deltas is already smooth. */
+export function wheelGlides(deltaY: number, deltaMode: number): boolean {
+  return deltaMode !== 0 || Math.abs(deltaY) >= 50;
+}
+
+/** The view at `zoom` with a fitted point in the middle of the box. */
+export function centreOn(point: Point, zoom: number, box: Box): MapView {
+  return clampPan({ zoom, x: -(point.x - box.width / 2) * zoom, y: -(point.y - box.height / 2) * zoom }, box);
+}
+
+/** Whether a screen point sits inside the box less `inset` on every side, where a picked pin can stay put. */
+export function inView(point: Point, box: Box, inset: number): boolean {
+  return point.x >= inset && point.x <= box.width - inset && point.y >= inset && point.y <= box.height - inset;
+}
+
+/**
+ * The view for a place just picked: where it already sits well inside the map on a pin of its own, the
+ * map stays put; otherwise it zooms in by halves until its pin stands alone (`alone`), and centres it.
+ */
+export function viewForPick(view: MapView, point: Point, box: Box, alone: (zoom: number) => boolean, limits: ZoomLimits = DEFAULT_LIMITS): MapView {
+  const shown = toView(point, view, box);
+  if (alone(view.zoom) && inView(shown, box, Math.min(box.width, box.height) * 0.15)) return view;
+  let zoom = Math.max(view.zoom, Math.min(1, limits.max));
+  for (let step = 0; step < 8 && !alone(zoom) && zoom * 1.5 <= limits.max; step += 1) zoom *= 1.5;
+  return centreOn(point, zoom, box);
+}
+
+/** A released drag keeps sliding: its speed (px a ms) after `ms` more, losing 0.6% of it a ms. */
+export function flingSpeed(speed: Point, ms: number): Point {
+  const keep = 0.994 ** ms;
+  return { x: speed.x * keep, y: speed.y * keep };
 }
 
 /** W2-Places' capsule: the bubble and padding, about 9 a glyph, and the count badge. */
