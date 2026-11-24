@@ -1,12 +1,21 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import {
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@ui-sdk/react/alert-dialog';
+import { useRef, useState } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
 
 /**
  * W2-Parts' confirm before a write that takes something away: the title, what it does, Cancel (focused,
- * Esc) and the red action. Undo still comes in the toast after. Keys stop here, so J, K or R never act on
- * the screen underneath while it asks.
+ * Esc) and the red action. Undo still comes in the toast after. ui-sdk's alert dialog keeps Tab inside,
+ * makes the page under it inert and plays the exit before the answer goes back. Keys stop here, so J, K
+ * or R never act on the screen underneath while it asks.
  */
 export function ConfirmDialog({
   title,
@@ -25,37 +34,41 @@ export function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const cancel = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useEffect(() => cancel.current?.focus(), []);
+  const [open, setOpen] = useState(true);
+  const answer = useRef<'cancel' | 'confirm'>('cancel');
   return (
-    <div className="scrim scrim-center" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
+    <AlertDialog
+      open={open}
+      onOpenChange={(next, details) => {
+        if (next) return;
+        answer.current = details.returnValue === 'confirm' ? 'confirm' : 'cancel';
+        setOpen(false);
+      }}
+      onOpenChangeComplete={(isOpen) => {
+        if (isOpen) return;
+        if (answer.current === 'confirm') onConfirm();
+        else onCancel();
+      }}
+    >
+      <AlertDialogBackdrop className="scrim scrim-center" />
+      <AlertDialogContent
         className="dialog confirm-dialog motion-pop"
-        onKeyDown={(event) => {
-          event.stopPropagation();
-          if (event.key === 'Escape') onCancel();
-        }}
+        onKeyDown={(event) => event.stopPropagation()}
       >
-        <h2 id={titleId} className="dialog-title">
-          {title}
-        </h2>
+        <AlertDialogTitle className="dialog-title">{title}</AlertDialogTitle>
         {children}
-        <p className="confirm-line">{line}</p>
+        <AlertDialogDescription className="confirm-line">{line}</AlertDialogDescription>
         <div className="confirm-actions">
-          <button ref={cancel} type="button" className="btn btn-sand press" onClick={onCancel}>
+          <AlertDialogClose value="cancel" className="btn btn-sand press">
             Cancel
             <span className="kbd">Esc</span>
-          </button>
-          <button type="button" className="btn confirm-danger press" onClick={onConfirm}>
+          </AlertDialogClose>
+          <AlertDialogClose value="confirm" className="btn confirm-danger press">
             <Glyph name={icon} size={18} />
             {action}
-          </button>
+          </AlertDialogClose>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

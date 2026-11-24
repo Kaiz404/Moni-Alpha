@@ -1158,6 +1158,40 @@ html[data-layout='phone'] .shortcut-grid {
   box-shadow: var(--shadow-float);
   display: flex;
   flex-direction: column;
+  inset: auto;
+  margin: 0;
+  border: 0;
+}
+
+/* ui-sdk places the account menu and the dialogs in the top layer and keeps them for their exit. */
+.account-menu.motion-pop {
+  transform-origin: var(--transform-origin, bottom left);
+}
+
+.account-menu[data-ending-style] {
+  animation:
+    pop-out var(--duration-press) var(--ease-press) both,
+    fade-out 120ms ease both;
+}
+
+.dialog[data-slot$='dialog-content'] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-width: calc(100% - 24px);
+  border: 0;
+  color: var(--color-foreground);
+}
+
+.dialog[data-slot$='dialog-content'][data-ending-style] {
+  animation:
+    grow-out var(--duration-press) var(--ease-press) both,
+    fade-out 120ms ease both;
+}
+
+.scrim[data-slot$='dialog-backdrop'][data-ending-style] {
+  animation: fade-out 160ms ease both;
 }
 
 .account-head {
@@ -1206,6 +1240,10 @@ html[data-layout='phone'] .shortcut-grid {
   font-weight: 600;
   color: var(--color-inactive);
   transition: background-color var(--duration-control) var(--ease-control);
+}
+
+.account-menu .seg button:focus-visible {
+  outline-color: var(--color-on-tab-bar);
 }
 
 .seg button[aria-checked='true'] {
@@ -1312,6 +1350,12 @@ html[data-layout='phone'] .toast-slot {
   .motion-rise,
   .scrim {
     animation: fade-in 180ms ease both !important;
+  }
+
+  .motion-grow[data-ending-style],
+  .motion-pop[data-ending-style],
+  .scrim[data-ending-style] {
+    animation: fade-out 120ms ease both !important;
   }
 
   .shell-main {

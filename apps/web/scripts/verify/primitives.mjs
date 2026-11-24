@@ -6,6 +6,8 @@ const SIZES = [
   { name: 'portrait', width: 820, height: 1180 },
 ];
 
+const focused = (page) => page.evaluate(() => document.activeElement?.outerHTML.slice(0, 160));
+
 const onScreen = (locator) =>
   locator.evaluate((el) => {
     const box = el.getBoundingClientRect();
@@ -31,7 +33,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
       check(`${where}: a filter chip opens its popover on screen`, (await filter.isVisible()) && (await onScreen(filter)));
       await shot(p, name('filter'));
       await p.keyboard.press('Escape');
-      await p.waitForTimeout(300);
+      await p.waitForTimeout(500);
       check(`${where}: Esc closes the filter popover and focus returns to its chip`, await chip.evaluate((el) => el === document.activeElement));
 
       const row = p.locator('[role="row"][data-row-id]:visible').nth(2);
@@ -52,7 +54,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
         check(`${where}: Tab stays inside the confirm`, await confirm.evaluate((el) => el.contains(document.activeElement)));
         await shot(p, name('confirm'));
         await p.keyboard.press('Escape');
-        await p.waitForTimeout(300);
+        await p.waitForTimeout(500);
         const confirmGone = !(await confirm.isVisible().catch(() => false));
         check(`${where}: Esc closes the confirm`, confirmGone);
         if (!confirmGone) await confirm.getByRole('button', { name: /^Cancel/ }).click();
@@ -66,10 +68,11 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
       await category.click();
       const list = p.getByRole('listbox', { name: 'category' });
       await list.waitFor({ timeout: 3000 }).catch(() => {});
-      check(`${where}: the pane's category opens its list on screen with the chosen row focused`, (await list.isVisible()) && (await onScreen(list)) && (await p.evaluate(() => document.activeElement?.getAttribute('aria-selected') === 'true')));
+      await p.waitForFunction(() => document.activeElement?.getAttribute('role') === 'option', null, { timeout: 2000 }).catch(() => {});
+      check(`${where}: the pane's category opens its list on screen with the chosen row focused`, (await list.isVisible()) && (await onScreen(list)) && (await p.evaluate(() => document.activeElement?.getAttribute('aria-selected') === 'true')), await focused(p));
       await shot(p, name('select'));
       await p.keyboard.press('Escape');
-      await p.waitForTimeout(300);
+      await p.waitForTimeout(500);
       check(`${where}: Esc closes the list, keeps the pane and focuses the category`, (await pane.isVisible()) && (await category.evaluate((el) => el === document.activeElement)));
 
       const date = pane.locator('.pane-field').filter({ hasText: 'Date' }).locator('.field-chip');
@@ -79,7 +82,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
       check(`${where}: the pane's date opens the calendar on screen`, (await picker.isVisible()) && (await onScreen(picker)));
       await shot(p, name('date'));
       await p.keyboard.press('Escape');
-      await p.waitForTimeout(300);
+      await p.waitForTimeout(500);
       check(`${where}: Esc closes the calendar and keeps the pane`, (await pane.isVisible()) && !(await picker.isVisible().catch(() => false)));
       await p.keyboard.press('Escape');
       await p.waitForURL((url) => url.pathname === '/activity' && !url.search.includes('open')).catch(() => {});
@@ -90,7 +93,7 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
       check(`${where}: ? opens the shortcuts dialog with the focus inside`, (await shortcuts.isVisible()) && (await shortcuts.evaluate((el) => el.contains(document.activeElement))));
       await shot(p, name('shortcuts'));
       await p.keyboard.press('Escape');
-      await p.waitForTimeout(300);
+      await p.waitForTimeout(500);
       check(`${where}: Esc closes the shortcuts dialog`, !(await shortcuts.isVisible().catch(() => false)));
 
       const account = p.locator('nav button[aria-haspopup="menu"]:visible').first();
@@ -98,12 +101,13 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
       await p.keyboard.press('Enter');
       const menu = p.getByRole('menu', { name: 'Account' });
       await menu.waitFor({ timeout: 3000 }).catch(() => {});
-      check(`${where}: the account menu opens on screen with Settings focused`, (await menu.isVisible()) && (await onScreen(menu)) && (await p.evaluate(() => document.activeElement?.textContent?.trim() === 'Settings')));
+      await p.waitForFunction(() => document.activeElement?.getAttribute('role') === 'menuitem', null, { timeout: 2000 }).catch(() => {});
+      check(`${where}: the account menu opens on screen with Settings focused`, (await menu.isVisible()) && (await onScreen(menu)) && (await p.evaluate(() => document.activeElement?.textContent?.trim() === 'Settings')), await focused(p));
       await p.keyboard.press('ArrowDown');
       check(`${where}: ArrowDown moves down the account menu`, await p.evaluate(() => document.activeElement?.textContent?.trim() !== 'Settings'));
       await shot(p, name('account-menu'));
       await p.keyboard.press('Escape');
-      await p.waitForTimeout(300);
+      await p.waitForTimeout(500);
       check(`${where}: Esc closes the account menu and focus returns to the name`, !(await menu.isVisible().catch(() => false)) && (await account.evaluate((el) => el === document.activeElement)));
       if (await menu.isVisible().catch(() => false)) await account.click({ force: true });
 

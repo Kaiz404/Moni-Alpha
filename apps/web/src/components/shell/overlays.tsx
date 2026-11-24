@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { bindPersistentLayer } from '@ui-sdk/core';
+import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
+import { Menu, MenuContent, MenuItem, MenuRadioGroup, MenuRadioItem } from '@ui-sdk/react/menu';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { useTheme } from '@/components/use-theme';
 import { SHORTCUT_GROUPS } from '@/lib/keys';
@@ -9,20 +12,37 @@ import { useShellApi } from './shell-context';
 import { Glyph } from '@/components/ledger/glyph';
 import { dismissToast, undoToast, useToast, type ToastTone } from './shell-store';
 
+/**
+ * Open while mounted; a close plays the exit first, then hands back to the shell. The shell's overlay
+ * state stays the one switch, so `?` and the account name still open and close these.
+ */
+function useExit(close: () => void) {
+  const [open, setOpen] = useState(true);
+  return {
+    open,
+    onOpenChange: (next: boolean) => {
+      if (!next) setOpen(false);
+    },
+    onOpenChangeComplete: (isOpen: boolean) => {
+      if (!isOpen) close();
+    },
+  };
+}
+
 /** W2-Parts "Keyboard shortcuts", on ?. Screens add their groups as they arrive. */
 export function ShortcutsDialog() {
   const { run } = useShellApi();
+  const exit = useExit(() => run({ kind: 'close' }));
   return (
-    <div className="scrim scrim-center" onMouseDown={(event) => event.target === event.currentTarget && run({ kind: 'close' })}>
-      <div role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" className="dialog motion-grow">
+    <Dialog {...exit}>
+      <DialogBackdrop className="scrim scrim-center" />
+      <DialogContent className="dialog motion-grow" onKeyDown={(event) => event.stopPropagation()}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 id="shortcuts-title" className="dialog-title">
-            Keyboard shortcuts
-          </h2>
-          <button type="button" className="pane-close press" autoFocus onClick={() => run({ kind: 'close' })} aria-label="Close">
+          <DialogTitle className="dialog-title">Keyboard shortcuts</DialogTitle>
+          <DialogClose className="pane-close press" autoFocus aria-label="Close">
             <Icon name="close" size={20} />
             <span className="kbd">Esc</span>
-          </button>
+          </DialogClose>
         </header>
         <div className="shortcut-grid">
           {SHORTCUT_GROUPS.map((group) => (
@@ -48,8 +68,8 @@ export function ShortcutsDialog() {
         <p className="meta" style={{ margin: '18px 0 0' }}>
           Shortcuts rest while you type in a field. G then a letter moves between sections.
         </p>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -59,78 +79,85 @@ const THEMES: { pref: ThemePref; label: string }[] = [
   { pref: 'system', label: 'System' },
 ];
 
-/** W2-Parts "Account menu": opens from the name at the foot of the sidebar or rail. Theme switches in place. */
+/**
+ * W2-Parts "Account menu": opens from the name at the foot of the sidebar or rail. Theme switches in
+ * place. ui-sdk's menu gives it arrow keys, type-to-find, Esc and a press outside, and keeps it on screen.
+ */
 export function AccountMenu({ anchor }: { anchor: DOMRect | null }) {
   const { user, run } = useShellApi();
   const { pref, setTheme } = useTheme();
   const menu = useRef<HTMLDivElement>(null);
-
+  const exit = useExit(() => run({ kind: 'close' }));
+  // A menu rendered open leaves the focus where it was; the shell opens this one from its name, so Settings takes it.
   useEffect(() => {
-    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-    const away = (event: MouseEvent) => {
-      if (!menu.current?.contains(event.target as Node)) run({ kind: 'close' });
-    };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [run]);
-
-  const style = anchor
-    ? anchor.width > 120
-      ? { left: anchor.left, bottom: innerHeight - anchor.top + 8 }
-      : { left: anchor.right + 12, bottom: innerHeight - anchor.bottom }
-    : { left: 20, bottom: 88 };
+    const frame = requestAnimationFrame(() => menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  const wide = anchor ? anchor.width > 120 : true;
+  const box = anchor ?? new DOMRect(20, innerHeight - 88, 0, 0);
 
   return (
-    <div ref={menu} role="menu" aria-label="Account" className="account-menu motion-pop" style={style}>
-      <div className="account-head">
-        <span className="me-tile">{user.initial}</span>
-        <span style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong style={{ fontSize: 16 }}>{user.name}</strong>
-          <span style={{ fontSize: 13, color: 'var(--color-inactive)' }}>Main currency {user.currency}</span>
-        </span>
-      </div>
-      <button type="button" role="menuitem" className="menu-item" onClick={() => run({ kind: 'go', to: 'settings' })}>
-        <Icon name="cog-outline" size={22} />
-        Settings
-      </button>
-      <div className="menu-item" style={{ cursor: 'default' }}>
-        <Icon name="weather-night" size={22} />
-        <span style={{ flex: '1 1 auto' }}>Theme</span>
-        <span className="seg" role="radiogroup" aria-label="Theme">
-          {THEMES.map((theme) => (
-            <button
-              key={theme.pref}
-              type="button"
-              role="radio"
-              aria-checked={pref === theme.pref}
-              onClick={(event) => {
-                const box = event.currentTarget.getBoundingClientRect();
-                setTheme(theme.pref, { x: box.left + box.width / 2, y: box.top + box.height / 2 });
-              }}
-            >
-              {theme.label}
-            </button>
-          ))}
-        </span>
-      </div>
-      <button type="button" role="menuitem" className="menu-item" onClick={() => run({ kind: 'shortcuts' })}>
-        <Icon name="keyboard-outline" size={22} />
-        <span style={{ flex: '1 1 auto' }}>Shortcuts</span>
-        <span className="kbd kbd-on-ink">?</span>
-      </button>
-      <a role="menuitem" className="menu-item" href="/help">
-        <Icon name="help-circle-outline" size={22} />
-        <span style={{ display: 'flex', flexDirection: 'column' }}>
-          Help
-          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--color-inactive)' }}>Guides, privacy policy and terms</span>
-        </span>
-      </a>
-      <span className="menu-rule" aria-hidden="true" />
-      <button type="button" role="menuitem" className="menu-item" onClick={() => run({ kind: 'signOut' })}>
-        <Icon name="logout" size={22} />
-        Sign out
-      </button>
-    </div>
+    <Menu {...exit} modal={false}>
+      <MenuContent
+        ref={menu}
+        aria-label="Account"
+        className="account-menu motion-pop"
+        anchor={{ getBoundingClientRect: () => box }}
+        side={wide ? 'top' : 'right'}
+        align={wide ? 'start' : 'end'}
+        sideOffset={wide ? 8 : 12}
+        collisionPadding={8}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <div className="account-head">
+          <span className="me-tile">{user.initial}</span>
+          <span style={{ display: 'flex', flexDirection: 'column' }}>
+            <strong style={{ fontSize: 16 }}>{user.name}</strong>
+            <span style={{ fontSize: 13, color: 'var(--color-inactive)' }}>Main currency {user.currency}</span>
+          </span>
+        </div>
+        <MenuItem className="menu-item" onSelect={() => run({ kind: 'go', to: 'settings' })}>
+          <Icon name="cog-outline" size={22} />
+          Settings
+        </MenuItem>
+        <div className="menu-item" style={{ cursor: 'default' }}>
+          <Icon name="weather-night" size={22} />
+          <span style={{ flex: '1 1 auto' }}>Theme</span>
+          <MenuRadioGroup
+            aria-label="Theme"
+            value={pref}
+            onValueChange={(value) => {
+              const button = menu.current?.querySelector<HTMLElement>(`[data-pref="${value}"]`)?.getBoundingClientRect();
+              setTheme(value as ThemePref, button ? { x: button.left + button.width / 2, y: button.top + button.height / 2 } : undefined);
+            }}
+            render={<span className="seg" />}
+          >
+            {THEMES.map((theme) => (
+              <MenuRadioItem key={theme.pref} value={theme.pref} data-pref={theme.pref} render={<button type="button" />}>
+                {theme.label}
+              </MenuRadioItem>
+            ))}
+          </MenuRadioGroup>
+        </div>
+        <MenuItem className="menu-item" onSelect={() => run({ kind: 'shortcuts' })}>
+          <Icon name="keyboard-outline" size={22} />
+          <span style={{ flex: '1 1 auto' }}>Shortcuts</span>
+          <span className="kbd kbd-on-ink">?</span>
+        </MenuItem>
+        <MenuItem className="menu-item" label="Help" render={<a href="/help" />}>
+          <Icon name="help-circle-outline" size={22} />
+          <span style={{ display: 'flex', flexDirection: 'column' }}>
+            Help
+            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--color-inactive)' }}>Guides, privacy policy and terms</span>
+          </span>
+        </MenuItem>
+        <span className="menu-rule" aria-hidden="true" />
+        <MenuItem className="menu-item" onSelect={() => run({ kind: 'signOut' })}>
+          <Icon name="logout" size={22} />
+          Sign out
+        </MenuItem>
+      </MenuContent>
+    </Menu>
   );
 }
 
@@ -139,13 +166,16 @@ const TOAST_ICON: Record<ToastTone, string> = { done: 'check-circle', undone: 'u
 
 /**
  * Toasts bottom left (above the tab bar on the phone layout), one at a time. The Mint bar runs out with
- * the time left and stops while pointed at; the toast closes when the bar ends. An error stays.
+ * the time left and stops while pointed at; the toast closes when the bar ends. An error stays. It is a
+ * ui-sdk persistent layer: Undo works under a confirm, and pressing it never closes an open popover.
  */
 export function Toaster() {
   const toast = useToast();
+  const slot = useRef<HTMLDivElement>(null);
+  useEffect(() => (toast && slot.current ? bindPersistentLayer(slot.current) : undefined), [toast]);
   if (!toast) return null;
   return (
-    <div className="toast-slot">
+    <div ref={slot} className="toast-slot">
       <div key={toast.id} role="status" className="toast motion-rise" data-tone={toast.tone}>
         <Glyph name={TOAST_ICON[toast.tone]} size={20} className="toast-icon" />
         <span style={{ fontSize: 14, lineHeight: '19px' }}>{toast.text}</span>
