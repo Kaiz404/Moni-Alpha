@@ -17,6 +17,7 @@ import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPhoneLayout } from './phone-layout.mjs';
 import { verifyPlaces } from './places.mjs';
+import { verifyPrimitives } from './primitives.mjs';
 import { verifyWallets } from './wallets.mjs';
 import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
@@ -916,6 +917,8 @@ try {
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('wallets')) await verifyWallets({ browser, base, storage, check, shot, settle, open, widths: WIDTHS, background: BACKGROUND, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  await keepSignedIn();
+  if (runs('primitives')) await verifyPrimitives({ browser, base, storage, check, shot });
   await keepSignedIn();
   if (runs('site')) await verifySite({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND });
 
