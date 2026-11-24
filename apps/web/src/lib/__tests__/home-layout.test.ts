@@ -3,7 +3,7 @@ import { DEFAULT_HOME_LAYOUT, parseHomeLayout, swapCards, toggleCard } from '../
 
 describe('Customise Home', () => {
   it('swaps two cards between their slots and leaves the rest in place', () => {
-    expect(swapCards(DEFAULT_HOME_LAYOUT, 'recent', 'wallets').slots).toEqual(['review', 'wallets', 'next', 'map', 'recent']);
+    expect(swapCards(DEFAULT_HOME_LAYOUT, 'recent', 'map').slots).toEqual(['review', 'map', 'next', 'recent']);
   });
 
   it('hides a card and shows it again', () => {
@@ -14,9 +14,16 @@ describe('Customise Home', () => {
 
   it('reads back what it stored, and falls back to the default for anything else', () => {
     const layout = toggleCard(swapCards(DEFAULT_HOME_LAYOUT, 'review', 'next'), 'recent');
-    expect(parseHomeLayout(JSON.stringify(layout))).toEqual({ slots: ['next', 'recent', 'review', 'map', 'wallets'], hidden: ['recent'] });
+    expect(parseHomeLayout(JSON.stringify(layout))).toEqual({ slots: ['next', 'recent', 'review', 'map'], hidden: ['recent'] });
     expect(parseHomeLayout(null)).toEqual(DEFAULT_HOME_LAYOUT);
-    expect(parseHomeLayout('{"slots":["review","review","next","map","wallets"]}')).toEqual(DEFAULT_HOME_LAYOUT);
+    expect(parseHomeLayout('{"slots":["review","review","next","map"]}')).toEqual(DEFAULT_HOME_LAYOUT);
     expect(parseHomeLayout('not json')).toEqual(DEFAULT_HOME_LAYOUT);
+  });
+
+  it('drops the Wallets card from a layout saved before Home lost it, keeping the rest in order', () => {
+    expect(parseHomeLayout('{"slots":["map","recent","wallets","next","review"],"hidden":["wallets","next"]}')).toEqual({
+      slots: ['map', 'recent', 'next', 'review'],
+      hidden: ['next'],
+    });
   });
 });

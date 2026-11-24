@@ -1,8 +1,9 @@
 /**
- * Customise Home (W2-Home, editing): Spent stays first; the other five cards sit in fixed slots, swap
+ * Customise Home (W2-Home, editing): Spent stays first; the other four cards sit in fixed slots, swap
  * by dragging one onto another, and each can be hidden. The phone layout shows them in the same order.
+ * Wallets has no card: the wallet strip above them and All wallets in the sidebar show them.
  */
-export const HOME_CARDS = ['review', 'recent', 'next', 'map', 'wallets'] as const;
+export const HOME_CARDS = ['review', 'recent', 'next', 'map'] as const;
 export type HomeCard = (typeof HOME_CARDS)[number];
 
 export const HOME_CARD_LABELS: Record<HomeCard | 'spent', string> = {
@@ -11,11 +12,10 @@ export const HOME_CARD_LABELS: Record<HomeCard | 'spent', string> = {
   recent: 'Recent',
   next: 'Next 14 days',
   map: 'Where you spend',
-  wallets: 'Wallets',
 };
 
 export type HomeLayout = {
-  /** The card in each slot: beside Spent, the left column, the middle top, the middle bottom, the right column. */
+  /** The card in each slot: beside Spent, then the three columns under them. */
   slots: readonly HomeCard[];
   hidden: readonly HomeCard[];
 };
@@ -24,7 +24,10 @@ export const DEFAULT_HOME_LAYOUT: HomeLayout = { slots: HOME_CARDS, hidden: [] }
 
 const isCard = (value: unknown): value is HomeCard => HOME_CARDS.includes(value as HomeCard);
 
-/** A stored layout, or the default when it is missing, malformed or names a card twice. */
+/**
+ * A stored layout, or the default when it is missing, malformed or names a card twice. Cards Home no
+ * longer has (a layout saved with Wallets) drop out, and the rest keep their order.
+ */
 export function parseHomeLayout(raw: string | null): HomeLayout {
   try {
     const value = JSON.parse(raw ?? 'null') as { slots?: unknown; hidden?: unknown } | null;

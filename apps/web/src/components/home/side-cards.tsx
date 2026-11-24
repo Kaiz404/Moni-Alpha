@@ -1,28 +1,15 @@
 'use client';
 
-import {
-  correctBalance,
-  firstDayOf,
-  formatMoney,
-  groupPlaces,
-  nextDays,
-  parseBalanceInput,
-  planCheckIn,
-  summarizeDebts,
-  walletToCheckIn,
-  type FinanceDebtActivity,
-} from '@repo/core';
+import { firstDayOf, formatMoney, groupPlaces, nextDays, summarizeDebts, type FinanceDebtActivity } from '@repo/core';
 import { miniMapStyles } from '@repo/design';
-import { minorToNumber } from '@repo/types';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Icon } from '@/components/icon';
 import { useSize } from '@/components/ledger/chart-parts';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { useMapsUsable } from '@/components/places/map-ground';
 import { useTheme } from '@/components/use-theme';
 import { MAPS_KEY, staticCover, staticFrame, staticMapUrl } from '@/lib/google-maps';
-import { commit, planContext } from '@/lib/ledger/commit';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
 /** "Next 14 days": a timeline strip of what's due, then each bill and debt (W2-Home). */
@@ -107,117 +94,6 @@ export function NextDaysCard({ ledger }: { ledger: Ledger }) {
           {next.items[0].name} {formatMoney(next.items[0].amountMinor, currency)} is due {next.items[0].when === 'Tomorrow' ? 'tomorrow' : next.items[0].when === 'Today' ? 'today' : `on ${next.items[0].when}`}
         </p>
       )}
-    </section>
-  );
-}
-
-/** Wallets with the check-in answered in place: That's right, Fix it, Not now (W2-Home). */
-export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; onDismiss: () => void; dismissed: boolean }) {
-  const { wallets, balances, currency, transactions, now, calendar, projection, userId } = ledger;
-  const main = wallets.filter((wallet) => wallet.currency === currency);
-  const other = wallets.filter((wallet) => wallet.currency !== currency);
-  const lastUsed = useMemo(() => {
-    const seen: Record<string, string> = {};
-    for (const transaction of transactions)
-      for (const id of [transaction.walletId, transaction.transferToWalletId]) if (id && !seen[id]) seen[id] = transaction.transactionDate;
-    return seen;
-  }, [transactions]);
-  const ask = dismissed ? null : walletToCheckIn({ wallets, balancesByWallet: balances, lastUsedByWallet: lastUsed, currency, now, calendar });
-  const [draft, setFixDraft] = useState<string | null>(null);
-  const fixing = draft !== null && ask !== null;
-  const netWorth = main.reduce((sum, wallet) => sum + Number(balances[wallet.id] ?? 0), 0);
-
-  const answer = (typed: string | null) => {
-    if (!ask) return;
-    const value = typed === null ? null : parseBalanceInput(typed);
-    if (typed !== null && value === null) return;
-    const correction = value === null ? null : correctBalance({ balance: minorToNumber(ask.balanceMinor) }, value);
-    setFixDraft(null);
-    commit(planCheckIn(ask.wallet.id, correction, projection, planContext(userId)), correction ? `${ask.wallet.name} fixed` : `${ask.wallet.name} checked`);
-  };
-
-  return (
-    <section aria-label="Wallets" className="card wallets-card" data-card="wallets">
-      <div className="section-head" data-only="sidebar rail rail-one-column">
-        <h2 className="card-title">Wallets</h2>
-        <Link href="/home/wallets" className="see-all press">
-          All wallets
-          <Icon name="chevron-right" size={18} />
-        </Link>
-      </div>
-      {main.length === 0 && (
-        <div className="wallets-empty" data-only="sidebar rail rail-one-column">
-          <span className="caps">Net worth</span>
-          <span className="net-worth num">{formatMoney(0, currency)}</span>
-          <span className="meta">Add a wallet and Moni adds up what you have.</span>
-        </div>
-      )}
-      {ask && (
-        <div className="check-in motion-rise" aria-label="Check-in">
-          <div className="wallet-row-inner">
-            <Bubble icon={ask.wallet.icon} color={ask.wallet.color} size={32} glyph={17} />
-            <span className="wallet-name">{ask.wallet.name}</span>
-            <span className="num wallet-balance">{formatMoney(ask.balanceMinor, currency)}</span>
-          </div>
-          <span className="caps check-in-caps">Check-in{ask.daysAgo !== null ? `, last done ${ask.daysAgo} days ago` : ''}</span>
-          <span className="check-in-question num">
-            Is {ask.wallet.name} still {formatMoney(ask.balanceMinor, currency)}?
-          </span>
-          {fixing ? (
-            <form
-              className="check-in-fix"
-              onSubmit={(event) => {
-                event.preventDefault();
-                answer(draft);
-              }}
-            >
-              <label className="check-in-field">
-                <span className="sr-only">{ask.wallet.name} balance now</span>
-                <input id="check-in-draft" inputMode="decimal" autoFocus value={draft ?? ''} placeholder={minorToNumber(ask.balanceMinor).toFixed(2)} onChange={(event) => setFixDraft(event.target.value)} />
-              </label>
-              <button type="button" className="icon-round press" aria-label="Cancel" onClick={() => setFixDraft(null)}>
-                <Icon name="close" size={18} />
-              </button>
-              <button type="submit" className="icon-round icon-round-ink press" aria-label="Save" disabled={parseBalanceInput(draft ?? '') === null}>
-                <Icon name="check" size={18} />
-              </button>
-            </form>
-          ) : (
-            <div className="check-in-actions">
-              <button type="button" className="btn btn-mint check-in-btn press" onClick={() => answer(null)}>
-                <Icon name="check" size={18} />
-                That&apos;s right
-              </button>
-              <button type="button" className="btn btn-paper check-in-btn press" onClick={() => setFixDraft('')}>
-                Fix it
-              </button>
-              <button type="button" className="not-now press" onClick={onDismiss}>
-                Not now
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      <ul className="wallet-rows" data-only="sidebar rail rail-one-column">
-        {main
-          .filter((wallet) => wallet.id !== ask?.wallet.id)
-          .map((wallet) => (
-            <li key={wallet.id}>
-              <Link href={`/home/wallets/${wallet.id}`} className="wallet-row press">
-                <Bubble icon={wallet.icon} color={wallet.color} size={32} glyph={17} />
-                <span className="wallet-name">{wallet.name}</span>
-                <span className="num wallet-balance">{formatMoney(balances[wallet.id] ?? 0, currency)}</span>
-              </Link>
-            </li>
-          ))}
-      </ul>
-      <span className="grow-space" />
-      {other[0] && (
-        <Link href="/home/wallets" className="meta wallets-foot" data-only="sidebar rail rail-one-column">
-          {other.length === 1 ? `${other[0].name} keeps its own currency` : `${other.length} wallets keep their own currency`}, on All wallets
-        </Link>
-      )}
-      <span hidden data-net-worth={netWorth} />
     </section>
   );
 }

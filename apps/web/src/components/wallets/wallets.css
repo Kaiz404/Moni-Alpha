@@ -377,3 +377,9 @@ html[data-layout='phone'] .wallet-line-balance {
 .wallet-save {
   width: 100%;
 }
+
+/* All wallets' check-in lines up with the cards around it. */
+[data-screen='wallets'] .check-in {
+  padding: 16px 22px 16px 18px;
+  border-radius: var(--radius-card);
+}

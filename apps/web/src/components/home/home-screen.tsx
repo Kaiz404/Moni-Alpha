@@ -1,6 +1,7 @@
 'use client';
 
 import { formatMoney, monthName } from '@repo/core';
+import Link from 'next/link';
 import { useEffect, useState, type DragEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { AskMoniMark } from '@/components/brand';
@@ -26,7 +27,8 @@ import { GetAppBanner } from './get-app-banner';
 import { ReviewDrawer } from '@/components/review/review-drawer';
 import { ReviewCard } from './review-card';
 import { useSetupChecklist } from './setup-card';
-import { NextDaysCard, PlacesCard, WalletsCard } from './side-cards';
+import { CheckInCard } from '@/components/wallets/check-in-card';
+import { NextDaysCard, PlacesCard } from './side-cards';
 import { SpentCard, type SpentMode } from './spent-card';
 import { WalletStrip } from './wallet-strip';
 import './home.css';
@@ -73,10 +75,9 @@ const CARD_PART: Record<HomeCard, { part: LedgerPart; what: string }> = {
   recent: { part: 'transactions', what: 'your transactions' },
   next: { part: 'transactions', what: 'your bills' },
   map: { part: 'transactions', what: 'your places' },
-  wallets: { part: 'wallets', what: 'your wallets' },
 };
 
-function cardFor(card: HomeCard, ledger: Ledger, setup: ChecklistItem[] | null, checkInDismissed: boolean, dismissCheckIn: () => void): ReactNode {
+function cardFor(card: HomeCard, ledger: Ledger, setup: ChecklistItem[] | null): ReactNode {
   if (ledger.failed.includes(CARD_PART[card].part)) return <CardError title={HOME_CARD_LABELS[card]} what={CARD_PART[card].what} />;
   switch (card) {
     case 'review':
@@ -87,15 +88,13 @@ function cardFor(card: HomeCard, ledger: Ledger, setup: ChecklistItem[] | null, 
       return <NextDaysCard ledger={ledger} />;
     case 'map':
       return <PlacesCard ledger={ledger} />;
-    case 'wallets':
-      return <WalletsCard ledger={ledger} dismissed={checkInDismissed} onDismiss={dismissCheckIn} />;
   }
 }
 
 /**
- * W2-Home: the spent chart and the review card, then Recent, Next 14 days, Where you spend and Wallets in
- * fixed slots that Customise swaps and hides. One tree for every layout: CSS places the slots, and the
- * phone layout reads them top to bottom as the phone's Home does.
+ * W2-Home: the wallet strip, the spent chart and the review card, then Recent, Next 14 days and Where you
+ * spend in fixed slots that Customise swaps and hides. One tree for every layout: CSS places the slots, and
+ * the phone layout reads them top to bottom as the phone's Home does, ending on the check-in.
  */
 export function HomeScreen() {
   const ledger = useLedger();
@@ -104,7 +103,6 @@ export function HomeScreen() {
   const [editing, setEditing] = useState(false);
   const [layout, setLayout] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
   const [dragging, setDragging] = useState<HomeCard | null>(null);
-  const [checkInDismissed, setCheckInDismissed] = useState(false);
   useEffect(() => setLayout(readLayout()), []);
 
   const change = (update: (current: HomeLayout) => HomeLayout) =>
@@ -180,15 +178,15 @@ export function HomeScreen() {
     >
       <div className="home" data-editing={editing || undefined} data-loaded={ledger.loaded || undefined}>
         <GetAppBanner />
-        <a href="#" className="net-worth-block" data-only="phone" onClick={(event) => event.preventDefault()}>
+        <Link href="/home/wallets" className="net-worth-block" data-only="phone">
           <span className="caps net-worth-caps">
             Net worth <Icon name="chevron-right" size={16} />
           </span>
           <span className="net-worth num" data-net-worth={netWorth}>
             {formatMoney(netWorth, ledger.currency)}
           </span>
-        </a>
-        {ledger.loaded && !editing && <WalletStrip ledger={ledger} />}
+        </Link>
+        {ledger.loaded && !editing && (ledger.failed.includes('wallets') ? <CardError title="Wallets" what="your wallets" /> : <WalletStrip ledger={ledger} />)}
         <div className="home-top">
           <div className="home-slot slot-spent" data-locked={editing || undefined}>
             {ledger.loaded ? <SpentCard month={ledger.month} mode={mode} onMode={setMode} firstRun={firstRun} /> : <LoadingCard title={`Spent in ${monthName(ledger.month.month)}`} chart />}
@@ -208,8 +206,9 @@ export function HomeScreen() {
           {renderSlot(0)}
         </div>
         <div className="home-grid">
-          {[1, 2, 3, 4].map(renderSlot)}
+          {[1, 2, 3].map(renderSlot)}
         </div>
+        {ledger.loaded && !editing && !ledger.failed.includes('wallets') && <CheckInCard ledger={ledger} only="phone" />}
       </div>
       <ReviewDrawer ledger={ledger} />
     </Page>
@@ -229,7 +228,7 @@ export function HomeScreen() {
         onDragOver={editing ? (event) => event.preventDefault() : undefined}
         onDrop={editing ? dropOn(card) : undefined}
       >
-        {(!hidden || editing) && (ledger.loaded ? cardFor(card, ledger, setup, checkInDismissed, () => setCheckInDismissed(true)) : <LoadingCard title={label} />)}
+        {(!hidden || editing) && (ledger.loaded ? cardFor(card, ledger, setup) : <LoadingCard title={label} />)}
         {editing && (
           <div
             className="slot-edit"

@@ -1,4 +1,5 @@
-// All wallets and a wallet's page in web-verify (`--only wallets`): Home's card opens them, every
+// All wallets and a wallet's page in web-verify (`--only wallets`): the sidebar's Wallets and Spending map
+// open their pages and light themselves, All wallets asks the check-in, every
 // wallet's balance against the e2e user's wallet_balances, Home's wallet strip with a mouse drag undone by Ctrl Z, net worth in the main currency, a wallet's
 // page with its transactions, Edit amount saved then undone with Ctrl Z, and the New wallet and Edit
 // wallet panes closing on Esc, and deleting the default wallet then Ctrl Z. Each write is undone before the part ends.
@@ -93,10 +94,20 @@ export async function verifyWallets(t) {
     const back = await cards();
     check('Ctrl Z puts the wallet order back', back.map((card) => card.id).join() === atRest.map((card) => card.id).join(), back);
   }
-  await p.locator('section[aria-label="Wallets"]').getByRole('link', { name: 'All wallets', exact: true }).click();
+  check('Home in landscape has the wallet strip and no Wallets card or check-in', (await p.locator('section[aria-label="Wallets"]').count()) === 0 && !(await p.getByRole('region', { name: 'Check-in' }).isVisible()));
+  const nav = p.getByRole('navigation', { name: 'Moni' });
+  await nav.getByRole('link', { name: 'Spending map', exact: true }).click();
+  await p.waitForURL(/\/home\/places$/);
+  check("the sidebar's Spending map opens Where you spend and lights itself, not Home", (await nav.getByRole('link', { name: 'Spending map', exact: true }).getAttribute('aria-current')) === 'page' && (await nav.getByRole('link', { name: 'Home', exact: true }).getAttribute('aria-current')) === null, p.url());
+  await nav.getByRole('link', { name: 'Wallets', exact: true }).click();
   await p.waitForURL(/\/home\/wallets$/);
   await p.locator('[data-screen="wallets"]').waitFor({ timeout: 20_000 });
-  check("Home's All wallets opens the Wallets page", p.url().endsWith('/home/wallets'), p.url());
+  check("the sidebar's Wallets opens the Wallets page and lights itself", p.url().endsWith('/home/wallets') && (await nav.getByRole('link', { name: 'Wallets', exact: true }).getAttribute('aria-current')) === 'page', p.url());
+  const checkIn = p.getByRole('region', { name: 'Check-in' });
+  check("All wallets asks the balance check-in in landscape, with That's right, Fix it and Not now", (await checkIn.isVisible()) && (await checkIn.getByRole('button', { name: "That's right" }).isVisible()) && (await checkIn.getByRole('button', { name: 'Fix it' }).isVisible()));
+  await checkIn.getByRole('button', { name: 'Not now' }).click();
+  await checkIn.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+  check('Not now puts the check-in away without a write', (await checkIn.count()) === 0);
 
   const shown = await p.locator('.wallet-line').evaluateAll((links) =>
     links.map((link) => ({ name: link.querySelector('.row-title')?.textContent, balance: link.querySelector('.wallet-line-balance')?.textContent })),

@@ -89,12 +89,12 @@ export async function verifyPlaces(t) {
       }));
       const nav = phone ? !(await p.locator('nav.tabbar').isVisible()) : await p.locator(navFor[size.layout]).isVisible();
       const back = phone ? await p.locator('.phone-head .back-button').isVisible() : await p.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Home' }).isVisible();
-      const homeActive = phone || (await p.locator(`${navFor[size.layout]} [aria-current="page"]`).first().textContent())?.includes('Home');
+      const mapActive = phone || (await p.locator(`${navFor[size.layout]} [aria-current="page"]`).first().getAttribute('href'))?.startsWith('/home/places');
       const lower = await p.locator('section[aria-label="Day by day"]').isVisible();
       check(
-        `${where}: ${size.layout}, ${phone ? 'a pushed page with Back and no tab bar' : 'Home ›, Home lit in the nav'}, ${theme} ground, ${phone ? 'no Day by day' : 'Day by day below'}, no sideways scroll`,
-        state.layout === size.layout && nav && back && homeActive && state.bg === background[theme] && lower === !phone && !(await scrolls(p)),
-        { ...state, nav, back, homeActive, lower },
+        `${where}: ${size.layout}, ${phone ? 'a pushed page with Back and no tab bar' : 'Home ›, Spending map lit in the nav'}, ${theme} ground, ${phone ? 'no Day by day' : 'Day by day below'}, no sideways scroll`,
+        state.layout === size.layout && nav && back && mapActive && state.bg === background[theme] && lower === !phone && !(await scrolls(p)),
+        { ...state, nav, back, mapActive, lower },
       );
       check(`${where}: the map's land is not the light paper in dark`, theme === 'light' || state.land !== 'rgb(242, 236, 224)', state.land);
       await shot(p, `places-${size.width}-${theme}`);

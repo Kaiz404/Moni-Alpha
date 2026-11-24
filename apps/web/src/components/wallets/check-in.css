@@ -1,0 +1,101 @@
+/* The balance check-in: a Lemon block that asks whether one wallet still holds its balance. */
+
+.check-in {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px 12px 10px;
+  border-radius: 20px;
+  background: var(--color-block-lemon);
+}
+
+.check-in-wallet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.check-in-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.check-in-balance {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.check-in-caps {
+  padding-top: 6px;
+  color: var(--color-on-lemon);
+}
+
+.check-in-question {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.check-in-actions,
+.check-in-fix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.check-in-btn {
+  height: 40px;
+  padding: 0 14px 0 10px;
+  gap: 6px;
+}
+
+.not-now {
+  margin-left: auto;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.check-in-field {
+  flex: 1 1 auto;
+  height: 40px;
+  border-radius: var(--radius-field);
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.check-in-field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* On the phone layout the check-in's buttons keep a 44 hit area. */
+html[data-layout='phone'] :is(.check-in-btn, .not-now) {
+  position: relative;
+}
+
+html[data-layout='phone'] :is(.check-in-btn, .not-now)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}

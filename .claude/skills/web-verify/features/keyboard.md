@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-Ctrl K command bar (Go to and Actions, at most three rows a group while typing, "Ask Moni: <words>" with Tab), `/` Moni chat, `N` Add, `?` shortcuts dialog, `Esc` closes the top overlay then the pane, `Ctrl Z` runs the toast's Undo, G then H A B D R S. Toasts bottom left (above the tab bar on the phone), one at a time, 4 s with a Mint bar that pauses while pointed at. The account menu from the name at the foot of the sidebar or rail: Settings, Theme, Shortcuts, Help, Sign out.
+Ctrl K command bar (Go to and Actions, at most three rows a group while typing, "Ask Moni: <words>" with Tab), `/` Moni chat, `N` Add, `?` shortcuts dialog, `Esc` closes the top overlay then the pane, `Ctrl Z` runs the toast's Undo, G then H A B D W M R S. Toasts bottom left (above the tab bar on the phone), one at a time, 4 s with a Mint bar that pauses while pointed at. The account menu from the name at the foot of the sidebar or rail: Settings, Theme, Shortcuts, Help, Sign out.
 
 ## How to get to it (user POV)
 

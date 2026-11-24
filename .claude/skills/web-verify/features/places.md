@@ -6,7 +6,7 @@ The drawn map with a pin per place, merged into one pin with a count when two to
 
 ## How to get to it (user POV)
 
-Home's Where you spend card, Open map. The page is `/home/places`; Home stays lit in the nav.
+Home's Where you spend card, Open map, or the sidebar's or rail's Spending map, or G then M. The page is `/home/places`; Spending map lights in the nav, Home does not.
 
 ## Driving it with Playwright
 

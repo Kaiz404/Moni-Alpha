@@ -14,6 +14,7 @@ import { useScreenKeys } from '@/lib/screen-keys';
 import { parseBalance } from '@/lib/setup';
 import { assetsAndOwed, monthChanges, walletsCsv } from '@/lib/wallets-view';
 import { BalanceCard } from './balance-card';
+import { CheckInCard } from './check-in-card';
 import { newWalletDraft, typeIcon, WalletForm, type WalletDraft } from './wallet-form';
 import '@/components/ledger/ledger.css';
 import '@/components/ledger/table-pane.css';
@@ -27,7 +28,7 @@ function Frame({ actions, children }: { actions?: React.ReactNode; children: Rea
   );
 }
 
-/** All wallets (V2H-Wallets on the web), pushed from Home's Wallets card. */
+/** All wallets (V2H-Wallets on the web), from the sidebar, a wallet card's page or the phone's net worth. */
 export function WalletsScreen() {
   const ledger = useLedger();
   if (!ledger.loaded) {
@@ -144,6 +145,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
               </div>
             }
           />
+          <CheckInCard ledger={ledger} only="sidebar rail rail-one-column" />
           {groups.map((group) => {
             const { name } = currencyName(group.currency);
             return (

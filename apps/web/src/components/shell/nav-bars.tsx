@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AskMoniMark, Cat, Wordmark } from '@/components/brand';
 import { Icon } from '@/components/icon';
-import { destinationOf, MAIN_NAV } from '@/lib/nav';
+import { destinationOf, MAIN_NAV, SIDE_NAV } from '@/lib/nav';
 import { useOnline } from '@/components/states/connection';
 import { useShellApi } from './shell-context';
 
@@ -35,7 +35,7 @@ export function Sidebar() {
         <span className="kbd kbd-on-ink">N</span>
       </button>
       <span aria-hidden="true" style={{ height: 14 }} />
-      {MAIN_NAV.map((item) => (
+      {SIDE_NAV.map((item) => (
         <Link key={item.key} href={hrefWithPane(item.href)} className="navi" aria-current={current === item.key ? 'page' : undefined}>
           <Icon name={item.icon} size={22} />
           <span>{item.label}</span>
@@ -95,12 +95,12 @@ export function Rail() {
         Add
       </button>
       <span aria-hidden="true" style={{ height: 6 }} />
-      {MAIN_NAV.map((item) => (
-        <Link key={item.key} href={hrefWithPane(item.href)} aria-current={current === item.key ? 'page' : undefined}>
+      {SIDE_NAV.map((item) => (
+        <Link key={item.key} href={hrefWithPane(item.href)} aria-label={item.short ? item.label : undefined} title={item.short ? item.label : undefined} aria-current={current === item.key ? 'page' : undefined}>
           <span className="ind">
             <Icon name={item.icon} size={22} />
           </span>
-          {item.label}
+          {item.short ?? item.label}
         </Link>
       ))}
       <span className="rail-rule" aria-hidden="true" />

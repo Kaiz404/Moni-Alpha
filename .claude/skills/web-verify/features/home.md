@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-Spent in October (Pace and Daily, P and D, a tooltip only under the pointer, what's left below), the lilac review card (Approve per capture, a wallet picker for one that needs it, Approve all N usual), Next 14 days (timeline and rows), Wallets with the check-in (That's right, Fix it in place, Not now), Recent (five rows; three on the phone), Where you spend (drawn map art, this month's three biggest places), and Customise (swap and hide cards, Reset, Done or Esc). The phone layout is V2H-Home: net worth, the spent card, the ask box, the review card, then the cards in the Customise order.
+Spent in October (Pace and Daily, P and D, a tooltip only under the pointer, what's left below), the lilac review card (Approve per capture, a wallet picker for one that needs it, Approve all N usual), the wallet strip above them, Next 14 days (timeline and rows), Recent (five rows; three on the phone), Where you spend (drawn map art, this month's three biggest places), and Customise (swap and hide cards, Reset, Done or Esc). The phone layout is V2H-Home: net worth, the spent card, the ask box, the review card, then the cards in the Customise order, then the check-in (That's right, Fix it in place, Not now) when one is due. In landscape the check-in is on All wallets.
 
 ## How to get to it (user POV)
 

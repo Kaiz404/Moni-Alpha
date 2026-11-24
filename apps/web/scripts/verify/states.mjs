@@ -280,12 +280,12 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     await b.goto(`${base}/home`);
     const alert = b.getByRole('alert').filter({ hasText: "Couldn't load your wallets" });
     await alert.waitFor({ timeout: 30_000 }).catch(() => {});
-    check("a wallets pull that fails: the Wallets card says Couldn't load, Recent still shows its rows", (await alert.isVisible()) && (await b.locator('.recent-card .txn-row').count()) > 0);
+    check("a wallets pull that fails: the wallet strip's place says Couldn't load, Recent still shows its rows", (await alert.isVisible()) && (await b.locator('.recent-card .txn-row').count()) > 0);
     await shot(b, 'states-card-error-1440');
     failing = false;
     await alert.getByRole('button', { name: 'Try again' }).click();
-    await b.locator('.wallets-card .wallet-row').first().waitFor({ timeout: 20_000 }).catch(() => {});
-    check('Try again loads the wallets in place', (await b.locator('.wallets-card .wallet-row').count()) > 0);
+    await b.locator('.wallet-strip .wallet-card').first().waitFor({ timeout: 20_000 }).catch(() => {});
+    check('Try again loads the wallets in place', (await b.locator('.wallet-strip .wallet-card').count()) > 0);
     await broken.close();
   });
 

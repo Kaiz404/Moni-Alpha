@@ -1,8 +1,8 @@
 @import '../ledger/ledger.css';
 
-/* W2-Home: Spent and Review, then three columns (Recent; Next 14 days over Where you spend; Wallets).
-   The rail stacks them in two columns, the rail with one column in one, and the phone layout reads
-   them as the phone's Home does (W2-Responsive). */
+/* W2-Home: the wallet strip, Spent and Review, then three equal columns (Recent, Next 14 days, Where you
+   spend). The rail puts Recent beside Next 14 days over Where you spend, the rail with one column stacks
+   them, and the phone layout reads them as the phone's Home does (W2-Responsive). */
 
 .home {
   display: flex;
@@ -29,8 +29,8 @@
 .home-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: 200px 156px;
-  grid-template-areas: 's1 s2 s4' 's1 s3 s4';
+  grid-template-rows: 376px;
+  grid-template-areas: 's1 s2 s3';
   gap: 20px;
 }
 
@@ -44,10 +44,6 @@
 
 .slot-3 {
   grid-area: s3;
-}
-
-.slot-4 {
-  grid-area: s4;
 }
 
 .home-slot {
@@ -69,8 +65,8 @@ html[data-layout='rail'] .home-top > .slot-0 {
 
 html[data-layout='rail'] .home-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: 376px 200px;
-  grid-template-areas: 's1 s4' 's2 s3';
+  grid-template-rows: 200px 156px;
+  grid-template-areas: 's1 s2' 's1 s3';
 }
 
 html[data-layout='rail-one-column'] .home-top {
@@ -86,7 +82,7 @@ html[data-layout='rail-one-column'] .home-top > .slot-0 {
 html[data-layout='rail-one-column'] .home-grid {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto;
-  grid-template-areas: 's1' 's2' 's4' 's3';
+  grid-template-areas: 's1' 's2' 's3';
 }
 
 html[data-layout='rail-one-column'] .home-grid .home-slot {
@@ -110,8 +106,8 @@ html[data-layout='rail-one-column'] .slot-spent {
 
   :root:is([data-layout='sidebar'], [data-layout='rail']) .home .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 376px 200px;
-    grid-template-areas: 's1 s4' 's2 s3';
+    grid-template-rows: 200px 156px;
+    grid-template-areas: 's1 s2' 's1 s3';
   }
 }
 
@@ -129,7 +125,7 @@ html[data-layout='rail-one-column'] .slot-spent {
   :root:is([data-layout='sidebar'], [data-layout='rail']) .home .home-grid {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
-    grid-template-areas: 's1' 's2' 's4' 's3';
+    grid-template-areas: 's1' 's2' 's3';
   }
 
   :root:is([data-layout='sidebar'], [data-layout='rail']) .home .home-grid .home-slot {
@@ -620,149 +616,6 @@ html[data-layout='phone'] .next-card .next-head {
   display: none;
 }
 
-/* ---------- Wallets and the check-in ---------- */
-
-.wallets-card {
-  padding: 6px 12px 12px;
-  gap: 2px;
-}
-
-.wallets-card .section-head {
-  padding: 0 2px 0 10px;
-}
-
-.wallet-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.wallet-row,
-.wallet-row-inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.wallet-row {
-  height: 48px;
-  padding: 0 10px;
-  border-radius: 16px;
-  color: var(--color-foreground);
-  transition: background-color 120ms ease;
-}
-
-a.wallet-row:hover,
-a.wallets-foot:hover {
-  background: var(--color-sand-light);
-}
-
-.wallet-name {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.wallet-balance {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.check-in {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 12px 12px 10px;
-  border-radius: 20px;
-  background: var(--color-block-lemon);
-}
-
-.check-in-caps {
-  padding-top: 6px;
-  color: var(--color-on-lemon);
-}
-
-.check-in-question {
-  font-size: 17px;
-  line-height: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.check-in-actions,
-.check-in-fix {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 6px;
-}
-
-.check-in-btn {
-  height: 40px;
-  padding: 0 14px 0 10px;
-  gap: 6px;
-}
-
-.not-now {
-  margin-left: auto;
-  height: 40px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.check-in-field {
-  flex: 1 1 auto;
-  height: 40px;
-  border-radius: var(--radius-field);
-  background: var(--color-card);
-  box-shadow: inset 0 0 0 2px var(--color-foreground);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-}
-
-.check-in-field input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.wallets-foot {
-  padding: 0 10px;
-  margin: 0;
-  border-radius: 12px;
-}
-
-.wallets-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-}
-
-.wallets-empty .net-worth {
-  font-size: 28px;
-  line-height: 32px;
-}
-
-html[data-layout='phone'] .wallets-card {
-  background: transparent;
-  padding: 0;
-}
-
-html[data-layout='phone'] .slot-4:not(:has(.check-in)) {
-  display: none;
-}
-
 /* ---------- Where you spend ---------- */
 
 .places-card {
@@ -968,12 +821,12 @@ html[data-layout='rail-one-column'] .customise-btn {
   }
 }
 
-/* On the phone layout Pace | Daily and the check-in's buttons keep a 44 hit area. */
-html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now) {
+/* On the phone layout Pace | Daily keep a 44 hit area. */
+html[data-layout='phone'] .home .toggle button {
   position: relative;
 }
 
-html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::before {
+html[data-layout='phone'] .home .toggle button::before {
   content: '';
   position: absolute;
   left: 50%;

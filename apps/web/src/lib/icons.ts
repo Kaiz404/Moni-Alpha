@@ -34,6 +34,7 @@ import {
   mdiKeyboardOutline,
   mdiLockOutline,
   mdiLogout,
+  mdiMapMarkerOutline,
   mdiMessageOutline,
   mdiPlus,
   mdiQrcodeScan,
@@ -43,6 +44,7 @@ import {
   mdiTimerSandEmpty,
   mdiTrayFull,
   mdiUndo,
+  mdiWalletOutline,
   mdiWeatherNight,
   mdiWhiteBalanceSunny,
 } from '@mdi/js';
@@ -84,6 +86,7 @@ export const ICON_PATHS = {
   'keyboard-outline': mdiKeyboardOutline,
   'lock-outline': mdiLockOutline,
   logout: mdiLogout,
+  'map-marker-outline': mdiMapMarkerOutline,
   'message-outline': mdiMessageOutline,
   plus: mdiPlus,
   'qrcode-scan': mdiQrcodeScan,
@@ -93,6 +96,7 @@ export const ICON_PATHS = {
   'timer-sand-empty': mdiTimerSandEmpty,
   'tray-full': mdiTrayFull,
   undo: mdiUndo,
+  'wallet-outline': mdiWalletOutline,
   'weather-night': mdiWeatherNight,
   'white-balance-sunny': mdiWhiteBalanceSunny,
 } as const;
