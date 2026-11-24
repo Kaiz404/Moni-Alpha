@@ -278,6 +278,26 @@ export async function verifyPlaces(t) {
   const wheeled = await scale();
   const stayed = await pinAt(leadId);
   check('a wheel notch over the map zooms half a level about the pointer, the pin under it staying put', Math.abs(Number(wheeled) - Math.SQRT2) < 0.001 && Math.abs(stayed.x - under.x) <= 3 && Math.abs(stayed.y - under.y) <= 3, { wheeled, under, stayed });
+  // Three quick notches in, sampled as they glide: the zoom only ever grows towards where it is going.
+  const glide = await p.evaluate(async () => {
+    const el = document.querySelector('.places-map');
+    const seen = [];
+    const end = performance.now() + 600;
+    const target = { x: el.getBoundingClientRect().left + 200, y: el.getBoundingClientRect().top + 200 };
+    for (let n = 0; n < 3; n += 1) {
+      el.dispatchEvent(new globalThis.WheelEvent('wheel', { deltaY: -100, clientX: target.x, clientY: target.y, bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    while (performance.now() < end) {
+      seen.push(Number(el.getAttribute('data-shown-zoom')));
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return { seen, goal: Number(el.getAttribute('data-zoom')) };
+  });
+  const steady = glide.seen.every((z, i) => i === 0 || z >= glide.seen[i - 1] - 1e-9) && glide.seen.every((z) => z <= glide.goal + 1e-9);
+  check('quick wheel notches glide in one smooth climb that never overshoots or wobbles', steady, { goal: glide.goal, first: glide.seen.slice(0, 4), last: glide.seen.slice(-2) });
+  for (let i = 0; i < 3; i += 1) await p.mouse.wheel(0, 100);
+  await p.waitForTimeout(700);
   for (let i = 0; i < 10; i += 1) await p.mouse.wheel(0, 8);
   await p.waitForTimeout(100);
   const pinched = Number(await scale());

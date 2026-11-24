@@ -1,7 +1,6 @@
 'use client';
 
 import { clusterPins, fitFrame, formatMoney, googleZoom, type Box, type Insets, type Place, type Point } from '@repo/core';
-import { springCurve, springs } from '@repo/design';
 import type { CurrencyCode } from '@repo/types';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
@@ -39,16 +38,8 @@ function insetsFor(layout: LayoutKind | null): Insets {
   return layout === 'phone' ? { top: 36, right: 64, bottom: 64, left: 64 } : { top: 96, right: 80, bottom: 88, left: 80 };
 }
 
-const SHEET = springCurve(springs.sheet);
-const SHEET_POINTS = [...SHEET.linear.matchAll(/-?[\d.]+/g)].map((match) => Number(match[0]));
-
-function sheetEase(t: number): number {
-  // A frame's timestamp can come before the glide's start, so t can be a hair under 0.
-  const at = Math.min(1, Math.max(0, t)) * (SHEET_POINTS.length - 1);
-  const low = Math.floor(at);
-  const high = Math.min(low + 1, SHEET_POINTS.length - 1);
-  return SHEET_POINTS[low]! + (SHEET_POINTS[high]! - SHEET_POINTS[low]!) * (at - low);
-}
+/** The glide's time constant: about two thirds of the way in this many ms, settled in about four times it. */
+const GLIDE_MS = 70;
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -56,37 +47,49 @@ const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matc
 export type MapMove = { view: MapView; glide: boolean };
 
 /**
- * The view the map shows, sliding to `target` on the sheet spring, so the Google camera and the pins
+ * The view the map shows, easing to `target` with no overshoot, so the Google camera and the pins
  * move on one clock. A gesture or reduced motion jumps straight there.
  */
 function useSlidingView(target: MapView, glide: boolean): MapView {
   const [shown, setShown] = useState(target);
   const current = useRef(target);
+  const goal = useRef(target);
+  const frame = useRef(0);
+  goal.current = target;
   useEffect(() => {
     const from = current.current;
     if (!glide || reduced() || (from.zoom === target.zoom && from.x === target.x && from.y === target.y)) {
+      cancelAnimationFrame(frame.current);
+      frame.current = 0;
       current.current = target;
       setShown(target);
       return;
     }
-    const start = performance.now();
-    let frame = 0;
+    // Already gliding: the running loop now chases the new goal from where it is, with no restart.
+    if (frame.current) return;
+    let last = performance.now();
     const step = (now: number) => {
-      const t = Math.max(0, Math.min(1, (now - start) / SHEET.durationMs));
-      const k = sheetEase(t);
+      const ms = Math.max(0, Math.min(48, now - last));
+      last = now;
+      const to = goal.current;
+      const at = current.current;
+      // Each frame closes the same share of what is left (an exponential ease-out): it never overshoots,
+      // and a new wheel notch mid-glide only moves the goal, so the motion stays one smooth curve.
+      const k = 1 - Math.exp(-ms / GLIDE_MS);
       const next = {
-        zoom: from.zoom * (target.zoom / from.zoom) ** k,
-        x: from.x + (target.x - from.x) * k,
-        y: from.y + (target.y - from.y) * k,
+        zoom: at.zoom * (to.zoom / at.zoom) ** k,
+        x: at.x + (to.x - at.x) * k,
+        y: at.y + (to.y - at.y) * k,
       };
-      current.current = t < 1 ? next : target;
+      const near = Math.abs(Math.log(to.zoom / next.zoom)) < 0.001 && Math.abs(to.x - next.x) < 0.3 && Math.abs(to.y - next.y) < 0.3;
+      current.current = near ? to : next;
       setShown(current.current);
-      if (t < 1) frame = requestAnimationFrame(step);
+      frame.current = near ? 0 : requestAnimationFrame(step);
     };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
+    frame.current = requestAnimationFrame(step);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the target's three numbers are the dependency
   }, [target.zoom, target.x, target.y, glide]);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
   return shown;
 }
 
@@ -148,7 +151,8 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
   const at = (place: Place) => (fitted && box ? toView(fitted(place), view, box) : { x: 0, y: 0 });
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
   const widthOf = (total: number, members: number) => pinWidth(whole(total), members);
-  const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), view, box), widthOf, PIN_ROW) : [];
+  // Pins group by where the camera is going, so they merge or split once per move, not on every frame of it.
+  const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), target, box), widthOf, PIN_ROW) : [];
   const leadOf = new Map(clusters.flatMap((cluster) => cluster.members.map((member) => [member.id, cluster] as const)));
   const max = places.reduce((top, place) => Math.max(top, place.totalMinor), 0);
 
@@ -303,6 +307,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
       className="places-map"
       data-heat={heat || undefined}
       data-zoom={target.zoom}
+      data-shown-zoom={view.zoom}
       data-faded={locationOff || undefined}
       data-dragging={dragging || undefined}
       data-google={google || undefined}
