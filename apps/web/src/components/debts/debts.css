@@ -63,47 +63,62 @@
   letter-spacing: -0.03em;
 }
 
-.net-tiles {
-  display: flex;
-  gap: 16px;
-}
-
-.net-tile {
-  width: 150px;
-  height: 84px;
-  border-radius: 20px;
-  background: var(--color-card);
-  color: var(--color-foreground);
-  padding: 12px 14px;
+.net-split {
+  flex: 0 1 520px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  text-align: left;
-  transition:
-    background-color 160ms ease,
-    color 160ms ease;
+  gap: 10px;
 }
 
-.net-tile:hover {
-  background: var(--color-sand-light);
-}
-
-.net-tile[aria-pressed='true'] {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
-}
-
-.net-tile-label {
+.net-bar {
+  height: 10px;
   display: flex;
-  align-items: center;
+  gap: 4px;
+}
+
+.net-bar > span {
+  flex-basis: 0;
+  border-radius: 9999px;
+  transition: flex-grow var(--duration-control) var(--ease-control);
+}
+
+.net-bar > [data-side='owed_to_me'] {
+  background: var(--color-on-pastel);
+}
+
+.net-bar > [data-side='i_owe'] {
+  background: var(--color-card);
+}
+
+.net-ends {
+  display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  gap: 12px;
+}
+
+.net-end {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.net-end[data-side='i_owe'] {
+  align-items: flex-end;
+}
+
+.net-end-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
 }
 
-.net-tile-amount {
-  font-size: 26px;
-  line-height: 30px;
+.net-end-amount {
+  font-size: 22px;
+  line-height: 26px;
   font-weight: 700;
 }
 
@@ -118,9 +133,12 @@ html[data-layout='phone'] .net-amount {
   line-height: 44px;
 }
 
-html[data-layout='phone'] .net-tile {
-  flex: 1 1 0;
-  width: auto;
+html[data-layout='phone'] .net-strip {
+  gap: 10px;
+}
+
+html[data-layout='phone'] .net-split {
+  flex: none;
 }
 
 .record-card {
@@ -276,21 +294,21 @@ html[data-layout='phone'] .net-tile {
   container: people / inline-size;
 }
 
-.people-title,
-.settled-title {
+.people-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.settled-title {
-  font-size: 16px;
+.people-filters {
+  display: flex;
+  gap: 8px;
 }
 
-.ledger .filter-chip {
-  height: 32px;
-  font-size: 13px;
-  padding: 0 10px 0 12px;
+.people-body {
+  animation: fade-in 200ms ease both;
 }
 
 .people-row {

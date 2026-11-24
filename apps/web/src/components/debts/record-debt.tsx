@@ -2,6 +2,7 @@
 
 import { formatMoney, lastDueDate, type NewDebt } from '@repo/core';
 import { parseAmountDraft } from '@/lib/budget-view';
+import { NO_WALLET, WALLET_WORDS, walletField } from '@/lib/debts-view';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
@@ -12,7 +13,8 @@ export type DebtDraft = {
   direction: 'owed_to_me' | 'i_owe';
   name: string;
   amount: string;
-  walletId: string | null;
+  /** A wallet's id, or `NO_WALLET` (the default) when no money moved. */
+  walletId: string;
   dueDate: string;
   note: string;
 };
@@ -38,7 +40,10 @@ export function RecordDebt({
   const amountMinor = parseAmountDraft(draft.amount);
   const owed = draft.direction === 'owed_to_me';
   const wallet = data.wallets.find((item) => item.id === draft.walletId) ?? null;
-  const ready = Boolean(who && amountMinor && wallet);
+  const choice = wallet ? wallet.id : NO_WALLET;
+  const words = WALLET_WORDS[draft.direction];
+  const field = walletField(words.principal, choice, (id) => data.walletNames[id]);
+  const ready = Boolean(who && amountMinor);
   const money = (minor: number) => formatMoney(minor, wallet?.currency ?? currency);
   const existing = data.summary.open.filter(
     (line) => line.debt.direction === draft.direction && line.debt.counterpartyName.trim().toLocaleLowerCase() === who.toLocaleLowerCase(),
@@ -52,12 +57,13 @@ export function RecordDebt({
       ? `Record: ${who} owes you ${money(amountMinor!)}`
       : `Record: you owe ${who} ${money(amountMinor!)}`;
   const save = () => {
-    if (!ready || !wallet || !amountMinor) return;
+    if (!ready || !amountMinor) return;
     onSave({
       counterpartyName: who,
       direction: draft.direction,
       amountMinor,
-      walletId: wallet.id,
+      walletId: wallet?.id ?? null,
+      currency: wallet?.currency ?? currency,
       dueDate: draft.dueDate || null,
       note: draft.note.trim() || null,
     });
@@ -125,14 +131,18 @@ export function RecordDebt({
       </label>
       <div>
         <div className="field-row">
-          <span className="label-text">{owed ? 'Lent from' : 'Borrowed into'}</span>
+          <span className="label-text">{field.label}</span>
           <Select
-            label={owed ? 'Lent from wallet' : 'Borrowed into wallet'}
+            label={words.principal}
             className="pill-field press"
-            value={draft.walletId}
-            placeholder="Pick a wallet"
-            lead={<Glyph name="wallet-outline" size={18} />}
-            options={data.wallets.map((item) => ({ value: item.id, label: item.name }))}
+            value={choice}
+            text={field.value ?? undefined}
+            triggerLabel={`${field.label}: ${choice === NO_WALLET ? words.principalNone : field.value}`}
+            lead={<Glyph name={choice === NO_WALLET ? 'note-text-outline' : 'wallet-outline'} size={18} />}
+            options={[
+              { value: NO_WALLET, label: words.principalNone, lead: <Glyph name="note-text-outline" size={18} /> },
+              ...data.wallets.map((item) => ({ value: item.id, label: item.name, lead: <Glyph name="wallet-outline" size={18} /> })),
+            ]}
             onChange={(walletId) => set({ walletId })}
           />
         </div>

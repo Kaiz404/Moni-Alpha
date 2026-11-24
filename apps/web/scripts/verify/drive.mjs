@@ -12,7 +12,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { verifyBudgetDebts } from './budget-debts.mjs';
+import { verifyBudgetDebts, verifyDebtFlows } from './budget-debts.mjs';
 import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPhoneLayout } from './phone-layout.mjs';
@@ -913,6 +913,7 @@ try {
   if (runs('phone')) await verifyPhoneLayout({ browser, base, storage, check, shot, settle, background: BACKGROUND, seed });
   await keepSignedIn();
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  else if (runs('debt-flows')) await verifyDebtFlows({ browser, base, storage, shot, open, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();

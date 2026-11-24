@@ -305,8 +305,6 @@ export async function verifyBudgetDebts(t) {
   const openNames = debts.filter((row) => row.status === 'open').map((row) => row.counterparty_name).sort();
   const shownNames = (await d.locator('.people-card').first().locator('.people-row[data-debt] .row-name .row-text b').allTextContents()).sort();
   check("the people table lists the e2e user's open debts", JSON.stringify(shownNames) === JSON.stringify(openNames), { shownNames, openNames });
-  const closedCount = await d.locator('[aria-label="Settled debts"] .people-row[data-debt]').count();
-  check('Settled and written off holds the closed ones', closedCount === debts.filter((row) => row.status !== 'open').length, closedCount);
   const people = await d.locator('.people-card').first().locator('.people-row[data-debt]').evaluateAll((els) =>
     els.map((el) => ({ id: el.dataset.debt, owesYou: el.querySelector('[data-col="owes-you"]')?.textContent ?? '', youOwe: el.querySelector('[data-col="you-owe"]')?.textContent ?? '' })),
   );
@@ -316,7 +314,7 @@ export async function verifyBudgetDebts(t) {
   const net = await d.locator('[data-testid="net-amount"]').textContent();
   const label = await d.locator('.net-label').textContent();
   check(
-    'the totals add up the rows, the tiles and the net position follow them',
+    "the totals add up the rows, the bar's ends and the net position follow them",
     totals[0] === cents(owed) &&
       totals[1] === cents(owe) &&
       (await d.locator('[data-testid="net-owed_to_me"]').textContent()) === whole(owed) &&
@@ -325,11 +323,28 @@ export async function verifyBudgetDebts(t) {
       label === (owed > owe ? 'Overall, you are owed' : owed < owe ? 'Overall, you owe' : 'Everyone is square'),
     { totals, owed, owe, net, label },
   );
-  await d.locator('.net-tile').first().click();
+  const bar = await d.locator('.net-bar > span').evaluateAll((els) => els.map((el) => ({ side: el.dataset.side, grow: Number(getComputedStyle(el).flexGrow), height: el.getBoundingClientRect().height })));
+  check(
+    "the hero's bar sizes owed against owe, 10 high, and leaves out an empty side",
+    bar.length === [owed, owe].filter((value) => value > 0).length && bar.every((part) => part.height === 10 && near(part.grow / 100, part.side === 'owed_to_me' ? owed : owe)),
+    bar,
+  );
+  const pickFilter = async (trigger, option) => {
+    await d.locator(`.people-filters [aria-label^="${trigger}"]`).click();
+    await d.getByRole('option', { name: new RegExp(`^${option}`) }).click();
+  };
+  await pickFilter('Show: Everyone', 'Owed to you');
   await d.waitForURL(/side=owed_to_me/);
   const filtered = await d.locator('.people-card').first().locator('.people-row[data-debt] [data-col="you-owe"]').allTextContents();
-  check('Owed to you filters the table to what others owe', filtered.every((text) => text === ''), filtered);
-  await d.locator('.net-tile').first().click();
+  const coming = await d.locator('.coming-row .row-text b').allTextContents();
+  check('Owed to you filters the table and Coming up to what others owe', filtered.every((text) => text === '') && coming.every((text) => !text.startsWith('Pay ')), { filtered, coming });
+  await pickFilter('Show: Owed to you', 'Everyone');
+  await pickFilter('Status: Open', 'Settled and written off');
+  await d.waitForURL(/status=closed/);
+  const closedCount = await d.locator('[aria-label="Settled debts"] .people-row[data-debt]').count();
+  check('Settled and written off lists the closed ones', closedCount === debts.filter((row) => row.status !== 'open').length, closedCount);
+  await pickFilter('Status: Settled', 'Open');
+  await d.waitForURL((url) => !url.search.includes('status='));
 
   const target = people.find((row) => row.owesYou) ?? people[0];
   if (target) {
@@ -394,12 +409,29 @@ export async function verifyBudgetDebts(t) {
   await d.getByRole('textbox', { name: 'Who' }).fill('E2E Verify');
   await d.getByLabel('Amount, in ringgit').fill('12.34');
   check('Record a debt names the person and the amount on its button', await d.getByRole('button', { name: /^Record: E2E Verify owes you RM12\.34/ }).isVisible());
+  check(
+    "Record a debt starts on Money didn't leave my wallet, shown as Wallet: Not used",
+    (await d.locator(`.record-debt [aria-label="Wallet: Money didn't leave my wallet"]`).isVisible()) &&
+      (await d.locator('.record-debt .field-row .label-text', { hasText: /^Wallet$/ }).isVisible()) &&
+      (await d.locator('.record-debt .select-value', { hasText: /^Not used$/ }).isVisible()),
+  );
   await shot(d, 'debts-1440-light-record');
   await d.keyboard.press('Enter');
   const made = d.getByRole('status').filter({ hasText: 'Recorded a debt with E2E Verify' });
   await made.waitFor({ timeout: 5000 }).catch(() => {});
   const opened = await d.locator('aside.slide-over h2', { hasText: /^E2E Verify$/ }).waitFor({ timeout: 5000 }).then(() => true, () => false);
   check('Enter records the debt and opens its person', (await made.isVisible()) && opened && /person=/.test(d.url()) && !d.url().includes('record='), d.url());
+  check('its row says Noted, not Lent', await d.locator('.people-row[data-debt]', { hasText: 'E2E Verify' }).locator('.row-text span', { hasText: /^Noted / }).isVisible());
+  await d.keyboard.press('r');
+  await d.getByLabel('Amount paid back, in ringgit').waitFor({ timeout: 5000 }).catch(() => {});
+  const choose = d.locator('.repay-form button.btn-ink');
+  check('paying back a debt with no wallet starts unchosen and asks where it went', ((await choose.textContent()) ?? '').startsWith('Choose where it went') && (await choose.isDisabled()), await choose.textContent());
+  await d.locator('.repay-form .select-trigger').first().click();
+  const firstOption = await d.getByRole('option').first().textContent();
+  check("its first choice is Money didn't reach my wallet", (firstOption ?? '').includes("Money didn't reach my wallet"), firstOption);
+  await shot(d, 'debts-1440-light-repay-noted');
+  await d.keyboard.press('Escape');
+  await d.keyboard.press('Escape');
   await made.hover().catch(() => {});
   const inDb = await until('debts', (rows) => rows.some((row) => row.counterparty_name === 'E2E Verify'));
   check('the dev project holds the new debt', inDb.ok);
@@ -506,4 +538,50 @@ export async function verifyBudgetDebts(t) {
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail-one-column');
   check('and back across 700 it is still there', (await repay.inputValue()) === '2');
   await rctx.close();
+  await verifyDebtFlows(t);
+}
+
+/** Debts, Record a debt and Record a repayment with their wallet pickers open, at 1440 and 390 in both themes (`--only debt-flows`); shots only, no writes. */
+export async function verifyDebtFlows({ browser, base, storage, shot, open, seed, query }) {
+  const pinned = async (options) => {
+    const ctx = await browser.newContext({ timezoneId: seed.zone, ...options });
+    await ctx.clock.setFixedTime(seed.pin);
+    return ctx;
+  };
+  const ready = (p) => p.locator('[data-screen]').waitFor({ timeout: 20_000 });
+  const anyOpen = query('debts').some((row) => row.status === 'open');
+  for (const theme of ['light', 'dark']) {
+    for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+      const fctx = await pinned({ viewport: size, storageState: storage, colorScheme: theme });
+      await fctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
+      const f = await fctx.newPage();
+      const tag = `debts-flow-${size.width}-${theme}`;
+      await open(f, '/debts');
+      await ready(f);
+      await shot(f, `${tag}-screen`);
+      await f.goto(`${base}/debts?record=debt`);
+      await f.getByRole('textbox', { name: 'Who' }).waitFor({ timeout: 10_000 });
+      await f.getByRole('textbox', { name: 'Who' }).fill('Hana');
+      await f.getByLabel('Amount, in ringgit').fill('50');
+      await shot(f, `${tag}-record`);
+      await f.locator('.record-debt .select-trigger').first().click();
+      await f.getByRole('listbox').waitFor({ timeout: 5000 }).catch(() => {});
+      await shot(f, `${tag}-record-wallet`);
+      await f.keyboard.press('Escape');
+      if (anyOpen) {
+        await open(f, '/debts');
+        await ready(f);
+        await f.locator('.people-row[data-debt][data-state="open"] .row-name').first().click();
+        const repayButton = f.getByRole('button', { name: /^Record a repayment/ }).first();
+        await repayButton.waitFor({ timeout: 10_000 });
+        await repayButton.click();
+        await f.getByLabel('Amount paid back, in ringgit').waitFor({ timeout: 5000 });
+        await shot(f, `${tag}-repay`);
+        await f.locator('.repay-form .select-trigger').first().click();
+        await f.getByRole('listbox').waitFor({ timeout: 5000 }).catch(() => {});
+        await shot(f, `${tag}-repay-wallet`);
+      }
+      await fctx.close();
+    }
+  }
 }

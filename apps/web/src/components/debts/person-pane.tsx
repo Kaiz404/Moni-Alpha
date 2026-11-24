@@ -3,14 +3,14 @@
 import { addDays, dateLabel, formatMoney, type DebtLine } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { parseAmountDraft } from '@/lib/budget-view';
-import { repaidWords, timeline } from '@/lib/debts-view';
+import { NO_WALLET, repayAction, repaidWords, timeline, WALLET_WORDS, walletField } from '@/lib/debts-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import type { DebtsData } from './use-debts';
 
-/** A repayment being typed in the pane: the amount and the wallet the money moved through. */
+/** A repayment being typed in the pane: the amount, and a wallet, `NO_WALLET` when no money moved, or null until one is chosen. */
 export type RepayDraft = { debtId: string; amount: string; walletId: string | null; date?: string };
 
 function stopKeys(onEnter: () => void, onEscape: () => void) {
@@ -66,15 +66,17 @@ export function PersonPane({
     dayOf: (iso) => ledger.calendar.dayKey(iso),
     walletName: (id) => (id ? (data.walletNames[id] ?? null) : null),
   });
+  const walletWords = WALLET_WORDS[debt.direction];
   const principal = activities.find((activity) => activity.kind === 'principal');
-  const walletName = principal?.walletId ? data.walletNames[principal.walletId] : null;
+  const lent = walletField(walletWords.principal, principal?.walletId ?? NO_WALLET, (id) => data.walletNames[id]);
+  const paid = repay ? walletField(walletWords.repay, repay.walletId, (id) => data.walletNames[id]) : null;
   const caps = open ? (mine ? 'Owes you' : 'You owe') : line.state === 'settled' ? 'Paid in full' : 'Written off';
   const wallets = data.wallets.filter((wallet) => wallet.currency === debt.currency);
 
   const amountMinor = repay ? parseAmountDraft(repay.amount) : undefined;
   const capped = amountMinor !== undefined && amountMinor <= line.balanceMinor ? amountMinor : undefined;
   const save = () => {
-    if (!repay || capped === undefined) return;
+    if (!repay || capped === undefined || !repay.walletId) return;
     const date = repay.date && repay.date !== today ? new Date(ledger.calendar.startOfDay(repay.date).getTime() + 12 * 3_600_000).toISOString() : new Date().toISOString();
     onSaveRepay(line, capped, repay.walletId, date);
   };
@@ -136,10 +138,10 @@ export function PersonPane({
           )}
           {open && (
             <div className="field-row">
-              <span className="label-text">{mine ? 'Lent from' : 'Borrowed into'}</span>
+              <span className="label-text">{lent.label}</span>
               <span className="pill-field">
-                <Glyph name="wallet-outline" size={18} />
-                {walletName ?? 'No wallet'}
+                <Glyph name={principal?.walletId ? 'wallet-outline' : 'note-text-outline'} size={18} />
+                {lent.value ?? 'No wallet'}
               </span>
             </div>
           )}
@@ -207,14 +209,19 @@ export function PersonPane({
             <span className="form-note tone-over">That&apos;s more than the {money(line.balanceMinor)} still owed.</span>
           )}
           <div className="field-row">
-            <span className="label-text">{mine ? 'Into' : 'From'}</span>
+            <span className="label-text">{paid!.label}</span>
             <Select
-              label={mine ? 'Into wallet' : 'From wallet'}
+              label={walletWords.repay}
               className="pill-field press"
               value={repay.walletId}
-              placeholder="Pick a wallet"
-              lead={<Glyph name="wallet-outline" size={18} />}
-              options={wallets.map((wallet) => ({ value: wallet.id, label: wallet.name }))}
+              placeholder="Choose"
+              text={paid!.value ?? undefined}
+              triggerLabel={`${paid!.label}: ${repay.walletId === NO_WALLET ? walletWords.repayNone : (paid!.value ?? 'Choose')}`}
+              lead={<Glyph name={repay.walletId === NO_WALLET ? 'note-text-outline' : 'wallet-outline'} size={18} />}
+              options={[
+                { value: NO_WALLET, label: walletWords.repayNone, lead: <Glyph name="note-text-outline" size={18} /> },
+                ...wallets.map((wallet) => ({ value: wallet.id, label: wallet.name, lead: <Glyph name="wallet-outline" size={18} /> })),
+              ]}
               onChange={(walletId) => onRepayDraft({ ...repay, walletId })}
             />
           </div>
@@ -228,7 +235,7 @@ export function PersonPane({
               <span className="kbd">Esc</span>
             </button>
             <button type="button" className="btn btn-ink press" disabled={capped === undefined || !repay.walletId} onClick={save}>
-              {capped !== undefined ? `Record ${money(capped)}` : 'Add an amount'}
+              {repayAction(capped !== undefined ? money(capped) : null, repay.walletId)}
               <span className="kbd kbd-on-ink">Enter</span>
             </button>
           </div>

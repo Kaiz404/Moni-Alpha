@@ -21,12 +21,32 @@ import type { MinorAmount } from '@repo/types';
 import { useState } from 'react';
 import { Cat } from '@/components/brand';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Select } from '@/components/controls/select';
+import { Icon } from '@/components/icon';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { SlideOver } from '@/components/ledger/slide-over';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
-import { comingUpWords, netLabel, openLabel, personMeta, writeOffWords } from '@/lib/debts-view';
+import {
+  comingUpWords,
+  debtMoney,
+  netLabel,
+  NO_WALLET,
+  openLabel,
+  owedBar,
+  peopleView,
+  personMeta,
+  repayWallet,
+  SIDE_LABEL,
+  sideOptions,
+  STATUS_LABEL,
+  statusOptions,
+  writeOffWords,
+  type FilterOption,
+  type SideFilter,
+  type StatusFilter,
+} from '@/lib/debts-view';
 import { applyPlan, commit, ledgerViewNow, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
@@ -56,8 +76,9 @@ export function DebtsScreen() {
   return <DebtsLoaded ledger={ledger} />;
 }
 
-function emptyDraft(walletId: string | null, name = '', direction: Side = 'owed_to_me'): DebtDraft {
-  return { direction, name, amount: '', walletId, dueDate: '', note: '' };
+/** A new debt starts as a record only, as on the phone: Money didn't leave my wallet. */
+function emptyDraft(name = '', direction: Side = 'owed_to_me'): DebtDraft {
+  return { direction, name, amount: '', walletId: NO_WALLET, dueDate: '', note: '' };
 }
 
 function DebtsLoaded({ ledger }: { ledger: Ledger }) {
@@ -66,15 +87,16 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const [params, setParams] = useQueryParams();
   const currency = ledger.currency;
   const today = ledger.calendar.dayKey(ledger.now);
-  const side = (['owed_to_me', 'i_owe'] as const).find((value) => value === params.get('side')) ?? null;
-  const open = side ? summary.open.filter((line) => line.debt.direction === side) : summary.open;
-  const order = [...open, ...summary.closed];
+  const side: SideFilter = (['owed_to_me', 'i_owe'] as const).find((value) => value === params.get('side')) ?? 'all';
+  const status: StatusFilter = params.get('status') === 'closed' ? 'closed' : 'open';
+  const view = peopleView(summary, side, status);
+  const order = view.lines;
   const recording = params.get('record') === 'debt';
   const selectedId = recording ? null : params.get('person');
   const selected = data.allLines.find((line) => line.debt.id === selectedId) ?? null;
   const index = selected ? order.findIndex((line) => line.debt.id === selected.debt.id) : -1;
   const [repay, setRepay] = useState<RepayDraft | null>(null);
-  const [draft, setDraft] = useState<DebtDraft>(() => emptyDraft(data.defaultWalletId));
+  const [draft, setDraft] = useState<DebtDraft>(() => emptyDraft());
   const [reminded, setReminded] = useState<Set<string>>(() => new Set());
   const [writingOffId, setWritingOffId] = useState<string | null>(null);
   const writingOff = data.allLines.find((line) => line.debt.id === writingOffId && line.state === 'open') ?? null;
@@ -94,15 +116,17 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   };
   const startRecord = (name = '', direction: Side = 'owed_to_me') => {
     setRepay(null);
-    setDraft(emptyDraft(data.defaultWalletId, name, direction));
+    setDraft(emptyDraft(name, direction));
     setParams({ record: 'debt', person: null }, selectedId || recording ? 'replace' : 'push');
   };
   const startRepay = (line: DebtLine | null = selected) => {
     if (!line || line.state !== 'open') return;
+    const inCurrency = data.wallets.filter((wallet) => wallet.currency === line.debt.currency).map((wallet) => wallet.id);
+    const usual = line.debt.currency === currency ? data.defaultWalletId : (inCurrency[0] ?? null);
     setRepay({
       debtId: line.debt.id,
       amount: (line.balanceMinor / 100).toFixed(2),
-      walletId: line.debt.currency === currency ? data.defaultWalletId : (data.wallets.find((wallet) => wallet.currency === line.debt.currency)?.id ?? null),
+      walletId: repayWallet(line, data.activitiesOf(line.debt.id), inCurrency, usual),
     });
     if (selectedId !== line.debt.id) setParams({ person: line.debt.id, record: null }, selectedId || recording ? 'replace' : 'push');
   };
@@ -130,7 +154,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
     const recorded = commit(
       planDebtActivity(
         line.debt,
-        { kind: 'repayment', amountMinor, walletId: walletId ?? undefined, activityDate },
+        { kind: 'repayment', amountMinor, walletId: walletId === NO_WALLET ? null : walletId, activityDate },
         ledger.projection,
         planContext(ledger.userId),
       ),
@@ -152,17 +176,18 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const saveDebt = (input: NewDebt) => {
     const now = () => new Date().toISOString();
     const wallet = data.wallets.find((item) => item.id === input.walletId);
+    const debtCurrency = wallet?.currency ?? input.currency ?? currency;
     const existing = data.summary.open.find(
       (line) =>
         line.debt.direction === input.direction &&
-        line.debt.currency === wallet?.currency &&
+        line.debt.currency === debtCurrency &&
         line.debt.counterpartyName.trim().toLocaleLowerCase() === input.counterpartyName.trim().toLocaleLowerCase(),
     );
     if (existing) {
       const ctx = planContext(ledger.userId);
       const added = planDebtActivity(
         existing.debt,
-        { kind: 'principal', amountMinor: input.amountMinor, walletId: input.walletId, note: input.note ?? null },
+        { kind: 'principal', amountMinor: input.amountMinor, walletId: input.walletId ?? null, note: input.note ?? null },
         ledger.projection,
         ctx,
       );
@@ -178,7 +203,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
         },
       );
       if (saved === null) return;
-      setDraft(emptyDraft(data.defaultWalletId));
+      setDraft(emptyDraft());
       setParams({ record: null, person: existing.debt.id });
       return;
     }
@@ -191,7 +216,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
       },
     );
     if (!recorded) return;
-    setDraft(emptyDraft(data.defaultWalletId));
+    setDraft(emptyDraft());
     setParams({ record: null, person: recorded.result.debt.id });
   };
 
@@ -248,7 +273,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </section>
           ) : (
             <>
-              <NetStrip data={data} currency={currency} side={side} onSide={(next) => setParams({ side: next })} />
+              <NetStrip data={data} currency={currency} />
               <button type="button" className="card record-card press" data-only="phone" onClick={() => startRecord()}>
                 <span className="record-plus">
                   <Glyph name="plus" />
@@ -256,7 +281,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                 <b>Record a debt</b>
                 <Glyph name="chevron-right" />
               </button>
-              {summary.comingUp.length > 0 && (
+              {view.comingUp.length > 0 && (
                 <section className="card coming-up" aria-label="Coming up">
                   <div className="coming-head">
                     <span className="caps">Coming up</span>
@@ -265,7 +290,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                       Moni reminds you the day before
                     </span>
                   </div>
-                  {summary.comingUp.map(({ line, dueDate, daysLeft }) => {
+                  {view.comingUp.map(({ line, dueDate, daysLeft }) => {
                     const words = comingUpWords(line, daysLeft);
                     return (
                       <div key={line.debt.id} className="coming-row" data-debt={line.debt.id}>
@@ -293,28 +318,16 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                 </section>
               )}
               <PeopleCard
-                open={open}
+                lines={view.lines}
                 summary={data.summary}
                 side={side}
+                status={status}
                 selectedId={selectedId}
                 today={today}
                 onPick={pick}
-                onClearSide={() => setParams({ side: null })}
+                onSide={(next) => setParams({ side: next === 'all' ? null : next })}
+                onStatus={(next) => setParams({ status: next === 'open' ? null : next })}
               />
-              {summary.closed.length > 0 && (
-                <section className="card people-card" aria-label="Settled">
-                  <div className="card-head">
-                    <h2 className="card-title settled-title">
-                      Settled and written off <span className="num meta">{summary.closed.length}</span>
-                    </h2>
-                  </div>
-                  <div role="grid" aria-label="Settled debts">
-                    {summary.closed.map((line) => (
-                      <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={pick} />
-                    ))}
-                  </div>
-                </section>
-              )}
             </>
           )}
         </div>
@@ -377,33 +390,61 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   );
 }
 
-function NetStrip({ data, currency, side, onSide }: { data: DebtsData; currency: string; side: Side | null; onSide: (side: Side | null) => void }) {
+/** The mint hero, read only: the net, then a bar of what you are owed against what you owe with each total under its end. */
+function NetStrip({ data, currency }: { data: DebtsData; currency: string }) {
   const { summary } = data;
-  const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
-  const tile = (value: Side, label: string, icon: 'arrow-bottom-left' | 'arrow-top-right', amount: number) => (
-    <button type="button" className="net-tile press" aria-pressed={side === value} onClick={() => onSide(side === value ? null : value)}>
-      <span className="net-tile-label">
-        {label}
-        <Glyph name={icon} size={18} />
+  const bar = owedBar(summary);
+  const end = (value: Side, icon: 'arrow-bottom-left' | 'arrow-top-right', amount: number) => (
+    <span className="net-end" data-side={value}>
+      <span className="net-end-label">
+        <Glyph name={icon} size={16} />
+        {SIDE_LABEL[value]}
       </span>
-      <span className="num net-tile-amount" data-testid={`net-${value}`}>
-        {whole(amount)}
+      <span className="num net-end-amount" data-testid={`net-${value}`}>
+        {debtMoney(amount, currency)}
       </span>
-    </button>
+    </span>
   );
   return (
-    <section className="card net-strip" aria-label="Net position">
+    <section className="card net-strip" aria-label="Where you stand">
       <div className="net-words">
         <span className="net-label">{netLabel(summary)}</span>
         <span className="num net-amount" data-testid="net-amount">
-          {whole(Math.abs(summary.netMinor))}
+          {debtMoney(Math.abs(summary.netMinor), currency)}
         </span>
       </div>
-      <div className="net-tiles">
-        {tile('owed_to_me', 'Owed to you', 'arrow-bottom-left', summary.owedToMeMinor)}
-        {tile('i_owe', 'You owe', 'arrow-top-right', summary.iOweMinor)}
-      </div>
+      {bar && (
+        <div className="net-split">
+          <div className="net-bar" aria-hidden="true">
+            {bar.map((part) => (
+              <span key={part.side} data-side={part.side} style={{ flexGrow: part.flex }} />
+            ))}
+          </div>
+          <div className="net-ends">
+            {end('owed_to_me', 'arrow-bottom-left', summary.owedToMeMinor)}
+            {end('i_owe', 'arrow-top-right', summary.iOweMinor)}
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+/** A People picker: the Activity filter capsule with only its value, Ink once it differs from the default. */
+function PeopleFilter<T extends string>({ name, value, label, options, changed, onChange }: { name: string; value: T; label: string; options: FilterOption<T>[]; changed: boolean; onChange: (value: T) => void }) {
+  return (
+    <Select
+      label={name}
+      className={`filter-chip press${changed ? ' filter-chip-on' : ''}`}
+      align="end"
+      value={value}
+      text={label}
+      options={options.map((option) => ({ value: option.value, label: option.label, side: <span className="num meta">{option.meta}</span> }))}
+      onChange={onChange}
+    >
+      <span className="filter-value">{label}</span>
+      <Icon name="chevron-down" size={16} />
+    </Select>
   );
 }
 
@@ -467,81 +508,85 @@ function PersonRow({ line, today, selected, onPick }: { line: DebtLine; today: s
 }
 
 function PeopleCard({
-  open,
+  lines,
   summary,
   side,
+  status,
   selectedId,
   today,
   onPick,
-  onClearSide,
+  onSide,
+  onStatus,
 }: {
-  open: readonly DebtLine[];
+  lines: readonly DebtLine[];
   summary: DebtsData['summary'];
-  side: Side | null;
+  side: SideFilter;
+  status: StatusFilter;
   selectedId: string | null;
   today: string;
   onPick: (id: string) => void;
-  onClearSide: () => void;
+  onSide: (side: SideFilter) => void;
+  onStatus: (status: StatusFilter) => void;
 }) {
-  const owed = open.filter((line) => line.debt.direction === 'owed_to_me').reduce((sum, line) => sum + line.balanceMinor, 0);
-  const owe = open.filter((line) => line.debt.direction === 'i_owe').reduce((sum, line) => sum + line.balanceMinor, 0);
+  const sum = (direction: Side) => lines.filter((line) => line.debt.direction === direction).reduce((total, line) => total + line.balanceMinor, 0);
+  const allSettled = status === 'open' && summary.open.length === 0;
   return (
     <section className="card people-card" aria-label="People">
-      <div className="card-head">
-        <h2 className="card-title people-title">
-          People
-          {side && (
-            <button type="button" className="chip filter-chip press" onClick={onClearSide}>
-              {side === 'owed_to_me' ? 'Owed to you' : 'You owe'}
-              <Glyph name="close" size={16} />
-            </button>
-          )}
-        </h2>
+      <div className="card-head people-head">
+        <h2 className="card-title">People</h2>
+        <div className="people-filters" role="group" aria-label="Filters">
+          <PeopleFilter name="Show" value={side} label={SIDE_LABEL[side]} options={sideOptions(summary)} changed={side !== 'all'} onChange={onSide} />
+          <PeopleFilter name="Status" value={status} label={STATUS_LABEL[status]} options={statusOptions(summary)} changed={status !== 'open'} onChange={onStatus} />
+        </div>
       </div>
-      {summary.open.length === 0 ? (
-        <div className="dashed-tile all-settled">
-          <Cat mood="happy" size={44} id="all-settled" />
-          <span>
-            <b>Nobody owes anybody</b>
-            <br />
-            Every debt is paid back. They stay under Settled.
-          </span>
-        </div>
-      ) : (
-        <div role="grid" aria-label="Open debts by person">
-          <div className="grid-head people-row" role="row" data-only="sidebar rail rail-one-column">
-            <span role="columnheader" className="caps">
-              Person
+      <div className="people-body" key={`${status}-${side}`}>
+        {allSettled ? (
+          <div className="dashed-tile all-settled">
+            <Cat mood="happy" size={44} id="all-settled" />
+            <span>
+              <b>Nobody owes anybody</b>
+              <br />
+              Every debt is paid back. Find them under Settled.
             </span>
-            <span role="columnheader" className="caps" style={{ justifySelf: 'start' }}>
-              Due
-            </span>
-            <span role="columnheader" className="caps">
-              Owes you
-            </span>
-            <span role="columnheader" className="caps">
-              You owe
-            </span>
-            <span />
           </div>
-          {open.map((line) => (
-            <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={onPick} />
-          ))}
-          {open.length === 0 && <p className="meta nobody">Nobody here right now.</p>}
-          <div className="grid-total people-row" role="row" data-testid="people-total">
-            <b className="open-label">{openLabel(open)}</b>
-            <span data-col="due" />
-            <span className="num tone-in" data-col="owes-you">
-              {formatMoney(owed, summary.currency)}
-            </span>
-            <span className="num" data-col="you-owe">
-              {formatMoney(owe, summary.currency)}
-            </span>
-            <span />
+        ) : lines.length === 0 ? (
+          <p className="meta nobody">Nobody here right now.</p>
+        ) : (
+          <div role="grid" aria-label={status === 'open' ? 'Open debts by person' : 'Settled debts'}>
+            <div className="grid-head people-row" role="row" data-only="sidebar rail rail-one-column">
+              <span role="columnheader" className="caps">
+                Person
+              </span>
+              <span role="columnheader" className="caps" style={{ justifySelf: 'start' }}>
+                Due
+              </span>
+              <span role="columnheader" className="caps">
+                Owes you
+              </span>
+              <span role="columnheader" className="caps">
+                You owe
+              </span>
+              <span />
+            </div>
+            {lines.map((line) => (
+              <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={onPick} />
+            ))}
+            {status === 'open' && (
+              <div className="grid-total people-row" role="row" data-testid="people-total">
+                <b className="open-label">{openLabel(lines)}</b>
+                <span data-col="due" />
+                <span className="num tone-in" data-col="owes-you">
+                  {formatMoney(sum('owed_to_me'), summary.currency)}
+                </span>
+                <span className="num" data-col="you-owe">
+                  {formatMoney(sum('i_owe'), summary.currency)}
+                </span>
+                <span />
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
-
