@@ -205,7 +205,7 @@ describe('Record a debt', () => {
 
     expect(screen.getByText('They owe me')).toBeTruthy();
     expect(screen.getByText('I owe them')).toBeTruthy();
-    expect(screen.getByText('Lent from')).toBeTruthy();
+    expect(screen.getByText('Not used')).toBeTruthy();
     expect(screen.getByText('Record: Hana owes you RM5.00')).toBeTruthy();
     expect(screen.queryByTestId('debts.sentence')).toBeNull();
     expect(screen.queryAllByText(/Hana/)).toHaveLength(1);
@@ -213,7 +213,7 @@ describe('Record a debt', () => {
     press('debts.direction.i-owe');
     expect(screen.getByText('They owe me')).toBeTruthy();
     expect(screen.getByText('I owe them')).toBeTruthy();
-    expect(screen.getByText('Borrowed into')).toBeTruthy();
+    expect(screen.getByText('Not used')).toBeTruthy();
     expect(screen.getByText('Record: you owe Hana RM5.00')).toBeTruthy();
     expect(screen.queryAllByText(/Hana/)).toHaveLength(1);
   });
@@ -288,7 +288,7 @@ describe('Record a debt', () => {
     await record();
 
     expect(jest.mocked(addDebtPrincipal).mock.calls).toEqual([
-      [stored, 2500, MAYBANK, null],
+      [stored, 2500, null, null],
     ]);
     expect(jest.mocked(createDebt).mock.calls).toEqual([]);
     expect(jest.mocked(showToast).mock.calls).toEqual([
