@@ -1,0 +1,21 @@
+# promo: The Budget calendar heats each day by spend; tapping a day lists what you paid.
+# order: 10
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.tab.budget
+    label: Budget tab
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: budget.view.calendar
+    label: Calendar view heats each day by spend
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: budget.calendar.day.16
+    label: Day 16 lists its payments
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: budget.calendar.day.20
+    label: Day 20, the heaviest day, lists its payments
+- runFlow: _hold/end.yaml

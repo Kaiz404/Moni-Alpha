@@ -1,0 +1,52 @@
+# promo: Scan a paper receipt and Moni reads the shop, items and total into a transaction to approve.
+# order: 5
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.plus
+    label: Plus opens the capture chooser
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.chooser.scan
+    label: Scan a receipt opens the scanner
+- extendedWaitUntil:
+    visible:
+      text: (?i).*import.*
+    timeout: 15000
+- tapOn:
+    text: (?i).*import.*
+    label: Imports the receipt photo
+- runFlow:
+    when:
+      visible: receipt-mamak.png
+    commands:
+      - tapOn: receipt-mamak.png
+- runFlow:
+    when:
+      notVisible: (?i)(next|save|done)
+    commands:
+      - tapOn:
+          id: '.*thumbnail.*|.*icon_thumbnail.*'
+          index: 0
+- tapOn:
+    text: (?i)(next|save|done)
+    label: The scanner straightens the receipt, then Next
+- runFlow:
+    when:
+      visible: (?i)(save|done)
+    commands:
+      - tapOn: (?i)(save|done)
+- extendedWaitUntil:
+    visible: Check and approve
+    timeout: 20000
+    label: Moni reads RM15.30 from Restoran Nasi Kandar Ali
+# The cloud phone sits in a Seattle lab and Device Farm refuses a mock location, so the take clears it.
+- tapOn:
+    id: capture.location.clear
+    optional: true
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: capture.approve
+    label: Approve adds it to the ledger
+- runFlow: _hold/end.yaml

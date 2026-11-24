@@ -1,0 +1,11 @@
+# Unrecorded: signs in after the reset and opens the Review deck with the seed's four captures.
+appId: com.anonymous.moni.e2e
+---
+- runFlow: ../../../apps/mobile/.maestro/subflows/launch.yaml
+- openLink: moni-e2e://review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000

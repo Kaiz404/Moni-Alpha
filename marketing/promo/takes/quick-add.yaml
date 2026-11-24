@@ -1,0 +1,26 @@
+# promo: Type a purchase in plain words to Moni and it drafts the transaction for one-tap approval.
+# order: 3
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.ask-box
+    label: Ask box opens Moni chat
+- tapOn:
+    id: chat.input
+- inputText: paid 6 ringgit parking at KLCC
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: chat.send
+    label: Sends "paid 6 ringgit parking at KLCC"
+- extendedWaitUntil:
+    visible:
+      id: chat.draft.approve
+    timeout: 30000
+    label: Draft card shows Parking KLCC, RM6.00
+- hideKeyboard
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: chat.draft.approve
+    label: Approve adds it to the ledger
+- runFlow: _hold/end.yaml

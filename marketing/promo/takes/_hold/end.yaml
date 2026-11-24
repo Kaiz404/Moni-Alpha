@@ -1,0 +1,4 @@
+# Holds the frame still for 2000 ms on the host, so it costs no device round trip.
+appId: com.anonymous.moni.e2e
+---
+- evalScript: ${(function () { var end = Date.now() + 2000; while (Date.now() < end) {} return end; })()}

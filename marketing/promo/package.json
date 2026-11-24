@@ -1,0 +1,22 @@
+{
+  "name": "moni-promo",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render MoniPromo out/prototype.mp4"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.4.0",
+    "@remotion/cli": "4.0.546",
+    "@remotion/three": "4.0.546",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "remotion": "4.0.546",
+    "three": "0.178.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.10",
+    "@types/three": "0.178.1",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,0 +1,26 @@
+# promo: Ask Moni a question about your money and it answers from your own ledger with a chart.
+# order: 7
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.ask-box
+    label: Ask box opens Moni chat
+- tapOn:
+    id: chat.input
+- inputText: How much on Transport this month
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: chat.send
+    label: Asks "How much on Transport this month"
+- extendedWaitUntil:
+    visible:
+      id: chat.answer.open-budget
+    timeout: 30000
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: chat.answer.title
+    direction: UP
+    label: Answer card shows Transport spend with its chart
+- runFlow: _hold/end.yaml

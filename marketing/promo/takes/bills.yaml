@@ -1,0 +1,47 @@
+# promo: Add a recurring bill in a few taps and it joins the bills list with a countdown to its due date.
+# order: 9
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.tab.budget
+    label: Budget tab
+- scrollUntilVisible:
+    element:
+      id: budget.add-bill
+    speed: 20
+    label: Scrolls to Bills
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: budget.add-bill
+    label: Add bill opens the amount page
+- tapOn:
+    id: budget.key.1
+- tapOn:
+    id: budget.key.2
+- tapOn:
+    id: budget.key.9
+    label: Keys in RM129
+- tapOn:
+    id: budget.bill-new.name
+- inputText: Indah Water
+- hideKeyboard
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: budget.bill-new.due
+    label: Due date sheet
+- tapOn:
+    id: sheet\.option\..*
+    enabled: true
+    index: 6
+    label: Picks the due day
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: budget.submit
+    label: Add bill RM129.00
+- scrollUntilVisible:
+    element:
+      id: budget.bills.row.indah-water
+    speed: 20
+    label: Indah Water shows in Bills with days left
+- runFlow: _hold/end.yaml

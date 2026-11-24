@@ -1,0 +1,6 @@
+# Unrecorded: signs in after the reset and settles on Home, where most takes start.
+appId: com.anonymous.moni.e2e
+---
+- runFlow: ../../../../apps/mobile/.maestro/subflows/launch.yaml
+- waitForAnimationToEnd:
+    timeout: 5000

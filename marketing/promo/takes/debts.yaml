@@ -1,0 +1,27 @@
+# promo: Track who owes you; record a repayment and Moni shows what is still owed.
+# order: 11
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.tab.debts
+    label: Debts tab shows who owes you and who you owe
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: 'debts\.person\..*'
+    text: 'Aiman owes you.*'
+    label: Aiman's debt page, RM150 for the Penang trip
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: debts.record-repayment
+    label: Record repayment
+- tapOn:
+    id: debts.key.5
+- tapOn:
+    id: debts.key.0
+    label: Keys in RM50
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: debts.submit
+    label: Recorded RM50, Aiman still owes RM100
+- runFlow: _hold/end.yaml

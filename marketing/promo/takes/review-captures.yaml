@@ -1,0 +1,40 @@
+# promo: Payments Moni caught from bank alerts, receipts and chat wait in a deck; swipe right to approve, left for not mine.
+# order: 6
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/read.yaml
+- swipe:
+    start: 20%, 50%
+    end: 95%, 50%
+    duration: 500
+    label: Swipe right approves GRAB*FOOD
+- runFlow: _hold/beat.yaml
+- swipe:
+    start: 20%, 50%
+    end: 95%, 50%
+    duration: 500
+    label: Swipe right approves Jaya Grocer
+- runFlow: _hold/beat.yaml
+- swipe:
+    start: 85%, 50%
+    end: 10%, 50%
+    duration: 500
+    label: Swipe left marks the receipt not mine
+- runFlow: _hold/beat.yaml
+- swipe:
+    start: 20%, 50%
+    end: 95%, 50%
+    duration: 500
+    label: Swipe right approves Parking KLCC from chat
+- runFlow:
+    when:
+      visible: Which wallet\?
+    commands:
+      - tapOn:
+          id: 'sheet\.option\..*'
+          index: 0
+- extendedWaitUntil:
+    visible: All caught up
+    timeout: 5000
+    label: All caught up
+- runFlow: _hold/end.yaml

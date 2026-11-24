@@ -1,0 +1,25 @@
+# promo: Home shows net worth, a wallet strip that swipes across every account, and the Wallets page with one line per wallet.
+# order: 1
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- swipe:
+    start: 85%, 25%
+    end: 25%, 25%
+    duration: 700
+    label: Wallet strip slides across to Cash, Wise USD and New wallet
+- runFlow: _hold/beat.yaml
+- swipe:
+    start: 25%, 25%
+    end: 90%, 25%
+    duration: 700
+    label: Wallet strip swipes back to the first wallet
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.net-worth
+    label: Net worth opens Wallets with the net worth chart
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: wallet.chart.by-wallet
+    label: Chart splits into one line per wallet
+- runFlow: _hold/end.yaml

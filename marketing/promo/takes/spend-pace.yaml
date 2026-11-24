@@ -1,0 +1,28 @@
+# promo: The spending pace chart on Home scrubs under a finger and zooms between ranges.
+# order: 2
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- swipe:
+    from:
+      id: home.chart.plot
+    direction: LEFT
+    duration: 2600
+    label: Finger scrubs across the spending pace line
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.range.7d
+    label: Range zooms to 7 days
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.range.90d
+    label: Range zooms out to 90 days
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.range.1m
+    label: Range returns to this month
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.chart.daily
+    label: Daily view shows spend per day this month
+- runFlow: _hold/end.yaml

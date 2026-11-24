@@ -1,0 +1,16 @@
+# promo: Search every transaction from the Activity tab; typing grab leaves only Grab rows.
+# order: 13
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.tab.activity
+    label: Activity lists every transaction
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: activity.search
+- inputText:
+    text: grab
+    label: Types grab, only Grab rows remain
+- hideKeyboard
+- runFlow: _hold/end.yaml

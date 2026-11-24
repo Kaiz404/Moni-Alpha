@@ -1,0 +1,6 @@
+node_modules
+out
+clips/*.mp4
+clips/raw
+clips/contact
+public/flow.mp4

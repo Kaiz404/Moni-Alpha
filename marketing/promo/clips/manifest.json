@@ -1,0 +1,421 @@
+[
+  {
+    "feature": "home-overview",
+    "order": 1,
+    "file": "home-overview.mp4",
+    "durationSec": 13.75,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/home-overview.yaml",
+    "oneLineDescription": "Home shows net worth, a wallet strip that swipes across every account, and the Wallets page with one line per wallet.",
+    "contactFrames": [
+      2.43,
+      8.12,
+      11.64,
+      13.45
+    ],
+    "beats": [
+      {
+        "t": 2.43,
+        "what": "Wallet strip slides across to Cash, Wise USD and New wallet"
+      },
+      {
+        "t": 5.11,
+        "what": "Strip rests at Wise USD and New wallet"
+      },
+      {
+        "t": 8.12,
+        "what": "Wallet strip swipes back to the first wallet"
+      },
+      {
+        "t": 10.1,
+        "what": "Net worth opens Wallets with the net worth chart"
+      },
+      {
+        "t": 11.64,
+        "what": "Chart splits into one line per wallet"
+      }
+    ]
+  },
+  {
+    "feature": "spend-pace",
+    "order": 2,
+    "file": "spend-pace.mp4",
+    "durationSec": 13.07,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/spend-pace.yaml",
+    "oneLineDescription": "The spending pace chart on Home scrubs under a finger and zooms between ranges.",
+    "contactFrames": [
+      2.71,
+      8.46,
+      11.88,
+      12.77
+    ],
+    "beats": [
+      {
+        "t": 2.71,
+        "what": "Finger scrubs across the spending pace line"
+      },
+      {
+        "t": 5.16,
+        "what": "Range zooms to 7 days"
+      },
+      {
+        "t": 8.46,
+        "what": "Range zooms out to 90 days"
+      },
+      {
+        "t": 10.11,
+        "what": "Range returns to this month"
+      },
+      {
+        "t": 11.88,
+        "what": "Daily view shows spend per day this month"
+      }
+    ]
+  },
+  {
+    "feature": "quick-add",
+    "order": 3,
+    "file": "quick-add.mp4",
+    "durationSec": 22.27,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/quick-add.yaml",
+    "oneLineDescription": "Type a purchase in plain words to Moni and it drafts the transaction for one-tap approval.",
+    "contactFrames": [
+      2.03,
+      16.59,
+      19.66,
+      21.97
+    ],
+    "beats": [
+      {
+        "t": 2.03,
+        "what": "Ask box opens Moni chat"
+      },
+      {
+        "t": 11.4,
+        "what": "Sends \"paid 6 ringgit parking at KLCC\""
+      },
+      {
+        "t": 16.59,
+        "what": "Draft card shows Parking KLCC, RM6.00"
+      },
+      {
+        "t": 19.66,
+        "what": "Approve adds it to the ledger"
+      }
+    ]
+  },
+  {
+    "feature": "scan-receipt",
+    "order": 5,
+    "file": "scan-receipt.mp4",
+    "durationSec": 18.47,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/scan-receipt.yaml",
+    "oneLineDescription": "Scan a paper receipt and Moni reads the shop, items and total into a transaction to approve.",
+    "contactFrames": [
+      1.73,
+      5.29,
+      16.21,
+      18.17
+    ],
+    "beats": [
+      {
+        "t": 1.73,
+        "what": "Plus opens the capture chooser"
+      },
+      {
+        "t": 3.96,
+        "what": "Scan a receipt opens the scanner"
+      },
+      {
+        "t": 5.29,
+        "what": "Imports the receipt photo"
+      },
+      {
+        "t": 13.71,
+        "what": "The scanner straightens the receipt, then Next"
+      },
+      {
+        "t": 14.96,
+        "what": "Moni reads RM15.30 from Restoran Nasi Kandar Ali"
+      },
+      {
+        "t": 16.21,
+        "what": "Approve adds it to the ledger"
+      }
+    ]
+  },
+  {
+    "feature": "review-captures",
+    "order": 6,
+    "file": "review-captures.mp4",
+    "durationSec": 15.47,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/review-captures.yaml",
+    "oneLineDescription": "Payments Moni caught from bank alerts, receipts and chat wait in a deck; swipe right to approve, left for not mine.",
+    "contactFrames": [
+      2.24,
+      9.32,
+      14.25,
+      15.17
+    ],
+    "beats": [
+      {
+        "t": 2.24,
+        "what": "Swipe right approves GRAB*FOOD"
+      },
+      {
+        "t": 5.84,
+        "what": "Swipe right approves Jaya Grocer"
+      },
+      {
+        "t": 9.32,
+        "what": "Swipe left marks the receipt not mine"
+      },
+      {
+        "t": 12.88,
+        "what": "Swipe right approves Parking KLCC from chat"
+      },
+      {
+        "t": 14.25,
+        "what": "All caught up: 3 approved, 1 not mine"
+      }
+    ]
+  },
+  {
+    "feature": "ask-moni",
+    "order": 7,
+    "file": "ask-moni.mp4",
+    "durationSec": 16.75,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/ask-moni.yaml",
+    "oneLineDescription": "Ask Moni a question about your money and it answers from your own ledger with a chart.",
+    "contactFrames": [
+      2.07,
+      10.52,
+      15.57,
+      16.45
+    ],
+    "beats": [
+      {
+        "t": 2.07,
+        "what": "Ask box opens Moni chat"
+      },
+      {
+        "t": 10.52,
+        "what": "Asks \"How much on Transport this month\""
+      },
+      {
+        "t": 15.57,
+        "what": "Answer card shows Transport spend with its chart"
+      }
+    ]
+  },
+  {
+    "feature": "budget-categories",
+    "order": 8,
+    "file": "budget-categories.mp4",
+    "durationSec": 9.63,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/budget-categories.yaml",
+    "oneLineDescription": "The Budget tab breaks the month down by category; a category opens its own payments.",
+    "contactFrames": [
+      1.62,
+      5.19,
+      6.85,
+      9.33
+    ],
+    "beats": [
+      {
+        "t": 1.62,
+        "what": "Budget tab shows the month's spend ring"
+      },
+      {
+        "t": 5.19,
+        "what": "Scrolls to By category"
+      },
+      {
+        "t": 6.85,
+        "what": "Food & Dining opens its payments and total"
+      }
+    ]
+  },
+  {
+    "feature": "bills",
+    "order": 9,
+    "file": "bills.mp4",
+    "durationSec": 27.38,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/bills.yaml",
+    "oneLineDescription": "Add a recurring bill in a few taps and it joins the bills list with a countdown to its due date.",
+    "contactFrames": [
+      1.65,
+      19.79,
+      26.19,
+      27.08
+    ],
+    "beats": [
+      {
+        "t": 1.65,
+        "what": "Budget tab"
+      },
+      {
+        "t": 3.97,
+        "what": "Scrolls to Bills"
+      },
+      {
+        "t": 5.22,
+        "what": "Add bill opens the amount page"
+      },
+      {
+        "t": 11.0,
+        "what": "Keys in RM129"
+      },
+      {
+        "t": 19.79,
+        "what": "Due date sheet"
+      },
+      {
+        "t": 21.04,
+        "what": "Picks the due day"
+      },
+      {
+        "t": 24.8,
+        "what": "Add bill RM129.00"
+      },
+      {
+        "t": 26.19,
+        "what": "Indah Water shows in Bills with days left"
+      }
+    ]
+  },
+  {
+    "feature": "spend-calendar",
+    "order": 10,
+    "file": "spend-calendar.mp4",
+    "durationSec": 9.0,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/spend-calendar.yaml",
+    "oneLineDescription": "The Budget calendar heats each day by spend; tapping a day lists what you paid.",
+    "contactFrames": [
+      1.3,
+      6.31,
+      7.79,
+      8.7
+    ],
+    "beats": [
+      {
+        "t": 1.3,
+        "what": "Budget tab"
+      },
+      {
+        "t": 4.88,
+        "what": "Calendar view heats each day by spend"
+      },
+      {
+        "t": 6.31,
+        "what": "Day 16 lists its payments"
+      },
+      {
+        "t": 7.79,
+        "what": "Day 20, the heaviest day, lists its payments"
+      }
+    ]
+  },
+  {
+    "feature": "debts",
+    "order": 11,
+    "file": "debts.mp4",
+    "durationSec": 15.02,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/debts.yaml",
+    "oneLineDescription": "Track who owes you; record a repayment and Moni shows what is still owed.",
+    "contactFrames": [
+      1.45,
+      4.66,
+      11.34,
+      14.72
+    ],
+    "beats": [
+      {
+        "t": 1.45,
+        "what": "Debts tab shows who owes you and who you owe"
+      },
+      {
+        "t": 3.41,
+        "what": "Aiman's debt page, RM150 for the Penang trip"
+      },
+      {
+        "t": 4.66,
+        "what": "Record repayment"
+      },
+      {
+        "t": 7.94,
+        "what": "Keys in RM50"
+      },
+      {
+        "t": 11.34,
+        "what": "Recorded RM50, Aiman still owes RM100"
+      }
+    ]
+  },
+  {
+    "feature": "places-map",
+    "order": 12,
+    "file": "places-map.mp4",
+    "durationSec": 12.38,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/places-map.yaml",
+    "oneLineDescription": "A map of where you spend, with the top places and filters by range.",
+    "contactFrames": [
+      2.35,
+      6.19,
+      9.83,
+      12.08
+    ],
+    "beats": [
+      {
+        "t": 2.35,
+        "what": "Scrolls Home to Where you spend"
+      },
+      {
+        "t": 4.94,
+        "what": "Opens the spending map"
+      },
+      {
+        "t": 6.19,
+        "what": "Range widens to All time"
+      },
+      {
+        "t": 9.83,
+        "what": "Sheet lifts to Top places"
+      }
+    ]
+  },
+  {
+    "feature": "activity-search",
+    "order": 13,
+    "file": "activity-search.mp4",
+    "durationSec": 9.88,
+    "device": "Google Pixel 8, Android 14 (AWS Device Farm)",
+    "takeFlow": "marketing/promo/takes/activity-search.yaml",
+    "oneLineDescription": "Search every transaction from the Activity tab; typing grab leaves only Grab rows.",
+    "contactFrames": [
+      1.49,
+      7.25,
+      9.58
+    ],
+    "beats": [
+      {
+        "t": 1.49,
+        "what": "Activity lists every transaction"
+      },
+      {
+        "t": 7.25,
+        "what": "Types grab, only Grab rows remain"
+      }
+    ]
+  }
+]

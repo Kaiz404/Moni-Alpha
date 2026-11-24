@@ -1,0 +1,26 @@
+# promo: A map of where you spend, with the top places and filters by range.
+# order: 12
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- scrollUntilVisible:
+    element:
+      id: home.open-map
+    speed: 20
+    label: Scrolls Home to Where you spend
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: home.open-map
+    label: Opens the spending map
+- extendedWaitUntil:
+    visible: Where you spend
+    timeout: 15000
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: map.range.all
+    label: Range widens to All time
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: map.sheet.grabber
+    label: Sheet lifts to Top places
+- runFlow: _hold/end.yaml

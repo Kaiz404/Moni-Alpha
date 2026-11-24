@@ -1,0 +1,21 @@
+# promo: The Budget tab breaks the month down by category; a category opens its own payments.
+# order: 8
+appId: com.anonymous.moni.e2e
+---
+- runFlow: _hold/beat.yaml
+- tapOn:
+    id: nav.tab.budget
+    label: Budget tab shows the month's spend ring
+- runFlow: _hold/read.yaml
+- scrollUntilVisible:
+    element:
+      id: budget\.by-category\..*
+      text: 'Food & Dining,.*'
+    speed: 20
+    label: Scrolls to By category
+- runFlow: _hold/read.yaml
+- tapOn:
+    id: budget\.by-category\..*
+    text: 'Food & Dining,.*'
+    label: Food & Dining opens its payments and total
+- runFlow: _hold/end.yaml
