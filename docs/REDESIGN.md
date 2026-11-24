@@ -35,7 +35,7 @@ If a board contradicts these docs, the board is newer only if it was published a
 | Capture | `V2A-Capture`, `V2A-CaptureFlow-VA`, `V2A-CaptureType`, `V2A-CaptureTypeDuplicate`, `V2A-CaptureSay`, `V2A-CaptureSayHeard`, `V2A-CaptureSayDenied`, `V2A-CaptureScan`, `V2A-CaptureScanAdded`, `V2A-CaptureScanFailed` | + chooser sheet, the chosen flow (sheet, then a page slides in from the right), type / voice / live-scan pages | `components/nav/capture-chooser.tsx`, `transaction/new.tsx`, `scan/*` |
 | Review | `XA-Review`, `XA-Notification` (`XA-Compare` is the record of the decision) | The review card deck (swipe right Approve, left Not mine), approving from the Android notification | `app/review.tsx` (R1) |
 | Budget tab | `V2P-InsightsMonth` (tab root, title "Budget"), `V2P-InsightsCalendar`, `V2P-BudgetDetail`, `V2P-InsightsStates`, `V2P-BudgetEdit`, `V2P-BillDetail`, `V2P-AmountPage`, `V2P-PlanStates` | Month chart and calendar, budgets (rings), bills list, the one category page, editing caps, bills, the amount page for new money | `(tabs)/budget.tsx`, `budget/*` |
-| Debts tab | `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtsEmpty`, `V2P-DebtSettle` | Debts as a tab: net position, coming up, people, per-person page, record a debt, settle | `(tabs)/debts.tsx`, `debt/*` |
+| Debts tab | `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtsEmpty`, `V2P-DebtSettle`; ahead of them `XD-DebtsFilter-B`, `XD-RecordNoWallet-A`, `XD-SettleNoWallet` (D14) | Debts as a tab: net position, coming up, people, per-person page, record a debt, settle | `(tabs)/debts.tsx`, `debt/*` |
 | Map | `XM-Places`, `XM-Detail`, `XM-Empty` | Where you spend (fixed place card), place detail, empty and location-off | `heatmap.tsx` |
 | Type | `XB-Type` | Decision record: Funnel Display for everything | font loading |
 | Brand | `XB-Brand9C`, `XB-Kit1-Guidelines`, `XB-Kit3-InApp` (`XB-Kit2-Assets` is marketing, not app) | Cat Pebble mascot, app icon, splash, notification icon, wordmark, and where the cat shows in the app (loud edges only, one cat per screen, no sparkles) | `components/brand/*`, `scripts/brand/*` (`pnpm --filter moni brand:assets`), `app.json` |
@@ -100,7 +100,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D2. Budgets show as rings on the Budget tab.
 - D3. No reactions and no logging streak. The brand (Cat Pebble, the wordmark, the icons) was locked on 18 Nov 2026 and is in the app, except onboarding, which the owner has not designed yet.
 - D4. Decided 16 Nov 2026: Home keeps the ask box only; the Moni header button is gone from Home and Activity.
-- D5. Debts hero tiles filter in place; Remind, on the debt page only (Coming up rows carry no buttons since #87), opens the Android share sheet.
+- D5. Superseded 24 Nov 2026 by D14 for the filter. Remind, on the debt page only (Coming up rows carry no buttons since #87), opens the Android share sheet.
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
 - D7. Superseded by the owner on 1 Nov 2026: the next card shows real content under the top card, hidden until the top card moves.
 - D8. Motion has six tokens: five springs and `drag`.
@@ -109,6 +109,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D11. Scan a receipt uses the ML Kit document scanner instead of the in-app camera that `V2A-CaptureScan` draws.
 - D12. Decided 20 Nov 2026 (#79): Edit budgets draws its budgets on the Budget tab's ring, never a second chart. The monthly total sits in the ring's middle and edits in place, with one line under it; the unassigned pill and the sentence are gone. The web lays its ring out with the same geometry (`ringSegments` in `@repo/core`).
 - D13. 20 Nov 2026 (#80): Ask Moni can suggest a budget. Edit budgets has **Ask Moni to suggest** under the ring and a category's empty budget tile has **Ask Moni**; both open the pushed page `/budget/suggest`: pick the monthly total or a category (each with what it spent last month), answer one to three questions with chips or your own words, then **Moni suggests** "RM450 a month" in place, with the three months' average and Moni's one line. **Set budget** saves it; from Edit budgets **Use this amount** puts it in the page's draft. Optional and behind the `chat` AI switch. No canvas board yet.
+- D14. Decided 24 Nov 2026 (canvas row "Debts explorations: filter and no-wallet debts", version `1795508041-f441`): the Debts hero only reads. Under the net number a two-part bar sizes owed against owe, with Owed to you and You owe totals at its ends (`XD-DebtsFilter-B`). The People heading carries two Activity-style pickers, **Everyone ▾** (Everyone, Owed to you, You owe) and **Open ▾** (Open, Settled and written off), which replaces the Settled fold. A debt can move no money: **Money didn't leave my wallet** is the first choice in Lent from (Borrowed into for I owe them), the field then reads Wallet: Not used, and the list row says Noted instead of Lent (`XD-RecordNoWallet-A`). Paying such a debt back starts with Paid into empty, chosen then, with **Money didn't reach my wallet** first (`XD-SettleNoWallet`). Not built; needs debts without a wallet in the backend.
 
 ## Where the app differs from a board
 
@@ -116,7 +117,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 
 - Map: the range control offers Last 7 days, Last 30 days (the default) and All time, rolling windows ending today, where the board has a custom range (owner, 18 Nov 2026); the empty state's action is **Add an expense**.
 - Map: a build with no Google Maps key has no board. It draws Sand where the map goes, with XM-Empty's capsule reading **Map unavailable** and no Fit button. The sheet and the place page keep working. The Budget tab's card is drawn art, so it needs no key.
-- Debts: recording a debt with no wallet, and debt reminders.
+- Debts: debt reminders. Recording a debt with no wallet is now designed (D14) and not built.
 - Budget: the Budgets heading has a routing chevron into Edit budgets, which the board does not draw (D9 removed the Edit link, and the chevron keeps the monthly total reachable).
 - Budget calendar: the day cut-offs.
 - Ask Moni to suggest a budget (#80, D13): no board on the canvas yet, on the phone or the web. Patterns from Mobbin: N26 and Quicken show past spending beside the amount, Origin's AI button and last month per category, Monzo's chips on one screen.
