@@ -16,7 +16,7 @@ const LABEL_IN = FadeIn.duration(180);
 const CLEAR_OUT = FadeOut.duration(140);
 
 /** A picker capsule: the current choice and a chevron, Ink once it narrows what shows. */
-function FilterTrigger({
+export function FilterTrigger({
   testID,
   name,
   label,

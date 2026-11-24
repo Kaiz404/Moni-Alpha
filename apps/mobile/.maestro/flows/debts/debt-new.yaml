@@ -79,9 +79,6 @@ tags:
 - tapOn:
     id: debts.submit
 - assertVisible: People
-- assertNotVisible:
-    id: debts.tile.owed-to-me
-    text: Owed to you RM150
 - scrollUntilVisible:
     element:
       id: 'debts\.person\..*'
@@ -90,10 +87,11 @@ tags:
 - takeScreenshot: d1-l5-new
 - scrollUntilVisible:
     element:
-      id: debts.settled.toggle
+      id: debts.filter.status
     centerElement: true
 - tapOn:
-    id: debts.settled.toggle
+    id: debts.filter.status
+- tapOn: Settled and written off
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'

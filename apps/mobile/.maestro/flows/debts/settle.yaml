@@ -27,10 +27,11 @@ tags:
     id: debts.done
 - scrollUntilVisible:
     element:
-      id: debts.settled.toggle
+      id: debts.filter.status
     centerElement: true
 - tapOn:
-    id: debts.settled.toggle
+    id: debts.filter.status
+- tapOn: Settled and written off
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'

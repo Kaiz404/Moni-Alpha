@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { Keyboard } from 'react-native';
 import type { MinorAmount, TransactionType } from '@repo/types';
 
+import type { IconSymbolName } from '@/components/ui/icon-symbol';
 import type { WalletKind } from '@/constants/wallet-form';
 import type { GridLayout } from '@/lib/dates/grid-pages';
 import type { PlacePick } from '@/lib/capture/entry-place';
@@ -55,12 +56,15 @@ type Sheets = {
     request: {
       title: string;
       wallets: WalletOption[];
-      selectedId: string | null;
+      /** Null picks the none row when there is one; left out, nothing is picked yet. */
+      selectedId?: string | null;
       emptyMessage?: string;
       /** The 13/18 Meta line under the title, such as which currency the list keeps to. */
       note?: string;
       /** Adds a first row that resolves to `walletId: null`. */
       noneLabel?: string;
+      /** The icon in the none row's bubble; without it the row has no bubble. */
+      noneIcon?: IconSymbolName;
       /** Tints this row Mint and adds "Suggested" to its balance. */
       suggestedId?: string | null;
     };
@@ -78,6 +82,15 @@ type Sheets = {
   currency: { request: { selected: string }; result: string };
   walletType: { request: { selected: WalletKind }; result: WalletKind };
   transactionType: { request: { selected: TransactionType | null }; result: TransactionType };
+  /** A short list of plain choices, such as the Debts filters; resolves to the picked id. */
+  choice: {
+    request: {
+      title: string;
+      options: { id: string; label: string; meta?: string; icon: IconSymbolName }[];
+      selected: string;
+    };
+    result: string;
+  };
   /** Activity's Type filter. */
   activityKind: { request: { selected: ActivityKind }; result: ActivityKind };
   notificationApp: {

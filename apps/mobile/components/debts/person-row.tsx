@@ -48,7 +48,7 @@ export function PersonRow({ line }: { line: DebtLine }) {
           className="text-muted"
           numberOfLines={1}
         >
-          {words.started}{' '}
+          {line.noted ? words.noted : words.started}{' '}
           {dateLabel(
             deviceCalendar.dayKey(line.startedAt),
             deviceCalendar.dayKey(new Date()),

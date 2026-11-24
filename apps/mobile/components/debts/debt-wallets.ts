@@ -22,18 +22,25 @@ export function useDebtWallets(currency: string): {
   return { wallets, balances };
 }
 
+/** A debt's wallet choice: a wallet's id, `NO_WALLET` when no money moved, or null before one is chosen. */
+export const NO_WALLET = 'none';
+export type DebtWalletChoice = string | null;
+
+/** Opens the wallet sheet with the no-money row on top; resolves to the choice, or null when dismissed. */
 export async function pickDebtWallet(
   title: string,
   wallets: FinanceWallet[],
-  selectedId: string | null,
-  currency: string,
-): Promise<string | null> {
+  choice: DebtWalletChoice,
+  noneLabel: string,
+): Promise<DebtWalletChoice> {
   const picked = await openSheet({
     kind: 'wallet',
     title,
     wallets,
-    selectedId,
-    emptyMessage: `Add a ${currency} wallet first.`,
+    selectedId: choice === NO_WALLET ? null : (choice ?? undefined),
+    noneLabel,
+    noneIcon: 'note-text-outline',
   });
-  return picked?.walletId ?? null;
+  if (!picked) return null;
+  return picked.walletId ?? NO_WALLET;
 }

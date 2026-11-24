@@ -4,17 +4,17 @@ import { View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
 import { TextTile } from '@/components/amount/text-tile';
+import { DebtWalletField } from '@/components/debts/debt-wallet-field';
 import {
-  pickDebtWallet,
+  type DebtWalletChoice,
+  NO_WALLET,
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { useDebt } from '@/components/debts/use-debts';
 import { Chip } from '@/components/ui/chip';
-import { WalletBubble } from '@/components/ui/field-bubble';
 import { NotFound } from '@/components/ui/empty-tile';
 import { Page } from '@/components/ui/page';
-import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
 import { showToast } from '@/lib/toast/toast-store';
 import { approve } from '@/lib/haptics';
@@ -26,7 +26,6 @@ import {
 } from '@/lib/supabase/debts';
 import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
-import { compactWalletNames } from '@repo/core';
 import { minorToDecimal } from '@repo/types';
 import { type DebtLine, type FinanceDebtActivity, formatMoney } from '@repo/core';
 
@@ -97,12 +96,15 @@ function DebtMoneyForm({
     setTyped(minor > 0 ? minorToDecimal(minor) : '');
     setPrefilled(minor > 0);
   };
-  const [chosenWalletId, setWalletId] = useState<string | null>(null);
-  const walletId =
-    wallets.find((item) => item.id === chosenWalletId)?.id ??
+  const [chosen, setChosen] = useState<DebtWalletChoice>(null);
+  const noted = line.noted && !usual;
+  const choice: DebtWalletChoice =
+    (chosen === NO_WALLET || wallets.some((item) => item.id === chosen)
+      ? chosen
+      : null) ??
     usual ??
-    wallets[0]?.id ??
-    null;
+    (noted ? null : (wallets[0]?.id ?? null));
+  const walletId = choice === NO_WALLET ? null : choice;
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -152,7 +154,7 @@ function DebtMoneyForm({
       }));
 
   const save = async () => {
-    if (!walletId || amountMinor <= 0 || over) return;
+    if (!choice || amountMinor <= 0 || over) return;
     approve();
     setSaving(true);
     try {
@@ -186,23 +188,13 @@ function DebtMoneyForm({
   const fields = (
     <View className="gap-3">
       <View className="flex-row gap-2">
-        <PickerField
+        <DebtWalletField
           testID={tid('debts', 'amount', 'wallet')}
-          className="flex-1"
           label={walletLabel}
-          value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
-          spokenValue={wallet?.name}
-          icon="wallet-outline"
-          leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
-          onPress={async () => {
-            const picked = await pickDebtWallet(
-              walletLabel,
-              wallets,
-              walletId,
-              currency,
-            );
-            if (picked) setWalletId(picked);
-          }}
+          noneLabel={repay ? words.repayNone : words.principalNone}
+          wallets={wallets}
+          choice={choice}
+          onChoose={setChosen}
         />
         <View className="flex-1">
           <TextTile
@@ -271,16 +263,16 @@ function DebtMoneyForm({
       hint={
         walletAfter !== null && wallet
           ? `${money(walletAfter)} ${leaves ? 'left in' : 'in'} ${wallet.name} after this`
-          : wallets.length === 0
-            ? `Add a ${currency} wallet first.`
-            : undefined
+          : undefined
       }
       action={{
         label:
-          amountMinor > 0 && !over
-            ? `${verb} ${money(amountMinor)}`
-            : 'Add an amount',
-        disabled: saving || !walletId || amountMinor <= 0 || over,
+          amountMinor <= 0 || over
+            ? 'Add an amount'
+            : choice
+              ? `${verb} ${money(amountMinor)}`
+              : 'Choose where it went',
+        disabled: saving || !choice || amountMinor <= 0 || over,
         onPress: () => void save(),
       }}
     >

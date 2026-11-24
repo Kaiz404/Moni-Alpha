@@ -234,6 +234,7 @@ type KindSheetProps<
     | 'walletType'
     | 'transactionType'
     | 'activityKind'
+    | 'choice'
     | 'date'
     | 'notificationApp'
     | 'person',
@@ -279,9 +280,22 @@ export function WalletSheet({
   onPick,
   ...frame
 }: KindSheetProps<'wallet'>) {
+  const tokens = useThemeTokens();
   const options = useWalletOptions(request.wallets, request.suggestedId);
   if (request.noneLabel)
-    options.unshift({ id: NONE, name: request.noneLabel });
+    options.unshift({
+      id: NONE,
+      name: request.noneLabel,
+      leading: request.noneIcon ? (
+        <Bubble>
+          <IconSymbol
+            name={request.noneIcon}
+            size={20}
+            color={tokens.foreground}
+          />
+        </Bubble>
+      ) : undefined,
+    });
   return (
     <OptionPickerSheet
       {...frame}
@@ -293,7 +307,9 @@ export function WalletSheet({
       }
       options={options}
       selectedId={
-        request.selectedId ?? (request.noneLabel ? NONE : null)
+        request.selectedId === undefined
+          ? null
+          : (request.selectedId ?? (request.noneLabel ? NONE : null))
       }
       onPick={(id) => onPick({ walletId: id === NONE ? null : id })}
     />
@@ -538,6 +554,37 @@ export function ActivityKindSheet({
         const picked = ACTIVITY_KINDS.find((kind) => kind === id);
         if (picked) onPick(picked);
       }}
+    />
+  );
+}
+
+export function ChoiceSheet({
+  request,
+  onPick,
+  ...frame
+}: KindSheetProps<'choice'>) {
+  const tokens = useThemeTokens();
+  const options: PickerOption[] = request.options.map((option) => ({
+    id: option.id,
+    name: option.label,
+    meta: option.meta,
+    leading: (
+      <Bubble>
+        <IconSymbol
+          name={option.icon}
+          size={20}
+          color={tokens.foreground}
+        />
+      </Bubble>
+    ),
+  }));
+  return (
+    <OptionPickerSheet
+      {...frame}
+      title={request.title}
+      options={options}
+      selectedId={request.selected}
+      onPick={onPick}
     />
   );
 }

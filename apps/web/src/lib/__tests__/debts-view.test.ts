@@ -25,6 +25,7 @@ function debtLine(over: Partial<FinanceDebt>, money: Partial<DebtLine> = {}): De
     balanceMinor: m(15000),
     state: 'open',
     startedAt: '2026-09-27T04:00:00.000Z',
+    noted: false,
     lastAt: '2026-09-27T04:00:00.000Z',
     ...money,
   };

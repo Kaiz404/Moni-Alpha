@@ -31,7 +31,6 @@ jest.mock('@/components/debts/coming-up', () => ({
   },
 }));
 jest.mock('@/components/debts/person-row', () => ({ PersonRow: () => null }));
-jest.mock('@/components/debts/settled-list', () => ({ SettledList: () => null }));
 jest.mock('@/components/debts/use-debts', () => ({ useDebtSummary: jest.fn() }));
 
 function order(): string[] {

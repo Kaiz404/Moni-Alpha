@@ -12,6 +12,7 @@ import { GridPickerSheet } from '@/components/sheets/grid-picker-sheet';
 import { NotificationAccessSheet } from '@/components/sheets/notification-access-sheet';
 import {
   ActivityKindSheet,
+  ChoiceSheet,
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
@@ -92,6 +93,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
     case 'transactionType':
       return (
         <TransactionTypeSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'choice':
+      return (
+        <ChoiceSheet
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}

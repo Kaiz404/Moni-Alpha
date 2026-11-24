@@ -444,10 +444,29 @@ describe('debt plans', () => {
   it.each([
     ['a repayment above the balance', { kind: 'repayment', amountMinor: minor(10001), walletId: 'maybank' }, 'Amount cannot exceed the outstanding balance'],
     ['a write-off short of the balance', { kind: 'write_off', amountMinor: minor(5000) }, 'Write-off must settle the full remaining balance'],
-    ['cash with no wallet', { kind: 'repayment', amountMinor: minor(5000) }, 'Select a wallet'],
     ['a wallet in another currency', { kind: 'repayment', amountMinor: minor(5000), walletId: 'dbs' }, 'Select a MYR wallet'],
   ] as const)('refuses %s', (_case, input, message) => {
     expect(planDebtActivity(DEBT, input, owed, context())).toEqual({ kind: 'error', message });
+  });
+
+  it('records a repayment that moved no money with no wallet and no cash row', () => {
+    const plan = planDebtActivity(DEBT, { kind: 'repayment', amountMinor: minor(5000), walletId: null }, owed, context());
+    expect(plan.kind === 'writes' && plan.writes.insert).toEqual([
+      expect.objectContaining({
+        table: 'debt_activities',
+        row: expect.objectContaining({ kind: 'repayment', wallet_id: null, cash_transaction_id: null }),
+      }),
+    ]);
+  });
+
+  it('opens a debt with no wallet in the currency it is given', () => {
+    const plan = planDebt(
+      { counterpartyName: 'Farah', direction: 'owed_to_me', amountMinor: minor(6000), walletId: null, currency: 'MYR' },
+      view({}),
+      context(),
+    );
+    expect(plan.kind === 'writes' && plan.writes.insert.map((write) => write.table)).toEqual(['debts', 'debt_activities']);
+    expect(plan.kind === 'writes' && plan.result.debt.currency).toBe('MYR');
   });
 
   it('settles a debt with a repayment that comes back into the wallet', () => {

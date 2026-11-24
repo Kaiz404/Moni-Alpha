@@ -14,6 +14,8 @@ import { PRIVACY_POLICY_URL } from '@/constants/links';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
+const privacyUrl = PRIVACY_POLICY_URL ?? '';
+
 /**
  * Google Play's prominent disclosure, shown in the app before Android's settings page. Each line
  * must stay true: `notification-filter.core.js` drops other apps and one-time codes on the phone,
@@ -83,13 +85,13 @@ export function NotificationAccessSheet({
             </Text>
           </View>
         ))}
-        {PRIVACY_POLICY_URL ? (
+        {privacyUrl ? (
           <Button
             testID={tid('sheet', 'privacy-policy')}
             variant="tertiary"
             className="self-start"
             label="Read the privacy policy"
-            onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+            onPress={() => void Linking.openURL(privacyUrl)}
           />
         ) : null}
       </View>

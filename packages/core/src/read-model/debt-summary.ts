@@ -9,7 +9,8 @@ export type DebtSide = FinanceDebt['direction'];
 type Activity = Pick<
   FinanceDebtActivity,
   'id' | 'debtId' | 'kind' | 'amountMinor' | 'activityDate'
->;
+> &
+  Partial<Pick<FinanceDebtActivity, 'walletId'>>;
 
 /** One debt with the money that moved on it: what every debts screen reads. */
 export type DebtLine = {
@@ -20,6 +21,8 @@ export type DebtLine = {
   state: DebtStatus;
   /** ISO time of the first principal ("Lent Sun 27 Sep"). */
   startedAt: string;
+  /** The first principal moved no money: a record only ("Noted Thu 1 Oct"). */
+  noted: boolean;
   /** ISO time of the newest activity; closed debts sort by it. */
   lastAt: string;
 };
@@ -59,6 +62,7 @@ export function describeDebt(debt: FinanceDebt, activities: readonly Activity[])
     balanceMinor,
     state: debtStatus(own),
     startedAt: first.activityDate,
+    noted: first.walletId === null,
     lastAt: own[own.length - 1]?.activityDate ?? first.activityDate,
   };
 }

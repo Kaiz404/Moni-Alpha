@@ -4,13 +4,14 @@ import { Keyboard, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
 import { TextTile } from '@/components/amount/text-tile';
-import { WalletBubble } from '@/components/ui/field-bubble';
 import {
   dueLabel,
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
+import { DebtWalletField } from '@/components/debts/debt-wallet-field';
 import {
-  pickDebtWallet,
+  type DebtWalletChoice,
+  NO_WALLET,
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
@@ -34,7 +35,6 @@ import {
 } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { compactWalletNames } from '@repo/core';
 import { type DebtSide, formatMoney } from '@repo/core';
 
 const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;
@@ -47,7 +47,7 @@ export default function NewDebtScreen() {
   const [name, setName] = useState('');
   const [direction, setDirection] = useState<DebtSide>('owed_to_me');
   const [typed, setTyped] = useState('');
-  const [chosenWalletId, setChosenWalletId] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<DebtWalletChoice>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [dueOpen, setDueOpen] = useState(false);
@@ -69,12 +69,16 @@ export default function NewDebtScreen() {
           sameName(line.debt.counterpartyName, who),
       )
     : undefined;
-  const wallet =
-    wallets.find((item) => item.id === chosenWalletId) ?? wallets[0] ?? null;
-  const walletId = wallet?.id ?? null;
+  const choice =
+    (chosen === NO_WALLET || wallets.some((item) => item.id === chosen)
+      ? chosen
+      : null) ??
+    wallets[0]?.id ??
+    NO_WALLET;
+  const walletId = choice === NO_WALLET ? null : choice;
   const amountMinor = readAmount(typed).minor;
   const amount = formatMoney(amountMinor, currency);
-  const ready = who.length > 0 && amountMinor > 0 && walletId !== null;
+  const ready = who.length > 0 && amountMinor > 0;
   const walletLabel = words.principalWallet;
   const people = pastPeople(lines, direction);
 
@@ -90,7 +94,7 @@ export default function NewDebtScreen() {
   };
 
   const submit = async () => {
-    if (!ready || !walletId) return;
+    if (!ready) return;
     approve();
     setSaving(true);
     try {
@@ -106,6 +110,7 @@ export default function NewDebtScreen() {
           direction,
           amountMinor,
           walletId,
+          currency,
           dueDate,
           note: saidNote,
         });
@@ -153,9 +158,7 @@ export default function NewDebtScreen() {
         action={{
           label: ready
             ? words.record(who, amount)
-            : wallets.length === 0
-              ? `Add a ${currency} wallet first`
-              : who
+            : who
                 ? 'Add an amount'
                 : 'Add who and an amount',
           disabled: !ready,
@@ -210,23 +213,13 @@ export default function NewDebtScreen() {
           </View>
         ) : null}
         <View className="flex-row gap-2">
-          <PickerField
+          <DebtWalletField
             testID={tid('debts', 'new', 'wallet')}
-            className="flex-1"
             label={walletLabel}
-            value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
-            spokenValue={wallet?.name}
-            icon="wallet-outline"
-            leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
-            onPress={async () => {
-              const picked = await pickDebtWallet(
-                walletLabel,
-                wallets,
-                walletId,
-                currency,
-              );
-              if (picked) setChosenWalletId(picked);
-            }}
+            noneLabel={words.principalNone}
+            wallets={wallets}
+            choice={choice}
+            onChoose={setChosen}
           />
           <PickerField
             testID={tid('debts', 'new', 'due-date')}

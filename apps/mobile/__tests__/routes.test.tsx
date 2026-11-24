@@ -265,7 +265,7 @@ const ROUTES: Record<string, RouteSpec> = {
     'Pay Mei back',
     "This debt isn't here any more",
   ),
-  'debt/new.tsx': differ('/debt/new', 'Add who and an amount', 'Add a MYR wallet first'),
+  'debt/new.tsx': same('/debt/new', 'Add who and an amount'),
   'debug/index.tsx': same('/debug', 'Debug tools'),
   'map.tsx': same('/map', 'Where you spend'),
   'merchants.tsx': differ(

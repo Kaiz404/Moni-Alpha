@@ -36,16 +36,21 @@ export const createDebtInputSchema = z.object({
   counterpartyName: z.string().trim().min(1).max(120),
   direction: debtDirectionSchema,
   amountMinor: positiveMinorAmountSchema,
-  walletId: z.string().uuid(),
+  /** None when the debt is a record only and no money moved. */
+  walletId: z.string().uuid().nullable().optional(),
+  /** The debt's currency when it has no wallet to take it from. */
+  currency: z.string().regex(/^[A-Z]{3}$/).optional(),
   dueDate: z.string().date().nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
   activityDate: z.string().datetime().optional(),
+}).refine((input) => Boolean(input.walletId || input.currency), {
+  message: 'Choose a wallet or a currency',
 });
 
 export const createDebtActivityInputSchema = z.object({
   kind: z.enum(['principal', 'repayment']),
   amountMinor: positiveMinorAmountSchema,
-  walletId: z.string().uuid(),
+  walletId: z.string().uuid().nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
   activityDate: z.string().datetime().optional(),
 });

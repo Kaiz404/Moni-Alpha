@@ -70,7 +70,8 @@ export function activitiesOfDebt(view: Pick<LedgerView, 'debtActivitiesById'>, d
 export type DebtActivityInput = {
   kind: DebtActivityKind;
   amountMinor: MinorAmount;
-  walletId?: string;
+  /** None: the activity is a record only and moves no money. */
+  walletId?: string | null;
   note?: string | null;
   activityDate?: string;
 };
@@ -92,14 +93,13 @@ function activityWrites(
   if (data.kind === 'write_off' && data.amountMinor !== balance) {
     return refused('Write-off must settle the full remaining balance');
   }
-  if (data.kind !== 'write_off' && !data.walletId) return refused('Select a wallet');
   if (data.walletId) {
     const wallet = view.walletsById[data.walletId];
     if (!wallet) return refused('Wallet not found');
     if (wallet.currency !== debt.currency) return refused(`Select a ${debt.currency} wallet`);
   }
   const id = ctx.newId();
-  const cashTransactionId = data.kind === 'write_off' ? null : ctx.newId();
+  const cashTransactionId = data.kind === 'write_off' || !data.walletId ? null : ctx.newId();
   const activity: FinanceDebtActivity = {
     id,
     userId: ctx.userId,
@@ -161,7 +161,9 @@ export type NewDebt = {
   counterpartyName: string;
   direction: DebtDirection;
   amountMinor: MinorAmount;
-  walletId: string;
+  /** None: a record only, in `currency`. */
+  walletId?: string | null;
+  currency?: string;
   dueDate?: string | null;
   note?: string | null;
   activityDate?: string;
@@ -175,21 +177,23 @@ export function planDebt(
 ): Planned<{ debt: FinanceDebt }> {
   const name = data.counterpartyName.trim();
   if (!name) return refused('Enter a person’s name');
-  const wallet = view.walletsById[data.walletId];
-  if (!wallet) return refused('Wallet not found');
+  const wallet = data.walletId ? view.walletsById[data.walletId] : undefined;
+  if (data.walletId && !wallet) return refused('Wallet not found');
+  const currency = wallet?.currency ?? data.currency;
+  if (!currency) return refused('Choose a wallet or a currency');
   const debt: FinanceDebt = {
     id: ctx.newId(),
     userId: ctx.userId,
     counterpartyName: name,
     direction: data.direction,
-    currency: wallet.currency,
+    currency,
     dueDate: data.dueDate ?? null,
     note: data.note ?? null,
     status: 'open',
     createdAt: ctx.now,
     updatedAt: ctx.now,
   };
-  const principal = { kind: 'principal' as const, ...data, note: data.note };
+  const principal = { kind: 'principal' as const, amountMinor: data.amountMinor, walletId: data.walletId, note: data.note, activityDate: data.activityDate };
   const written = activityWrites(debt, principal, [], view, ctx);
   if ('kind' in written) return written;
   const row: StoredRow<'debts'> = {

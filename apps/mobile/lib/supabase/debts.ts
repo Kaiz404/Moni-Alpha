@@ -98,7 +98,7 @@ export function updateDebt(
 export async function addDebtPrincipal(
   debt: Debt,
   amountMinor: MinorAmount,
-  walletId: string,
+  walletId: string | null,
   note?: string | null,
 ) {
   const parsed = createDebtActivityInputSchema.safeParse({
@@ -113,7 +113,7 @@ export async function addDebtPrincipal(
 export async function repayDebt(
   debt: Debt,
   amountMinor: MinorAmount,
-  walletId: string,
+  walletId: string | null,
   note?: string | null,
 ) {
   const parsed = createDebtActivityInputSchema.safeParse({

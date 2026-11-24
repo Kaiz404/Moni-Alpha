@@ -2,30 +2,20 @@ import { View } from 'react-native';
 
 import { debtMoney, SIDE_WORDS } from '@/components/debts/debt-words';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtSide, DebtSummary } from '@repo/core';
-import { tid } from '@/lib/test-ids';
 
-const TILES = [
+const SIDES = [
   { side: 'owed_to_me', glyph: 'arrow-bottom-left' },
   { side: 'i_owe', glyph: 'arrow-top-right' },
 ] as const;
 
 /**
- * The Mint hero: where the user stands overall, then one tile per side. A tile
- * filters the people list below it in place (D5); tapping it again clears it.
+ * The Mint hero, read only: where the user stands overall, then a bar that sizes what they are
+ * owed against what they owe, with each total under its end (XD-DebtsFilter-B).
  */
-export function NetPosition({
-  summary,
-  filter,
-  onFilter,
-}: {
-  summary: DebtSummary;
-  filter: DebtSide | null;
-  onFilter: (side: DebtSide | null) => void;
-}) {
+export function NetPosition({ summary }: { summary: DebtSummary }) {
   const tokens = useThemeTokens();
   const { netMinor, currency } = summary;
   const label =
@@ -36,14 +26,15 @@ export function NetPosition({
         : summary.owedToMeMinor > 0
           ? 'Overall, you are even'
           : 'Everyone is square';
-  const totals = {
+  const totals: Record<DebtSide, number> = {
     owed_to_me: summary.owedToMeMinor,
     i_owe: summary.iOweMinor,
   };
+  const any = totals.owed_to_me + totals.i_owe > 0;
   return (
     <View
       accessibilityLabel="Where you stand"
-      className="gap-3 rounded-card bg-block-mint py-4 pl-[18px] pr-4"
+      className="gap-2.5 rounded-card bg-block-mint py-4 pl-[18px] pr-4"
     >
       <View
         accessible
@@ -62,53 +53,50 @@ export function NetPosition({
           {debtMoney(Math.abs(netMinor), currency)}
         </Text>
       </View>
-      <View className="flex-row gap-2">
-        {TILES.map(({ side, glyph }) => {
-          const on = filter === side;
-          const ink = on
-            ? tokens.primaryForeground
-            : tokens.foreground;
-          const amount = debtMoney(totals[side], currency);
-          return (
-            <Press
-              key={side}
-              testID={tid('debts', 'tile', side)}
-              accessibilityLabel={`${SIDE_WORDS[side].tile} ${amount}`}
-              accessibilityHint={
-                on
-                  ? 'Shows everyone again'
-                  : 'Shows only these people'
-              }
-              accessibilityState={{ selected: on }}
-              pressedClassName={
-                on ? 'bg-primary-pressed' : 'bg-sand-light'
-              }
-              radius={{ rest: 18, pressed: 16 }}
-              className={`flex-1 gap-0.5 py-2.5 pl-3.5 pr-2.5 ${on ? 'bg-primary' : 'bg-card'}`}
-              onPress={() => onFilter(on ? null : side)}
-            >
-              <View className="flex-row items-center justify-between">
-                <Text
-                  className={`text-[13px] leading-[18px] font-display-semibold ${on ? 'text-primary-foreground' : 'text-foreground'}`}
-                >
-                  {SIDE_WORDS[side].tile}
-                </Text>
-                <IconSymbol
-                  name={glyph}
-                  size={18}
-                  color={ink}
-                />
-              </View>
-              <Text
-                className={`text-[22px] leading-[26px] font-display-bold ${on ? 'text-primary-foreground' : 'text-foreground'}`}
-                numberOfLines={1}
+      {any ? (
+        <>
+          <View
+            importantForAccessibility="no-hide-descendants"
+            className="mt-0.5 h-2.5 flex-row gap-1"
+          >
+            {totals.owed_to_me > 0 ? (
+              <View
+                className="rounded-full bg-on-pastel"
+                style={{ flex: totals.owed_to_me }}
+              />
+            ) : null}
+            {totals.i_owe > 0 ? (
+              <View
+                className="rounded-full bg-card"
+                style={{ flex: totals.i_owe }}
+              />
+            ) : null}
+          </View>
+          <View className="flex-row justify-between">
+            {SIDES.map(({ side, glyph }) => (
+              <View
+                key={side}
+                accessible
+                className={`gap-0.5 ${side === 'i_owe' ? 'items-end' : ''}`}
               >
-                {amount}
-              </Text>
-            </Press>
-          );
-        })}
-      </View>
+                <View className="flex-row items-center gap-1">
+                  <IconSymbol
+                    name={glyph}
+                    size={16}
+                    color={tokens.onPastel}
+                  />
+                  <Text className="text-[13px] leading-[18px] font-display-semibold text-on-pastel">
+                    {SIDE_WORDS[side].tile}
+                  </Text>
+                </View>
+                <Text className="text-[22px] leading-[26px] font-display-bold text-on-pastel">
+                  {debtMoney(totals[side], currency)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
     </View>
   );
 }

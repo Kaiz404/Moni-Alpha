@@ -185,6 +185,7 @@ describe('Record a debt', () => {
           direction: 'owed_to_me',
           amountMinor: 5000,
           walletId: MAYBANK,
+          currency: 'MYR',
           dueDate: null,
           note: 'Lunch',
         },
@@ -306,11 +307,13 @@ describe('Record a debt', () => {
     ).toMatchObject({ selected: true });
   });
 
-  it('asks for a wallet when the main currency has none', () => {
+  it('records with no wallet when the main currency has none', async () => {
     financeProjection$.set(EMPTY_FINANCE_PROJECTION);
     render(<NewDebtScreen />);
     fireEvent.changeText(screen.getByTestId('debts.new.person'), 'Hana');
     keys('5');
-    expect(screen.getByText('Add a MYR wallet first')).toBeTruthy();
+    expect(screen.getByText('Not used')).toBeTruthy();
+    await record();
+    expect(jest.mocked(createDebt).mock.calls[0]?.[0]).toMatchObject({ walletId: null, currency: 'MYR' });
   });
 });
