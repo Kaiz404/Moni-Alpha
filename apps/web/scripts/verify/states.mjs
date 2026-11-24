@@ -148,10 +148,10 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       await sp.getByLabel('Wallet 2 starting balance').fill('63.60');
       await sp.getByRole('button', { name: 'Add another wallet' }).click();
       await sp.getByLabel('Wallet 3 name').fill('Wise USD');
-      await sp.getByRole('button', { name: /^Wallet 3 type/ }).click();
+      await sp.getByRole('combobox', { name: /^Wallet 3 type/ }).click();
       await sp.getByRole('option', { name: 'Bank', exact: true }).click();
       await sp.getByLabel('Wallet 3 starting balance').fill('120');
-      await sp.getByRole('button', { name: /^Wallet 3 currency/ }).click();
+      await sp.getByRole('combobox', { name: /^Wallet 3 currency/ }).click();
       await sp.getByRole('option', { name: 'USD', exact: true }).click();
       check('no wallet label wraps the currency button', (await sp.locator('.setup-wrow label button').count()) === 0 && (await sp.getByRole('textbox', { name: 'Wallet 3 starting balance', exact: true }).inputValue()) === '120');
       const preview = (await sp.locator('.setup-preview').textContent()) ?? '';
@@ -437,7 +437,7 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     await p.keyboard.press('j');
     const pane = p.getByRole('complementary', { name: 'Transaction' });
     await pane.waitFor({ timeout: 10_000 });
-    await pane.locator('.pane-top').getByRole('button', { name: /^Delete transaction/ }).click();
+    await p.getByRole('button', { name: 'Delete transaction (Del)' }).click();
     const one = p.getByRole('alertdialog', { name: 'Delete this transaction?' });
     await one.waitFor({ timeout: 5000 }).catch(() => {});
     check(

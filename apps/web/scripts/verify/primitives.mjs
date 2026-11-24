@@ -58,6 +58,11 @@ export async function verifyPrimitives({ browser, base, storage, check, shot, se
         const confirmGone = !(await confirm.isVisible().catch(() => false));
         check(`${where}: Esc closes the confirm`, confirmGone);
         if (!confirmGone) await confirm.getByRole('button', { name: /^Cancel/ }).click();
+        const all = p.getByRole('checkbox', { name: 'Select all on this page' });
+        const took = await all.click({ timeout: 3000 }).then(() => true, () => false);
+        check(`${where}: after the confirm the page takes a press again`, took && (await all.isChecked()), await p.evaluate(() => [...document.querySelectorAll('[inert]')].map((el) => el.className).join()));
+        if (took) await p.keyboard.press('Escape');
+        await p.waitForTimeout(300);
       }
 
       await row.click();

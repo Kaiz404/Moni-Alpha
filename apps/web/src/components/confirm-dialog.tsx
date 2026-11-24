@@ -8,14 +8,13 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from '@ui-sdk/react/alert-dialog';
-import { useRef, useState } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
 
 /**
  * W2-Parts' confirm before a write that takes something away: the title, what it does, Cancel (focused,
  * Esc) and the red action. Undo still comes in the toast after. ui-sdk's alert dialog keeps Tab inside,
- * makes the page under it inert and plays the exit before the answer goes back. Keys stop here, so J, K
- * or R never act on the screen underneath while it asks.
+ * and makes the page under it inert. The answer goes back at once, so a second Esc reaches the screen.
+ * Keys stop here, so J, K or R never act on the screen underneath while it asks.
  */
 export function ConfirmDialog({
   title,
@@ -34,19 +33,12 @@ export function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const [open, setOpen] = useState(true);
-  const answer = useRef<'cancel' | 'confirm'>('cancel');
   return (
     <AlertDialog
-      open={open}
+      open
       onOpenChange={(next, details) => {
         if (next) return;
-        answer.current = details.returnValue === 'confirm' ? 'confirm' : 'cancel';
-        setOpen(false);
-      }}
-      onOpenChangeComplete={(isOpen) => {
-        if (isOpen) return;
-        if (answer.current === 'confirm') onConfirm();
+        if (details.returnValue === 'confirm') onConfirm();
         else onCancel();
       }}
     >

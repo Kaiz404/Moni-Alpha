@@ -670,7 +670,7 @@ try {
     await open(p, '/home');
     await p.locator('.home-slot').first().waitFor();
     await p.getByRole('button', { name: /Settings$/ }).first().click();
-    await p.getByRole('radio', { name: to === 'dark' ? 'Dark' : 'Light' }).click();
+    await p.getByRole('menuitemradio', { name: to === 'dark' ? 'Dark' : 'Light' }).click();
     await p.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement), null, { timeout: 3000 }).catch(() => {});
     const groups = await p.evaluate(() => [...new Set(document.getAnimations().map((a) => a.effect?.pseudoElement).filter(Boolean))].sort());
     check(
@@ -716,6 +716,7 @@ try {
   await k.waitForTimeout(500);
   await shot(k, 'shortcuts-1440');
   await k.keyboard.press('Escape');
+  await shortcuts.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   check('Esc closes the shortcuts dialog', !(await shortcuts.isVisible()));
 
   await k.keyboard.press('g');
@@ -764,6 +765,7 @@ try {
   await k.waitForTimeout(500);
   await shot(k, 'account-menu-1440');
   await k.keyboard.press('Escape');
+  await menu.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   check('Esc closes the account menu', !(await menu.isVisible()));
   await keysCtx.close();
 
