@@ -1,8 +1,11 @@
 import { receiptPath } from '@repo/core';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Linking, View } from 'react-native';
+import { useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Alert, View } from 'react-native';
+
+import { ReceiptViewer } from '@/components/capture/receipt-photo';
+import type { WindowFrame } from '@/components/capture/receipt-flight';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import {
@@ -24,20 +27,33 @@ export type DetailLink = {
   meta?: string;
   icon: IconSymbolName;
   trailing: 'chevron-right' | 'plus';
-  onPress: () => void;
+  /** Gets where the row's bubble sits in the window, for anything that opens out of it. */
+  onPress: (from: WindowFrame) => void;
   bubble?: ReactNode;
+  /** Drawn over the page while the link is open, such as the receipt full screen. */
+  overlay?: ReactNode;
 };
 
 function LinkRow({ link }: { link: DetailLink }) {
   const tokens = useThemeTokens();
+  const bubble = useRef<View>(null);
   return (
+    <>
     <Press
       testID={tid('txn', 'link', link.name)}
       accessibilityLabel={link.meta ? `${link.title}, ${link.meta}` : link.title}
-      onPress={link.onPress}
+      onPress={() => {
+        const view = bubble.current;
+        if (!view) return link.onPress({ x: 0, y: 0, width: 42, height: 42 });
+        view.measureInWindow((x, y, width, height) => link.onPress({ x, y, width, height }));
+      }}
       className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
     >
-      <View className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full bg-sand">
+      <View
+        ref={bubble}
+        collapsable={false}
+        className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full bg-sand"
+      >
         {link.bubble ?? <IconSymbol name={link.icon} size={20} color={tokens.foreground} />}
       </View>
       <View className="min-w-0 flex-1">
@@ -52,6 +68,8 @@ function LinkRow({ link }: { link: DetailLink }) {
       </View>
       <IconSymbol name={link.trailing} size={20} color={tokens.muted} />
     </Press>
+    {link.overlay}
+    </>
   );
 }
 
@@ -99,6 +117,7 @@ export function useReceiptLink(
   const tokens = useThemeTokens();
   const [saving, setSaving] = useState(false);
   const photo = useReceiptPhoto(stored);
+  const [open, setOpen] = useState<{ uri: string; from: WindowFrame } | null>(null);
   if (receiptPath(stored))
     return {
       name: 'receipt',
@@ -107,10 +126,17 @@ export function useReceiptLink(
       icon: 'receipt-text-outline',
       trailing: 'chevron-right',
       bubble: photo ? <Image source={{ uri: photo }} style={{ width: 42, height: 42 }} contentFit="cover" /> : undefined,
-      onPress: () =>
-        void receiptPhoto(stored).then((url) => {
-          if (url) void Linking.openURL(url);
+      onPress: (from) =>
+        void receiptPhoto(stored).then((uri) => {
+          if (uri) setOpen({ uri, from });
         }),
+      overlay: open ? (
+        <ReceiptViewer
+          uri={open.uri}
+          origin={open.from}
+          onClosed={() => setOpen(null)}
+        />
+      ) : null,
     };
   const add = async () => {
     if (!userId || saving) return;

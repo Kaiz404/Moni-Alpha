@@ -76,6 +76,12 @@ jest.mock('@/lib/supabase/transactions', () => ({
   setTransactionReceipt: jest.fn(),
 }));
 jest.mock('@/lib/receipts/images', () => ({}));
+jest.mock('@/components/capture/receipt-photo', () => {
+  const { Image } = jest.requireActual<typeof import('expo-image')>('expo-image');
+  return {
+    ReceiptViewer: ({ uri }: { uri: string }) => <Image source={{ uri }} accessibilityLabel="The receipt, full screen" />,
+  };
+});
 jest.mock('@/lib/supabase/client', () => ({
   supabase: {
     storage: {
@@ -145,15 +151,19 @@ describe('Transaction detail', () => {
     act(() => dismissSheet());
   });
 
-  it('shows a stored receipt photo through a signed link and opens the same link', async () => {
+  it('shows a stored receipt photo through a signed link and opens it full screen in the app', async () => {
     mockRaw = { metadata: { source: 'camera' }, receipt_image_url: 'kai/t1.jpg' };
     const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    jest
+      .requireActual<{ default: { measureInWindow: jest.Mock } }>('@react-native/jest-preset/jest/MockNativeMethods')
+      .default.measureInWindow.mockImplementation((cb: (x: number, y: number, w: number, h: number) => void) => cb(20, 400, 42, 42));
     render(<TransactionDetailScreen />);
     await act(async () => {});
     const signed = 'https://dev.supabase.co/storage/v1/object/sign/receipts/kai/t1.jpg?token=t1';
     expect(screen.UNSAFE_queryAllByType(Image).map((image) => (image.props.source as { uri: string }).uri)).toEqual([signed]);
     await act(async () => fireEvent.press(screen.getByTestId('txn.link.receipt')));
-    expect(openURL).toHaveBeenCalledWith(signed);
+    expect(openURL).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('The receipt, full screen').props.source).toEqual([{ uri: signed }]);
     expect(mockSigns).toEqual(['receipts kai/t1.jpg 3600']);
   });
 

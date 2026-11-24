@@ -95,7 +95,7 @@ export function ReceiptPhoto({
  * The receipt full screen on black. It expands out of the header it was pressed on and shrinks back
  * into it; pinch or double-tap zooms, a drag pans the zoomed photo, and × or Back closes it.
  */
-function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; onClosed: () => void }) {
+export function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; onClosed: () => void }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -195,7 +195,7 @@ function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; 
               <Image
                 source={{ uri }}
                 contentFit="contain"
-                accessibilityLabel="The scanned receipt, full screen"
+                accessibilityLabel="The receipt, full screen"
                 style={{ flex: 1 }}
               />
             </Animated.View>
