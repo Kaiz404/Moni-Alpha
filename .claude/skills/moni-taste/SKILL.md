@@ -170,7 +170,9 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 **23. The web is not the phone made wider.**
 - Do: in landscape, fit in more (quick actions, inline actions, data side by side). Details slide over from the right. Every passing message is the one toast at the bottom left. Key hints touch their control, and popovers stay on screen. Portrait web follows the phone.
 - Don't: leave an empty side pane, or give a feature a page when a pane will do (#102, #104, #106).
-- Owner: "I don't want the desktop web UI to simply just be the same as the mobile UI, just wider"
+- Maps are the exception to the slide-over: a map moves like Google's (drag, wheel and pinch zoom, double click; one finger scrolls the page on touch), sits in a wide band so the page shows it goes on, and a picked place swaps into the card beside it with "‹ All places", never a pane over the map.
+- Example: Where you spend's square map took no drag or wheel, and a picked place opened a slide-over over the page; the map became a wide band and the place swaps into the Spent at places card (24 Nov 2026).
+- Owner: "I don't want the desktop web UI to simply just be the same as the mobile UI, just wider" "the map itself is not exactly interactable like how I would expect a Google map to interact" "I don't like that the panel covers everything and I have to exit to see anything else"
 
 ## How to design
 

@@ -14,7 +14,7 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Budget: ring, budget table, category pane, bills, calendar | [budget.md](budget.md) |
 | Review: Home's drawer, deck and inbox, capture with its source, rule preview, All caught up | [review.md](review.md) |
 | Debts: net position, Coming up, people, person pane, Record a debt | [debts.md](debts.md) |
-| Where you spend: map, pins, places list, place pane, Day by day, Without a place | [places.md](places.md) |
+| Where you spend: map and its gestures, pins, the side card with the places or a place, Day by day, Without a place | [places.md](places.md) |
 | Wallets: All wallets, a wallet's page, New wallet, Edit wallet, Edit amount | [wallets.md](wallets.md) |
 | Moni chat: the docked pane, consent, answer cards, drafts for many rows | [chat.md](chat.md) |
 | Settings: Profile, Moni's AI, Merchant names, Import and export | [settings.md](settings.md) |
