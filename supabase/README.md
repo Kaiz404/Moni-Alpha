@@ -12,6 +12,15 @@ npx supabase db push
 
 Migrations are append-only. Synced tables need `created_at`/`updated_at`, a `deleted` soft-delete flag, RLS, and realtime publication (see `20260707000000_legend_state_prep.sql`).
 
+## Tests
+
+`tests/*.sql` run as two users against a local database and roll themselves back. `owned_references.sql` proves a row can't reference another user's row (#121).
+
+```bash
+npx supabase db start      # local Postgres with every migration (Docker)
+bash supabase/tests/run.sh
+```
+
 ## API keys
 
 Use the new key system (Dashboard → Settings → API Keys):

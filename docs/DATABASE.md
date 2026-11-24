@@ -42,7 +42,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 
 - UUID primary keys (`gen_random_uuid()`)
 - Postgres stores money as `DECIMAL(12,2)` and currency as a `TEXT` three-letter ISO code with a check, never `CHAR(3)`, because Supabase Realtime delivers a `CHAR(n)` value cut to one character. Client/domain contracts use integer minor units (`amountMinor` and balance/budget variants); adapters convert exactly at the database boundary.
-- `transaction_type` enum: `income` | `expense` | `transfer` — transfers store source in `wallet_id`, destination in `transfer_to_wallet_id` (same currency only in the app); net worth unchanged across wallets
+- `transaction_type` enum: `income` | `expense` | `transfer` — transfers store source in `wallet_id`, destination in `transfer_to_wallet_id` (same currency, refused otherwise by the trigger `enforce_transfer_currency` when a row becomes a transfer or changes a wallet); net worth unchanged across wallets
 - All user tables reference `auth.users(id) ON DELETE CASCADE`, so deleting the auth user (the Edge Function `delete-account`) deletes every row; Storage objects are not rows and the function removes them first. A new user table must cascade too
 - Deleting a category sets `is_active = false` (a soft delete): it removes a custom category from lists and new selections while preserving linked financial history. System presets remain read-only through RLS.
 - `20260721000000_refresh_category_catalog.sql` is a development reset: it removes prior category/budget rows, clears transaction category links, drops `parent_id`, and reseeds the fixed icon/pastel catalogue.
@@ -64,6 +64,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 - `20261021000200_merchant_aliases_and_wallet_location.sql` creates `merchant_aliases` (synced, gated like `auto_add_rules`) and adds `wallets.record_location`. The app writes the column only after it finds `merchant_aliases`, because an unknown column fails the whole row's sync.
 - Transaction `currency` is a ledger snapshot derived from the source wallet. The mobile command layer and web API enforce a matching-currency transfer destination, including when a transaction's wallet changes.
 - RLS on everything; policies scope to `auth.uid()`. Clients use the publishable key + user JWT, so RLS is always in force.
+- A row references only its own user's rows (or a system category). RLS checks a row's own `user_id` and a foreign key ignores RLS, so the trigger `enforce_owned_references` (`20261124130000_owned_references.sql`) refuses, with RLS's `42501`, a reference to a row another user owns. It covers every reference between user tables, the debt tables' logical IDs included; a referenced row not there yet passes. A new reference column joins its table's trigger arguments. `supabase/tests/owned_references.sql` proves it as two users (`supabase/README.md` § Tests).
 
 ## Storage
 
