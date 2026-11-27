@@ -33,7 +33,7 @@ import { tid } from '@/lib/test-ids';
 
 import { CapturesCard } from './captures-card';
 import { RevealText } from './reveal-text';
-import { InkCardLabel, useOnInk } from './ink-card';
+import { InkCardLabel, onMoniCard } from './ink-card';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type CardMessage = Extract<ChatMessage, { kind: 'assistant_card' }>;
@@ -67,7 +67,6 @@ function useMonthDaily(createdAt: string, currency: string, categoryId: string |
 
 /** Spent of budget on an Ink card: Sand track, Ink 2 fill, or full Coral and "RMx over". */
 function Bar({ spent, budget, currency }: { spent: number; budget: number; currency: string }) {
-  const onInk = useOnInk();
   const over = spent > budget;
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
   return (
@@ -75,13 +74,13 @@ function Bar({ spent, budget, currency }: { spent: number; budget: number; curre
       <View className="flex-row justify-between">
         <Text
           variant="meta"
-          className={onInk.body}
+          className={onMoniCard.body}
         >
           {`${whole(spent)} of ${whole(budget)}`}
         </Text>
         <Text
           variant="meta"
-          className={`font-display-bold ${over ? 'text-coral' : onInk.body}`}
+          className={`font-display-bold ${over ? 'text-coral' : onMoniCard.body}`}
         >
           {over ? `${whole(spent - budget)} over` : `${whole(budget - spent)} left`}
         </Text>
@@ -113,7 +112,6 @@ function BillTimeline({
   asked: Date;
 }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   const [width, setWidth] = useState(0);
   const first = parseDayKey(subject.dueDate);
   if (!first) return null;
@@ -146,7 +144,7 @@ function BillTimeline({
       style={{ left: center - 48, top }}
     >
       <Text
-        className={`text-[12px] leading-[16px] ${strong ? `font-display-bold text-primary-foreground` : onInk.meta}`}
+        className={`text-[12px] leading-[16px] ${strong ? `font-display-bold ${onMoniCard.title}` : onMoniCard.meta}`}
         numberOfLines={1}
       >
         {text}
@@ -174,7 +172,7 @@ function BillTimeline({
               y1={BASE_Y + 0.5}
               x2={width - 6}
               y2={BASE_Y + 0.5}
-              stroke={tokens.primaryForeground}
+              stroke={tokens.onMoniCard}
               strokeOpacity={0.25}
               strokeWidth={1}
             />
@@ -203,7 +201,7 @@ function BillTimeline({
           {label('first', x(firstDay), 68, dateLabel(first, deviceCalendar.dayKey(asked)).replace(/ \S+$/, ''), true)}
           {dayLabels.map((day) => label(`day-${day}`, x(day), 68, String(day), false))}
           <Text
-            className={`absolute right-1.5 text-[12px] leading-[16px] ${onInk.meta}`}
+            className={`absolute right-1.5 text-[12px] leading-[16px] ${onMoniCard.meta}`}
             style={{ top: 68 }}
           >
             {monthEndLabel(first)}
@@ -228,14 +226,14 @@ function LinkButton({
   onPress: () => void;
 }) {
   const tokens = useThemeTokens();
-  const ink = primary ? tokens.foreground : tokens.primaryForeground;
+  const ink = primary ? tokens.onMoniCardAction : tokens.onMoniCard;
   return (
     <Press
       testID={testID}
       onPress={onPress}
       radius={{ rest: 22, pressed: 16 }}
-      pressedClassName={primary ? 'bg-sand-light' : 'bg-ink-2'}
-      className={`h-11 flex-row items-center pl-4 pr-2.5 ${icon ? 'gap-1.5' : 'gap-0.5'} ${primary ? 'bg-card' : 'bg-ink-2/60'}`}
+      pressedClassName={primary ? 'bg-on-moni-card-body' : 'bg-moni-card-pressed'}
+      className={`h-11 flex-row items-center pl-4 pr-2.5 ${icon ? 'gap-1.5' : 'gap-0.5'} ${primary ? 'bg-moni-card-action' : 'bg-moni-card-quiet'}`}
     >
       {icon ? (
         <IconSymbol
@@ -276,7 +274,6 @@ type LedgerCard = Exclude<Card, { kind: 'captures' }>;
 
 function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCard }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   const currency = useMainCurrency();
   const categoryId = card.kind === 'category_spend' ? card.categoryId : null;
   const categoryName = useValue(() =>
@@ -293,14 +290,14 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
   return (
     <View
       accessibilityLabel={`Moni's answer. ${title}. ${message.content}`}
-      className="gap-3 rounded-card bg-primary p-[18px]"
+      className="gap-3 rounded-card bg-moni-card p-[18px]"
     >
       <InkCardLabel label="Moni" />
       <View className="gap-1.5">
         <Text
           testID={tid('chat', 'answer', 'title')}
           variant="sectionTitle"
-          className="text-primary-foreground"
+          className={onMoniCard.title}
         >
           {title}
         </Text>
@@ -308,7 +305,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
           <RevealText
             messageId={message.id}
             text={message.content}
-            color={tokens.onInkBody}
+            color={tokens.onMoniCardBody}
           />
         ) : null}
       </View>
@@ -329,7 +326,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
       ) : null}
 
       {card.kind !== 'bill_due' && daily ? (
-        <View className="-mx-2 rounded-[18px] bg-card px-2 py-2.5">
+        <View className="-mx-2 rounded-[18px] bg-moni-card-raised px-2 py-2.5">
           <PaceChart
             screen="chat"
             mode="pace"
@@ -351,7 +348,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
           {after ? (
             <Text
               variant="meta"
-              className={onInk.meta}
+              className={onMoniCard.meta}
             >
               {after}
             </Text>
@@ -360,7 +357,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
       ) : after ? (
         <Text
           variant="body"
-          className={onInk.body}
+          className={onMoniCard.body}
         >
           {after}
         </Text>

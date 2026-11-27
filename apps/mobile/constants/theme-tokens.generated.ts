@@ -79,6 +79,16 @@ export const themeTokenNames = [
   'on-mint',
   'on-ink-meta',
   'on-ink-body',
+  'moni-card',
+  'on-moni-card',
+  'on-moni-card-meta',
+  'on-moni-card-body',
+  'moni-card-glyph',
+  'moni-card-raised',
+  'moni-card-action',
+  'on-moni-card-action',
+  'moni-card-quiet',
+  'moni-card-pressed',
 ] as const;
 
 export type ThemeTokenName = (typeof themeTokenNames)[number];
@@ -162,6 +172,16 @@ export const lightThemeTokens: Record<ThemeTokenName, string> = {
   'on-mint': '#174831',
   'on-ink-meta': '#a9a397',
   'on-ink-body': '#efe8da',
+  'moni-card': '#17181a',
+  'on-moni-card': '#fffdf8',
+  'on-moni-card-meta': '#a9a397',
+  'on-moni-card-body': '#efe8da',
+  'moni-card-glyph': '#c9b6f0',
+  'moni-card-raised': '#fffdf8',
+  'moni-card-action': '#fffdf8',
+  'on-moni-card-action': '#17181a',
+  'moni-card-quiet': '#363430',
+  'moni-card-pressed': '#4a463e',
 };
 
 export const darkThemeTokens: Record<ThemeTokenName, string> = {
@@ -243,4 +263,14 @@ export const darkThemeTokens: Record<ThemeTokenName, string> = {
   'on-mint': '#72de97',
   'on-ink-meta': '#6b655c',
   'on-ink-body': '#2d2a27',
+  'moni-card': '#1d1b19',
+  'on-moni-card': '#f6f3ed',
+  'on-moni-card-meta': '#a39c90',
+  'on-moni-card-body': '#cec8bd',
+  'moni-card-glyph': '#c9b7ff',
+  'moni-card-raised': '#2d2a27',
+  'moni-card-action': '#f6f3ed',
+  'on-moni-card-action': '#0b0a09',
+  'moni-card-quiet': '#2d2a27',
+  'moni-card-pressed': '#443f38',
 };

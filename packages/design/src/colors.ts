@@ -106,6 +106,23 @@ export const colorGroups = [
     ['on-ink-meta', '#a9a397', '#6b655c', 'Secondary text on an Ink card (AI moments).'],
     ['on-ink-body', '#efe8da', '#2d2a27'],
   ],
+  [
+    [
+      'moni-card',
+      '#17181a',
+      '#1d1b19',
+      "Moni's chat cards and bubbles: Ink in light, a dark surface in dark, never cream (#146).",
+    ],
+    ['on-moni-card', '#fffdf8', '#f6f3ed'],
+    ['on-moni-card-meta', '#a9a397', '#a39c90'],
+    ['on-moni-card-body', '#efe8da', '#cec8bd'],
+    ['moni-card-glyph', '#c9b6f0', '#c9b7ff'],
+    ['moni-card-raised', '#fffdf8', '#2d2a27', 'A panel or chip on a Moni card; foreground reads on it.'],
+    ['moni-card-action', '#fffdf8', '#f6f3ed', "A Moni card's main button."],
+    ['on-moni-card-action', '#17181a', '#0b0a09'],
+    ['moni-card-quiet', '#363430', '#2d2a27', "A Moni card's second button."],
+    ['moni-card-pressed', '#4a463e', '#443f38'],
+  ],
 ] as const satisfies readonly (readonly ColorRoleEntry[])[];
 
 export type ColorRole = (typeof colorGroups)[number][number][0];

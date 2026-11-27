@@ -135,6 +135,16 @@ describe('useResolvedThemeTokens', () => {
       onMint: '#174831',
       onInkMeta: '#a9a397',
       onInkBody: '#efe8da',
+      moniCard: '#17181a',
+      onMoniCard: '#fffdf8',
+      onMoniCardMeta: '#a9a397',
+      onMoniCardBody: '#efe8da',
+      moniCardGlyph: '#c9b6f0',
+      moniCardRaised: '#fffdf8',
+      moniCardAction: '#fffdf8',
+      onMoniCardAction: '#17181a',
+      moniCardQuiet: '#363430',
+      moniCardPressed: '#4a463e',
     });
   });
 
@@ -148,6 +158,8 @@ describe('useResolvedThemeTokens', () => {
     expect(result.current.primary).toBe('#f6f3ed');
     expect(result.current.onPastel).toBe('#f6f3ed');
     expect(result.current.onCategory).toBe('#17181a');
+    expect(result.current.moniCard).toBe('#1d1b19');
+    expect(result.current.onMoniCard).toBe('#f6f3ed');
     expect(result.current.blockMint).toBe('#123422');
     expect(result.current.tabBar).toBe('#242220');
     expect(result.current.states.pending).toBe('#c9b7ff');

@@ -111,6 +111,21 @@
       /* Secondary text on an Ink card (AI moments). */
       --color-on-ink-meta: #a9a397;
       --color-on-ink-body: #efe8da;
+
+      /* Moni's chat cards and bubbles: Ink in light, a dark surface in dark, never cream (#146). */
+      --color-moni-card: #17181a;
+      --color-on-moni-card: #fffdf8;
+      --color-on-moni-card-meta: #a9a397;
+      --color-on-moni-card-body: #efe8da;
+      --color-moni-card-glyph: #c9b6f0;
+      /* A panel or chip on a Moni card; foreground reads on it. */
+      --color-moni-card-raised: #fffdf8;
+      /* A Moni card's main button. */
+      --color-moni-card-action: #fffdf8;
+      --color-on-moni-card-action: #17181a;
+      /* A Moni card's second button. */
+      --color-moni-card-quiet: #363430;
+      --color-moni-card-pressed: #4a463e;
     }
 
     @variant dark {
@@ -197,6 +212,17 @@
       --color-on-mint: #72de97;
       --color-on-ink-meta: #6b655c;
       --color-on-ink-body: #2d2a27;
+
+      --color-moni-card: #1d1b19;
+      --color-on-moni-card: #f6f3ed;
+      --color-on-moni-card-meta: #a39c90;
+      --color-on-moni-card-body: #cec8bd;
+      --color-moni-card-glyph: #c9b7ff;
+      --color-moni-card-raised: #2d2a27;
+      --color-moni-card-action: #f6f3ed;
+      --color-on-moni-card-action: #0b0a09;
+      --color-moni-card-quiet: #2d2a27;
+      --color-moni-card-pressed: #443f38;
     }
   }
 }

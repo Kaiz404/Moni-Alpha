@@ -16,7 +16,7 @@ describe('colour roles', () => {
   });
 
   it('gives every role a value in both themes', () => {
-    expect(colorRoleNames).toHaveLength(78);
+    expect(colorRoleNames).toHaveLength(88);
     for (const name of colorRoleNames) {
       expect(lightColors[name]).toMatch(/^#[0-9a-f]{6}$/);
       expect(darkColors[name]).toMatch(/^#[0-9a-f]{6}$/);

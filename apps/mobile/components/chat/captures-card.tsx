@@ -26,7 +26,7 @@ import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
-import { InkCardLabel, SoftBubble, useOnInk } from './ink-card';
+import { InkCardLabel, SoftBubble, onMoniCard } from './ink-card';
 import { pickWallet } from './pick-wallet';
 import { formatMoney, formatSignedMoney } from '@repo/core';
 
@@ -75,7 +75,6 @@ function CaptureRow({
   onSettle: (next: { kind: Settled; outcome: ReviewOutcome } | null) => void;
 }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   const { user } = useAuth();
   const wallets = useValue(walletsForUser$(user?.id ?? null));
   const category = useValue(() =>
@@ -118,14 +117,14 @@ function CaptureRow({
       />
       <View className="min-w-0 flex-1">
         <Text
-          className="text-[15px] leading-[20px] font-display-semibold text-primary-foreground"
+          className="text-[15px] leading-[20px] font-display-semibold text-on-moni-card"
           numberOfLines={1}
         >
           {title}
         </Text>
         <Text
           variant="meta"
-          className={onInk.meta}
+          className={onMoniCard.meta}
           numberOfLines={1}
         >
           {meta}
@@ -192,7 +191,6 @@ function CaptureRow({
 /** "Show my 3 captures": the waiting captures on an Ink card, each settled in place. */
 export function CapturesCard({ proposalIds }: { proposalIds: readonly string[] }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   const currency = useMainCurrency();
   const [settled, setSettled] = useState<Record<string, { kind: Settled; outcome: ReviewOutcome | null }>>({});
   const proposals = useValue(() =>
@@ -211,20 +209,20 @@ export function CapturesCard({ proposalIds }: { proposalIds: readonly string[] }
   return (
     <View
       accessibilityLabel={`Moni's answer: captures to review. ${title}`}
-      className="gap-2.5 rounded-card bg-primary p-[18px]"
+      className="gap-2.5 rounded-card bg-moni-card p-[18px]"
     >
       <InkCardLabel label="Moni" />
       <View className="gap-1">
         <Text
           testID={tid('chat', 'answer', 'title')}
           variant="sectionTitle"
-          className="text-primary-foreground"
+          className={onMoniCard.title}
         >
           {title}
         </Text>
         <Text
           variant="body"
-          className={onInk.body}
+          className={onMoniCard.body}
         >
           None of these count in your totals until you say yes.
         </Text>
@@ -248,13 +246,13 @@ export function CapturesCard({ proposalIds }: { proposalIds: readonly string[] }
         testID={tid('chat', 'answer', 'open-review')}
         onPress={() => router.push('/review')}
         radius={{ rest: 22, pressed: 16 }}
-        className="h-11 flex-row items-center gap-0.5 self-start bg-card pl-4 pr-2.5"
+        className="h-11 flex-row items-center gap-0.5 self-start bg-moni-card-action pl-4 pr-2.5"
       >
-        <Text className="text-[15px] font-display-semibold text-foreground">Open Review</Text>
+        <Text className="text-[15px] font-display-semibold text-on-moni-card-action">Open Review</Text>
         <IconSymbol
           name="chevron-right"
           size={20}
-          color={tokens.foreground}
+          color={tokens.onMoniCardAction}
         />
       </Press>
     </View>

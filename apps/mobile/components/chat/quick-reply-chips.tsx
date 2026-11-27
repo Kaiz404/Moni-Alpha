@@ -10,7 +10,7 @@ const LABELS: Record<QuickReplyOption, string> = {
   analyze_finances: 'Ask about it',
 };
 
-/** The two answers to "add or ask?", as cream capsules on Moni's Ink bubble. */
+/** The two answers to "add or ask?", as capsules on Moni's bubble. */
 export function QuickReplyChips({
   options,
   onSelect,
@@ -26,11 +26,11 @@ export function QuickReplyChips({
           key={option}
           onPress={() => onSelect(option)}
           radius={{ rest: 22, pressed: 16 }}
-          pressedClassName="bg-sand-light"
-          className="h-11 justify-center bg-primary-foreground px-4"
+          pressedClassName="bg-on-moni-card-body"
+          className="h-11 justify-center bg-moni-card-action px-4"
           accessibilityLabel={LABELS[option]}
         >
-          <Text className="text-[15px] font-display-semibold text-primary">{LABELS[option]}</Text>
+          <Text className="text-[15px] font-display-semibold text-on-moni-card-action">{LABELS[option]}</Text>
         </Press>
       ))}
     </View>

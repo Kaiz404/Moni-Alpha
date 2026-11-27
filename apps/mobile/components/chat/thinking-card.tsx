@@ -11,7 +11,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { useUniwind } from 'uniwind';
 
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -54,19 +53,18 @@ function Coin({ index, rim }: { index: number; rim: string }) {
 /** Moni at work: an Ink bubble saying what it is doing, then three coins rising in turn; its answer replaces it in place. */
 export function ThinkingCard({ label }: { label: string }) {
   const tokens = useThemeTokens();
-  // The coins keep an ink rim on the cream bubble of the dark theme.
-  const rim = useUniwind().theme === 'dark' ? tokens.primaryForeground : tokens.foreground;
+  const rim = tokens.moniCard;
   return (
     <Animated.View
       entering={FadeIn.duration(220)}
       accessibilityRole="progressbar"
       accessibilityLabel={`Moni is thinking. ${label}`}
       accessibilityLiveRegion="polite"
-      className="h-11 flex-row items-center gap-2.5 self-start rounded-[22px] rounded-bl-md bg-primary px-[18px]"
+      className="h-11 flex-row items-center gap-2.5 self-start rounded-[22px] rounded-bl-md bg-moni-card px-[18px]"
     >
       <Text
         variant="body"
-        style={{ color: tokens.onInkBody }}
+        style={{ color: tokens.onMoniCardBody }}
       >
         {label}
       </Text>

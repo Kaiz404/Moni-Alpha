@@ -27,12 +27,18 @@ const FILL: Record<Exclude<SoftTint, object>, string> = {
   sand: 'bg-sand',
 };
 
-/** Secondary text on an Ink card: #A9A397 and #EFE8DA on the boards, a dimmed ink on the cream dark card. */
+/** Text on Moni's cards: Ink cards in light, dark surfaces in dark (#146). */
+export const onMoniCard = {
+  title: 'text-on-moni-card',
+  meta: 'text-on-moni-card-meta',
+  body: 'text-on-moni-card-body',
+} as const;
+
+/** Secondary marks on an Ink control (the listening capsule): cream controls in dark. */
 export function useOnInk() {
   const tokens = useThemeTokens();
   return {
     meta: 'text-on-ink-meta',
-    body: 'text-on-ink-body',
     metaGlyph: tokens.onInkMeta,
   };
 }
@@ -80,22 +86,21 @@ export function InkCardLabel({
   trailing?: string;
 }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   return (
     <View className="flex-row items-center gap-2">
       <MoniGlyph
         size={16}
-        color={tokens.moniGlyph}
+        color={tokens.moniCardGlyph}
       />
       <Text
         variant="caps"
-        className={`flex-1 ${onInk.meta}`}
+        className={`flex-1 ${onMoniCard.meta}`}
       >
         {label}
       </Text>
       {trailing ? (
         <Text
-          className={`text-[12px] leading-[16px] font-display-semibold ${onInk.meta}`}
+          className={`text-[12px] leading-[16px] font-display-semibold ${onMoniCard.meta}`}
         >
           {trailing}
         </Text>
@@ -126,14 +131,13 @@ export function InkRow({
   onPress: () => void;
 }) {
   const tokens = useThemeTokens();
-  const onInk = useOnInk();
   return (
     <Press
       testID={testID}
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       radius={{ rest: 18, pressed: 16 }}
-      pressedClassName="bg-ink-2/40"
+      pressedClassName="bg-moni-card-pressed"
       className="-mx-2 min-h-[52px] flex-row items-center gap-3 px-2 py-1.5"
       style={done ? { opacity: 0.55 } : undefined}
     >
@@ -143,7 +147,7 @@ export function InkRow({
       />
       <View className="min-w-0 flex-1">
         <Text
-          className="text-[15px] leading-[20px] font-display-semibold text-primary-foreground"
+          className="text-[15px] leading-[20px] font-display-semibold text-on-moni-card"
           numberOfLines={1}
         >
           {title}
@@ -151,14 +155,14 @@ export function InkRow({
         {meta ? (
           <Text
             variant="meta"
-            className={onInk.meta}
+            className={onMoniCard.meta}
             numberOfLines={1}
           >
             {meta}
           </Text>
         ) : null}
       </View>
-      <View className="h-8 w-8 items-center justify-center rounded-full bg-card">
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-moni-card-raised">
         <IconSymbol
           name={done ? 'check' : 'arrow-up'}
           size={18}

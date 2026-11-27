@@ -22,7 +22,7 @@ export function NoticedCard({
   return (
     <View
       accessibilityLabel="Moni noticed"
-      className="gap-1 rounded-card bg-primary px-[18px] pb-2.5 pt-3.5"
+      className="gap-1 rounded-card bg-moni-card px-[18px] pb-2.5 pt-3.5"
     >
       <View className="pb-1">
         <InkCardLabel

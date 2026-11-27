@@ -69,7 +69,7 @@ function Arrive({ id, typed, children }: { id: string; typed: boolean; children:
   );
 }
 
-/** One thread item: the user's words on Sand, Moni's on Ink, and Moni's cards. */
+/** One thread item: the user's words on Sand, Moni's on its card colour, and Moni's cards. */
 export const MessageBubble = memo(function MessageBubble(props: MessageBubbleProps) {
   const { message } = props;
   if (message.role !== 'assistant' || message.kind === 'assistant_status') return <ThreadItem {...props} />;
@@ -160,13 +160,13 @@ function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubblePr
       return (
         <Bubble
           mine={false}
-          fill="bg-primary"
+          fill="bg-moni-card"
           createdAt={message.createdAt}
         >
           <RevealText
             messageId={message.id}
             text={message.content}
-            color={tokens.primaryForeground}
+            color={tokens.onMoniCard}
           />
         </Bubble>
       );
@@ -174,13 +174,13 @@ function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubblePr
       return (
         <Bubble
           mine={false}
-          fill="bg-primary"
+          fill="bg-moni-card"
           createdAt={message.createdAt}
         >
           <RevealText
             messageId={message.id}
             text={message.content}
-            color={tokens.primaryForeground}
+            color={tokens.onMoniCard}
           />
           <QuickReplyChips
             options={message.quickReplies}

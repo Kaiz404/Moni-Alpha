@@ -147,6 +147,16 @@
   --color-on-mint: #174831;
   --color-on-ink-meta: #a9a397;
   --color-on-ink-body: #efe8da;
+  --color-moni-card: #17181a;
+  --color-on-moni-card: #fffdf8;
+  --color-on-moni-card-meta: #a9a397;
+  --color-on-moni-card-body: #efe8da;
+  --color-moni-card-glyph: #c9b6f0;
+  --color-moni-card-raised: #fffdf8;
+  --color-moni-card-action: #fffdf8;
+  --color-on-moni-card-action: #17181a;
+  --color-moni-card-quiet: #363430;
+  --color-moni-card-pressed: #4a463e;
 }
 
 [data-theme='dark'] {
@@ -229,6 +239,16 @@
   --color-on-mint: #72de97;
   --color-on-ink-meta: #6b655c;
   --color-on-ink-body: #2d2a27;
+  --color-moni-card: #1d1b19;
+  --color-on-moni-card: #f6f3ed;
+  --color-on-moni-card-meta: #a39c90;
+  --color-on-moni-card-body: #cec8bd;
+  --color-moni-card-glyph: #c9b7ff;
+  --color-moni-card-raised: #2d2a27;
+  --color-moni-card-action: #f6f3ed;
+  --color-on-moni-card-action: #0b0a09;
+  --color-moni-card-quiet: #2d2a27;
+  --color-moni-card-pressed: #443f38;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -312,5 +332,15 @@
     --color-on-mint: #72de97;
     --color-on-ink-meta: #6b655c;
     --color-on-ink-body: #2d2a27;
+    --color-moni-card: #1d1b19;
+    --color-on-moni-card: #f6f3ed;
+    --color-on-moni-card-meta: #a39c90;
+    --color-on-moni-card-body: #cec8bd;
+    --color-moni-card-glyph: #c9b7ff;
+    --color-moni-card-raised: #2d2a27;
+    --color-moni-card-action: #f6f3ed;
+    --color-on-moni-card-action: #0b0a09;
+    --color-moni-card-quiet: #2d2a27;
+    --color-moni-card-pressed: #443f38;
   }
 }

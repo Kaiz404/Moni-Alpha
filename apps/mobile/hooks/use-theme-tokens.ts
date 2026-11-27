@@ -97,6 +97,16 @@ function buildThemeTokens(values: readonly (string | number | undefined)[]) {
     onMint: t['on-mint'],
     onInkMeta: t['on-ink-meta'],
     onInkBody: t['on-ink-body'],
+    moniCard: t['moni-card'],
+    onMoniCard: t['on-moni-card'],
+    onMoniCardMeta: t['on-moni-card-meta'],
+    onMoniCardBody: t['on-moni-card-body'],
+    moniCardGlyph: t['moni-card-glyph'],
+    moniCardRaised: t['moni-card-raised'],
+    moniCardAction: t['moni-card-action'],
+    onMoniCardAction: t['on-moni-card-action'],
+    moniCardQuiet: t['moni-card-quiet'],
+    moniCardPressed: t['moni-card-pressed'],
   };
 }
 
