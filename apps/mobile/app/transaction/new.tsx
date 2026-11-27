@@ -58,6 +58,7 @@ import {
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow } from '@/lib/transactions/row';
 import { guessCategory, transactionRow } from '@repo/core';
+import { pickNewCategory } from '@/lib/categories/new-category';
 import { compactWalletNames } from '@repo/core';
 import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
@@ -312,10 +313,9 @@ export default function TypeItScreen() {
               categories,
             ).suggestions,
       onCreate: () =>
-        router.push({
-          pathname: '/categories/form',
-          params: { type: kind, returnTo: '/transaction/new' },
-        }),
+        void pickNewCategory(kind === 'income' ? 'income' : 'expense').then(
+          (created) => created && setCategoryId(created),
+        ),
       ...(kind === 'expense'
         ? {
             onTransfer: () => changeKind('transfer'),

@@ -71,6 +71,7 @@ import {
   moneySign,
 } from '@repo/core';
 import { BALANCE_CORRECTION_TITLE, guessCategory } from '@repo/core';
+import { pickNewCategory } from '@/lib/categories/new-category';
 import { compactWalletNames } from '@repo/core';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -274,6 +275,10 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
 
   const pickCategory = async () => {
     const type = tx.type === 'income' ? 'income' : 'expense';
+    const choose = (categoryId: string) => {
+      if (categoryId !== tx.categoryId)
+        saveWithUndo(tx.id, 'Category', { categoryId }, { categoryId: tx.categoryId });
+    };
     const picked = await openSheet({
       kind: 'category',
       title: 'Choose category',
@@ -290,15 +295,9 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         categories,
       ).suggestions,
       onCreate: () =>
-        router.push({ pathname: '/categories/form', params: { type } }),
+        void pickNewCategory(type).then((created) => created && choose(created)),
     });
-    if (picked && picked !== tx.categoryId)
-      saveWithUndo(
-        tx.id,
-        'Category',
-        { categoryId: picked },
-        { categoryId: tx.categoryId },
-      );
+    if (picked) choose(picked);
   };
 
   const pickWallet = async (end: 'from' | 'to') => {

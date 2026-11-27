@@ -24,6 +24,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { settleNewCategory } from '@/lib/categories/new-category';
 import { categoriesForUser$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
@@ -56,7 +57,6 @@ export default function CategoryFormScreen() {
   const params = useLocalSearchParams<{
     id?: string;
     type?: Kind;
-    returnTo?: string;
   }>();
   const { user } = useAuth();
   const tokens = useThemeTokens();
@@ -91,14 +91,7 @@ export default function CategoryFormScreen() {
   const iconWidth = Math.floor((width - 40 - ICON_GAP * 6) / 7);
   const swatchCell = Math.floor((width - 40 + 8) / 8);
 
-  const leave = (id: string) => {
-    if (params.returnTo === '/transaction/new')
-      router.dismissTo({
-        pathname: '/transaction/new',
-        params: { categoryId: id },
-      });
-    else router.back();
-  };
+  useEffect(() => () => settleNewCategory(null), []);
 
   const save = async () => {
     if (!named) return;
@@ -106,8 +99,8 @@ export default function CategoryFormScreen() {
     try {
       if (existing) {
         await updateCategory(existing.id, { name, icon, color: colour });
-        leave(existing.id);
-      } else leave(await createCategory({ name, icon, color: colour, type: kind }));
+      } else settleNewCategory(await createCategory({ name, icon, color: colour, type: kind }));
+      router.back();
     } catch (error) {
       Alert.alert(
         'Not saved',

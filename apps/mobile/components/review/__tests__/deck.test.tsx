@@ -15,6 +15,9 @@ import {
   buildMoneyMonth,
 } from '@repo/core';
 import { financeProjection$ } from '@/lib/finance/projection';
+import { router } from 'expo-router';
+
+import { settleNewCategory } from '@/lib/categories/new-category';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
@@ -232,6 +235,40 @@ describe('Review deck', () => {
     expect(ledger()).toEqual([
       expect.objectContaining({ type: 'income', category_id: SALARY, merchant: 'GRAB' }),
     ]);
+  });
+
+  it('makes a new category from the category sheet and files the same card under it', async () => {
+    seed('p1');
+    await show(<ReviewScreen />);
+
+    fireEvent.press(screen.getByTestId('review.category'));
+    const sheet = getOpenSheet();
+    if (sheet?.kind !== 'category') throw new Error('the Category row opens the category sheet');
+    const onCreate = sheet.request.onCreate;
+    if (!onCreate) throw new Error('the sheet offers New category');
+    act(() => dismissSheet());
+    act(() => onCreate());
+
+    expect(jest.mocked(router.push)).toHaveBeenLastCalledWith({
+      pathname: '/categories/form',
+      params: { type: 'expense' },
+    });
+    store.categories$['cat-hawker'].set({
+      id: 'cat-hawker',
+      user_id: 'user-1',
+      name: 'Hawker',
+      type: 'expense',
+      icon: 'silverware-fork-knife',
+      color: '#F1A399',
+      is_active: true,
+      display_order: 2,
+      deleted: false,
+    });
+    await act(async () => settleNewCategory('cat-hawker'));
+
+    expect(screen.getByText('Hawker')).toBeTruthy();
+    await decide('approve');
+    expect(ledger()).toEqual([expect.objectContaining({ category_id: 'cat-hawker', merchant: 'GRAB' })]);
   });
 
   it('corrects a capture to a transfer: destination replaces merchant and category', async () => {

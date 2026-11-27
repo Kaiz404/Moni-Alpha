@@ -57,6 +57,7 @@ import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } f
 import * as haptics from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { captureClues, guessCategory, retypeEdits, reviewStatus, timesFiled, type RejectedProposal } from '@repo/core';
+import { pickNewCategory } from '@/lib/categories/new-category';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
@@ -673,6 +674,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       ),
       selectedId: selected,
       suggestedIds: guessCategory(captureClues({ ...top, type: kind }), ledger, categories).suggestions,
+      onCreate: () =>
+        void pickNewCategory(kind).then((created) => created && setEdit(top.id, { categoryId: created })),
     });
     if (picked) setEdit(top.id, { categoryId: picked });
   }, [top, edits, categories, progress, mainCurrency, ledger, setEdit]);
