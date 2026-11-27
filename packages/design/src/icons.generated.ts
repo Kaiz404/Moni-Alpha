@@ -151,6 +151,7 @@ export const iconNames = [
   'note',
   'note-text-outline',
   'numeric',
+  'offer',
   'opacity',
   'package-variant',
   'party-popper',
