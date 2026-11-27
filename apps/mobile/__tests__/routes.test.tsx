@@ -237,7 +237,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'budget/merchants.tsx': differ(
     '/budget/merchants?month=2026-10',
     '22 merchants in October',
-    'Nothing to name. Moni lists a code here once it shows up 3 times.',
+    'Nothing spent in October',
   ),
   'budget/spending.tsx': differ(
     `/budget/spending?month=2026-10&categoryId=${FOOD}`,
@@ -586,6 +586,7 @@ describe('a Budget row opens its payments under Budget', () => {
     await open('budget.merchants.see-all');
     expect(screen.getPathname()).toBe('/budget/merchants');
     expect(text('merchants.month.label')).toEqual(['22 merchants in October']);
+    expect(screen.queryByText('1 code to name')).toBeNull();
     expect(text('merchants.pager.page')).toEqual(['Page 1 of 2']);
     expect(screen.queryByTestId('merchants.merchant.parking-klcc')).toBeNull();
     await open('merchants.pager.next');
@@ -614,6 +615,14 @@ describe('a Budget row opens its payments under Budget', () => {
     await leave();
     expect(screen.getPathname()).toBe('/budget');
     expect(noise).toEqual([]);
+  });
+
+  it("Profile's Merchant names keeps the codes to name beside the names given, with no spending list", async () => {
+    await mount('/merchants', { profile: 'full', theme: 'light' });
+    expect(screen.getByText('Merchant names')).toBeTruthy();
+    expect(screen.getByText('1 code to name')).toBeTruthy();
+    expect(screen.getByText(/^\d+ codes? named$/)).toBeTruthy();
+    expect(screen.queryByTestId('merchants.month.label')).toBeNull();
   });
 
   it("a Calendar day's All link lists that day", async () => {
