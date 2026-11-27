@@ -102,6 +102,9 @@ const MAYBANK = '00000000-0000-4000-8000-00000000000a';
 const FOOD = '00000000-0000-4000-8000-0000000000f0';
 const SALARY = '00000000-0000-4000-8000-0000000000f1';
 
+/** The nth capture after a default seed, dealt in that order: the deck runs oldest first. */
+const AFTER = (n: number) => new Date(Date.now() + n * 60_000).toISOString();
+
 function seed(id: string, over: Record<string, unknown> = {}) {
   store.proposedTransactions$[id].set({
     id,
@@ -254,7 +257,7 @@ describe('Review deck', () => {
     seed('p2', {
       merchant: 'JAYA GROCER',
       amount: '86.40',
-      created_at: '2020-01-01T00:00:00.000Z',
+      created_at: AFTER(1),
     });
     await show(<ReviewScreen />);
 
@@ -503,7 +506,7 @@ describe('Review deck', () => {
     ['Not mine', 'notMine', 'rejected'],
   ] as const)('Undo after %s puts the card back on top of the next one', async (_name, action, status) => {
     seed('p1');
-    seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+    seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
     await show(<ReviewScreen />);
 
     await decide(action);
@@ -586,7 +589,7 @@ describe('Review deck', () => {
   });
 
   describe('the card underneath', () => {
-    const SECOND = { merchant: 'JAYA GROCER', amount: '86.40', created_at: '2020-01-01T00:00:00.000Z' };
+    const SECOND = { merchant: 'JAYA GROCER', amount: '86.40', created_at: AFTER(1) };
     const hidden = { includeHiddenElements: true };
 
     it('is already rendered with its own content, hidden from a screen reader', async () => {
@@ -715,7 +718,7 @@ describe('Review deck', () => {
 
     it('keeps Recently reviewed reachable while cards wait', async () => {
       seed('p1');
-      seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+      seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
       await show(<ReviewScreen />);
       await decide('notMine');
       expect(screen.getByTestId('review.history.toggle')).toBeTruthy();
@@ -813,9 +816,9 @@ describe('Review deck', () => {
 
       it('turns on the handler already on the waiting card, so the next swipe lands, and so does the one after', async () => {
         seed('p1');
-        seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
-        seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
-        seed('p4', { merchant: 'TESCO', created_at: '2018-01-01T00:00:00.000Z' });
+        seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
+        seed('p3', { merchant: 'KEDAI ABC', created_at: AFTER(2) });
+        seed('p4', { merchant: 'TESCO', created_at: AFTER(3) });
         await showSettled();
 
         const onP1 = handlersOn();
@@ -849,8 +852,8 @@ describe('Review deck', () => {
 
       it('keeps a card mounted once from under to top', async () => {
         seed('p1');
-        seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
-        seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
+        seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
+        seed('p3', { merchant: 'KEDAI ABC', created_at: AFTER(2) });
         await showSettled();
 
         await swipe(100, 250, 'p1');
@@ -904,7 +907,7 @@ describe('Review deck', () => {
 
     it('loads the icon when the cache is cold, for the card underneath too', async () => {
       seed('p1');
-      seed('p2', { source_app: 'my.jaya', merchant: 'JAYA', created_at: '2020-01-01T00:00:00.000Z' });
+      seed('p2', { source_app: 'my.jaya', merchant: 'JAYA', created_at: AFTER(1) });
       const answers: (() => void)[] = [];
       mockGetInstalledAppInfo.mockImplementation(
         (name) =>
@@ -1071,7 +1074,7 @@ describe('Review deck', () => {
 
   it('puts the capture named by id first', async () => {
     seed('p1');
-    seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+    seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
     mockParams = { id: 'p2' };
     await show(<ReviewScreen />);
 
@@ -1094,7 +1097,7 @@ describe('Review deck', () => {
 
   it("Don't ask about similar adds an auto-add rule on Approve, and the summary counts both answers", async () => {
     seed('p1');
-    seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+    seed('p2', { merchant: 'JAYA GROCER', created_at: AFTER(1) });
     await show(<ReviewScreen />);
 
     fireEvent.press(screen.getByTestId('review.similar'));
@@ -1138,7 +1141,7 @@ describe('Recently reviewed', () => {
 
   it('lists the decisions under All caught up, and Move back to review puts a Not mine card back', async () => {
     seed('p1');
-    seed('p2', { merchant: 'JAYA GROCER', amount: '86.40', created_at: '2020-01-01T00:00:00.000Z' });
+    seed('p2', { merchant: 'JAYA GROCER', amount: '86.40', created_at: AFTER(1) });
     await show(
       <>
         <ReviewScreen />

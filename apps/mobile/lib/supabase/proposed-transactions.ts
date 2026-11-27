@@ -1,4 +1,5 @@
 import {
+  inboxOrder,
   planReview,
   reviewedLately,
   reviewedProposals,
@@ -84,9 +85,7 @@ function readProposals(): ProposedTransaction[] {
 
 /** Captures waiting for a decision, newest first. Reads the store, so it is safe in a reactive selector. */
 export function listAwaitingReview(): ProposedTransaction[] {
-  return readProposals()
-    .filter(isUnreviewed)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return inboxOrder(readProposals().filter(isUnreviewed));
 }
 
 export function isOpenProposal(id: string): boolean {

@@ -75,6 +75,14 @@ describe('Review', () => {
       ['stale', 'pending'],
     ]);
   });
+
+  it('deals the oldest payment first, so a backlog runs in the order it happened', () => {
+    seed('newest', { transaction_date: '2026-10-14T08:00:00.000Z', created_at: '2026-10-14T08:00:00.000Z' });
+    seed('oldest', { transaction_date: '2026-10-02T12:30:00.000Z', created_at: '2026-10-14T09:30:00.000Z' });
+    seed('middle', { transaction_date: '2026-10-09T19:00:00.000Z', created_at: '2026-10-09T19:00:00.000Z' });
+
+    expect(listAwaitingReview().map((p) => p.id)).toEqual(['oldest', 'middle', 'newest']);
+  });
 });
 
 describe('Not mine', () => {
