@@ -85,7 +85,8 @@ type GridPickerProps = {
 
 /**
  * A compact picker for a fixed set: months, a decade of years, or a month of days, a page at a
- * time with arrows between pages. Tapping a cell picks it and closes.
+ * time with arrows between pages. A page with a label always shows it, such as Choose month's
+ * year when every month is in one year (#142). Tapping a cell picks it and closes.
  */
 export function GridPickerSheet({
   title,
@@ -113,7 +114,7 @@ export function GridPickerSheet({
       closeLabel="Close"
     >
       <View className="gap-3 pb-1">
-        {paged ? (
+        {page.label ? (
           <View className="flex-row items-center gap-3">
             <Arrow
               direction="previous"
