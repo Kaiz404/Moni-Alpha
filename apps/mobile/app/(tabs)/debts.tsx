@@ -36,7 +36,7 @@ const STATUS_LABEL: Record<Status, string> = {
   open: 'Open',
   closed: 'Settled',
 };
-const people = (count: number) => `${count} ${count === 1 ? 'person' : 'people'}`;
+const debtCount = (count: number) => `${count} ${count === 1 ? 'debt' : 'debts'}`;
 
 export default function DebtsScreen() {
   const scroll = useRef<ScrollView>(null);
@@ -60,7 +60,7 @@ export default function DebtsScreen() {
       title: 'Show',
       selected: side,
       options: [
-        { id: 'all', label: SIDE_LABEL.all, icon: 'account-multiple-outline', meta: people(summary.open.length) },
+        { id: 'all', label: SIDE_LABEL.all, icon: 'account-multiple-outline', meta: debtCount(summary.open.length) },
         { id: 'owed_to_me', label: SIDE_LABEL.owed_to_me, icon: 'arrow-bottom-left', meta: debtMoney(summary.owedToMeMinor, summary.currency) },
         { id: 'i_owe', label: SIDE_LABEL.i_owe, icon: 'arrow-top-right', meta: debtMoney(summary.iOweMinor, summary.currency) },
       ],
@@ -73,8 +73,8 @@ export default function DebtsScreen() {
       title: 'Status',
       selected: status,
       options: [
-        { id: 'open', label: 'Open', icon: 'handshake-outline', meta: people(summary.open.length) },
-        { id: 'closed', label: 'Settled and written off', icon: 'check', meta: people(summary.closed.length) },
+        { id: 'open', label: 'Open', icon: 'handshake-outline', meta: debtCount(summary.open.length) },
+        { id: 'closed', label: 'Settled and written off', icon: 'check', meta: debtCount(summary.closed.length) },
       ],
     });
     if (picked === 'open' || picked === 'closed') setStatus(picked);
@@ -111,7 +111,7 @@ export default function DebtsScreen() {
                   className="text-foreground"
                   accessibilityRole="header"
                 >
-                  People
+                  Records
                 </Text>
                 <View className="flex-row gap-2">
                   <FilterTrigger
@@ -157,7 +157,7 @@ export default function DebtsScreen() {
                     variant="body"
                     className="px-1 text-muted"
                   >
-                    Nobody here right now.
+                    No debts here right now.
                   </Text>
                 )}
               </Animated.View>

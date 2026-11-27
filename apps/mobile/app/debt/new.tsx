@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Keyboard, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
@@ -15,24 +15,18 @@ import {
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
-import { pastPeople, sameName } from '@/components/debts/past-people';
+import { pastPeople } from '@/components/debts/past-people';
 import { useDebtLines } from '@/components/debts/use-debts';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
-import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { readAmount } from '@/lib/amount/amount-input';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
-import {
-  addDebtPrincipal,
-  createDebt,
-  getDebtById,
-  updateDebt,
-} from '@/lib/supabase/debts';
+import { createDebt } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { type DebtSide, formatMoney } from '@repo/core';
@@ -54,21 +48,8 @@ export default function NewDebtScreen() {
   const [saving, setSaving] = useState(false);
   const closeDue = useCallback(() => setDueOpen(false), []);
 
-  const mine = useMemo(
-    () => lines.filter((line) => line.debt.currency === currency),
-    [lines, currency],
-  );
-
   const who = name.trim();
   const words = SIDE_WORDS[direction];
-  const existing = who
-    ? mine.find(
-        (line) =>
-          line.state === 'open' &&
-          line.debt.direction === direction &&
-          sameName(line.debt.counterpartyName, who),
-      )
-    : undefined;
   const choice =
     (chosen === NO_WALLET || wallets.some((item) => item.id === chosen)
       ? chosen
@@ -96,27 +77,16 @@ export default function NewDebtScreen() {
     approve();
     setSaving(true);
     try {
-      const saidNote = note.trim() || null;
-      if (existing) {
-        const stored = await getDebtById(existing.debt.id);
-        if (!stored) throw new Error('This debt is gone');
-        await addDebtPrincipal(stored, amountMinor, walletId, saidNote);
-        if (dueDate) updateDebt(stored.id, { dueDate });
-      } else {
-        await createDebt({
-          counterpartyName: who,
-          direction,
-          amountMinor,
-          walletId,
-          currency,
-          dueDate,
-          note: saidNote,
-        });
-      }
-      const owed = existing
-        ? formatMoney(existing.balanceMinor + amountMinor, currency)
-        : amount;
-      showToast({ text: words.saved(who, owed) });
+      await createDebt({
+        counterpartyName: who,
+        direction,
+        amountMinor,
+        walletId,
+        currency,
+        dueDate,
+        note: note.trim() || null,
+      });
+      showToast({ text: words.saved(who, amount) });
       router.back();
     } catch (error) {
       setSaving(false);
@@ -192,24 +162,6 @@ export default function NewDebtScreen() {
             ) : null
           }
         />
-        {existing ? (
-          <View className="flex-row items-center gap-1.5 px-1.5">
-            <IconSymbol
-              name="information-outline"
-              size={16}
-              color={tokens.states.pending}
-            />
-            <Text
-              variant="meta"
-              className="flex-1 text-state-pending"
-            >
-              {words.existing(
-                existing.debt.counterpartyName,
-                formatMoney(existing.balanceMinor, currency),
-              )}
-            </Text>
-          </View>
-        ) : null}
         <View className="flex-row gap-2">
           <DebtWalletField
             testID={tid('debts', 'new', 'wallet')}

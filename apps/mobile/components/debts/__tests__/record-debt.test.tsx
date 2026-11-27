@@ -11,11 +11,7 @@ import NewDebtScreen from '@/app/debt/new';
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@repo/core';
-import {
-  addDebtPrincipal,
-  createDebt,
-  getDebtById,
-} from '@/lib/supabase/debts';
+import { createDebt } from '@/lib/supabase/debts';
 import { showToast } from '@/lib/toast/toast-store';
 import { dismissSheet } from '@/lib/sheet/sheet-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
@@ -32,10 +28,7 @@ jest.mock('react-native-reanimated', () => ({
   }),
 }));
 jest.mock('@/lib/supabase/debts', () => ({
-  addDebtPrincipal: jest.fn(async () => ({ id: 'activity' })),
   createDebt: jest.fn(async () => ({ id: 'saved' })),
-  getDebtById: jest.fn(),
-  updateDebt: jest.fn(),
 }));
 jest.mock('@/lib/toast/toast-store', () => ({ showToast: jest.fn() }));
 jest.mock('@/lib/haptics', () => ({
@@ -263,12 +256,8 @@ describe('Record a debt', () => {
     expect(sheetRows()).toEqual(['Mei', 'Bala']);
   });
 
-  it('picking a past person fills the field, and the open debt note says what it adds to', async () => {
+  it('picking a past person fills the field, and records a debt of its own beside their open one', async () => {
     seed(AIMAN_OPEN);
-    const stored = { id: AIMAN, counterpartyName: 'Aiman' };
-    jest.mocked(getDebtById).mockResolvedValue(
-      stored as Awaited<ReturnType<typeof getDebtById>>,
-    );
     withSheets();
     expect(
       screen.getByLabelText('Choose from people who owed you'),
@@ -278,21 +267,26 @@ describe('Record a debt', () => {
     await act(async () => press('sheet.option.aiman'));
 
     expect(screen.getByTestId('debts.new.person').props.value).toBe('Aiman');
-    expect(
-      screen.getByText(
-        "Aiman already owes you RM110.00. This goes on Aiman's page too.",
-      ),
-    ).toBeTruthy();
+    expect(screen.queryByText(/already owes you/)).toBeNull();
 
     keys('2', '5');
     await record();
 
-    expect(jest.mocked(addDebtPrincipal).mock.calls).toEqual([
-      [stored, 2500, null, null],
+    expect(jest.mocked(createDebt).mock.calls).toEqual([
+      [
+        {
+          counterpartyName: 'Aiman',
+          direction: 'owed_to_me',
+          amountMinor: 2500,
+          walletId: null,
+          currency: 'MYR',
+          dueDate: null,
+          note: null,
+        },
+      ],
     ]);
-    expect(jest.mocked(createDebt).mock.calls).toEqual([]);
     expect(jest.mocked(showToast).mock.calls).toEqual([
-      [{ text: 'Saved. Aiman owes you RM135.00' }],
+      [{ text: 'Saved. Aiman owes you RM25.00' }],
     ]);
   });
 

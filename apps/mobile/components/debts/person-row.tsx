@@ -9,7 +9,7 @@ import { tid } from '@/lib/test-ids';
 import { type DebtLine, dateLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
-/** An open debt in the people list; the whole row opens the person's page. */
+/** One open debt in the Debts list, by what it is for or else when it started; the whole row opens its page. */
 export function PersonRow({ line }: { line: DebtLine }) {
   const {
     id,
@@ -48,11 +48,11 @@ export function PersonRow({ line }: { line: DebtLine }) {
           className="text-muted"
           numberOfLines={1}
         >
-          {line.noted ? words.noted : words.started}{' '}
-          {dateLabel(
-            deviceCalendar.dayKey(line.startedAt),
-            deviceCalendar.dayKey(new Date()),
-          )}
+          {line.debt.note ??
+            `${line.noted ? words.noted : words.started} ${dateLabel(
+              deviceCalendar.dayKey(line.startedAt),
+              deviceCalendar.dayKey(new Date()),
+            )}`}
         </Text>
       </View>
       <View className="items-end">

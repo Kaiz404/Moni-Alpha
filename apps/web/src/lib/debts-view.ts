@@ -33,17 +33,23 @@ export function comingUpWords(line: DebtLine, daysLeft: number): { title: string
   return { title, meta: [dueWords(daysLeft), debt.note ? lowerFirst(debt.note) : null].filter(Boolean).join(', ') };
 }
 
-/** The People row's line under the name: "Lent Sun 27 Sep", "Noted Thu 1 Oct" when no money moved, or for a closed debt "Settled, Lunch". */
+/**
+ * A debt row's line under the name: what it is for ("Concert tickets"), else when it started ("Lent Sun 27 Sep",
+ * "Noted Thu 1 Oct" when no money moved), or for a closed debt "Settled, Lunch".
+ */
 export function personMeta(line: DebtLine, today: string, startedDay: string): string {
-  if (line.state === 'open') return `${line.noted ? 'Noted' : line.debt.direction === 'owed_to_me' ? 'Lent' : 'Borrowed'} ${dateLabel(startedDay, today)}`;
+  if (line.state === 'open') return line.debt.note ?? `${line.noted ? 'Noted' : line.debt.direction === 'owed_to_me' ? 'Lent' : 'Borrowed'} ${dateLabel(startedDay, today)}`;
   const state = line.state === 'settled' ? 'Settled' : 'Written off';
   return line.debt.note ? `${state}, ${line.debt.note}` : state;
 }
 
-/** "Open with 2 people": the people, not the debts, with something still open. */
+/** "3 open debts": each debt counts once, even two with one person. */
 export function openLabel(open: readonly DebtLine[]): string {
-  const people = new Set(open.map((line) => line.debt.counterpartyName.trim().toLocaleLowerCase())).size;
-  return `Open with ${people} ${people === 1 ? 'person' : 'people'}`;
+  return debtCount(open.length, 'open ');
+}
+
+function debtCount(count: number, kind = ''): string {
+  return `${count} ${kind}${count === 1 ? 'debt' : 'debts'}`;
 }
 
 /** The bar under the balance: what came back so far, and what is still to go. */
@@ -119,10 +125,6 @@ export type StatusFilter = 'open' | 'closed';
 export const SIDE_LABEL: Record<SideFilter, string> = { all: 'Everyone', owed_to_me: 'Owed to you', i_owe: 'You owe' };
 export const STATUS_LABEL: Record<StatusFilter, string> = { open: 'Open', closed: 'Settled' };
 
-function peopleCount(count: number): string {
-  return `${count} ${count === 1 ? 'person' : 'people'}`;
-}
-
 function onSide(side: SideFilter, line: Pick<DebtLine, 'debt'>): boolean {
   return side === 'all' || line.debt.direction === side;
 }
@@ -140,7 +142,7 @@ export type FilterOption<T extends string> = { value: T; label: string; meta: st
 /** Everyone, Owed to you and You owe, each with the people count or the amount, as the phone's picker. */
 export function sideOptions(summary: Pick<DebtSummary, 'open' | 'owedToMeMinor' | 'iOweMinor' | 'currency'>): FilterOption<SideFilter>[] {
   return [
-    { value: 'all', label: SIDE_LABEL.all, meta: peopleCount(summary.open.length) },
+    { value: 'all', label: SIDE_LABEL.all, meta: debtCount(summary.open.length) },
     { value: 'owed_to_me', label: SIDE_LABEL.owed_to_me, meta: debtMoney(summary.owedToMeMinor, summary.currency) },
     { value: 'i_owe', label: SIDE_LABEL.i_owe, meta: debtMoney(summary.iOweMinor, summary.currency) },
   ];
@@ -148,8 +150,8 @@ export function sideOptions(summary: Pick<DebtSummary, 'open' | 'owedToMeMinor' 
 
 export function statusOptions(summary: Pick<DebtSummary, 'open' | 'closed'>): FilterOption<StatusFilter>[] {
   return [
-    { value: 'open', label: 'Open', meta: peopleCount(summary.open.length) },
-    { value: 'closed', label: 'Settled and written off', meta: peopleCount(summary.closed.length) },
+    { value: 'open', label: 'Open', meta: debtCount(summary.open.length) },
+    { value: 'closed', label: 'Settled and written off', meta: debtCount(summary.closed.length) },
   ];
 }
 

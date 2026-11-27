@@ -9,7 +9,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 import { type DebtLine, formatMoney } from '@repo/core';
 
-/** A settled or written-off debt in the people list; the whole row opens the person's page. */
+/** One settled or written-off debt in the Debts list; the whole row opens its page. */
 export function ClosedRow({ line }: { line: DebtLine }) {
   const tokens = useThemeTokens();
   const { id, counterpartyName: name, note, currency } = line.debt;

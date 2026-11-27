@@ -45,10 +45,6 @@ export function RecordDebt({
   const field = walletField(words.principal, choice, (id) => data.walletNames[id]);
   const ready = Boolean(who && amountMinor);
   const money = (minor: number) => formatMoney(minor, wallet?.currency ?? currency);
-  const existing = data.summary.open.filter(
-    (line) => line.debt.direction === draft.direction && line.debt.counterpartyName.trim().toLocaleLowerCase() === who.toLocaleLowerCase(),
-  );
-  const existingMinor = existing.reduce((sum, line) => sum + line.balanceMinor, 0);
   const label = !ready
     ? who
       ? 'Add an amount'
@@ -116,13 +112,6 @@ export function RecordDebt({
             </button>
           ))}
         </div>
-      )}
-      {existing.length > 0 && (
-        <span className="form-hint">
-          {owed
-            ? `${existing[0]!.debt.counterpartyName} already owes you ${money(existingMinor)}. This goes on ${existing[0]!.debt.counterpartyName}'s page too.`
-            : `You already owe ${existing[0]!.debt.counterpartyName} ${money(existingMinor)}. This goes on ${existing[0]!.debt.counterpartyName}'s page too.`}
-        </span>
       )}
       <label className="debt-input debt-amount">
         <span className="label-text">Amount</span>

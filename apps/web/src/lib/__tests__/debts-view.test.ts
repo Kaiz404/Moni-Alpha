@@ -66,16 +66,17 @@ describe('debt words', () => {
     expect(comingUpWords(debtLine({ note: null }), -2)).toEqual({ title: 'Aiman pays RM150', meta: '2 days late' });
   });
 
-  it('says when a debt started or how it closed', () => {
-    expect(personMeta(debtLine({}), '2026-10-14', '2026-09-27')).toBe('Lent Sun 27 Sep');
-    expect(personMeta(debtLine({ direction: 'i_owe' }), '2026-10-14', '2026-09-25')).toBe('Borrowed Fri 25 Sep');
+  it('says what a debt is for, else when it started, or how it closed', () => {
+    expect(personMeta(debtLine({}), '2026-10-14', '2026-09-27')).toBe('Penang trip hotel share');
+    expect(personMeta(debtLine({ note: null }), '2026-10-14', '2026-09-27')).toBe('Lent Sun 27 Sep');
+    expect(personMeta(debtLine({ direction: 'i_owe', note: null }), '2026-10-14', '2026-09-25')).toBe('Borrowed Fri 25 Sep');
     expect(personMeta(debtLine({ note: 'Lunch' }, { state: 'settled' }), '2026-10-14', '2026-09-01')).toBe('Settled, Lunch');
     expect(personMeta(debtLine({ note: null }, { state: 'written_off' }), '2026-10-14', '2026-09-01')).toBe('Written off');
   });
 
-  it('counts people, not debts', () => {
-    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('Open with 2 people');
-    expect(openLabel([debtLine({})])).toBe('Open with 1 person');
+  it('counts debts, two with one person as two', () => {
+    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('3 open debts');
+    expect(openLabel([debtLine({})])).toBe('1 open debt');
   });
 
   it('says what came back and what is left', () => {
@@ -116,8 +117,8 @@ describe('writeOffWords', () => {
 
 describe('debts that moved no money', () => {
   it('says Noted on the row instead of Lent or Borrowed', () => {
-    expect(personMeta(debtLine({}, { noted: true }), '2026-10-14', '2026-10-01')).toBe('Noted Thu 1 Oct');
-    expect(personMeta(debtLine({ direction: 'i_owe' }, { noted: true }), '2026-10-14', '2026-10-01')).toBe('Noted Thu 1 Oct');
+    expect(personMeta(debtLine({ note: null }, { noted: true }), '2026-10-14', '2026-10-01')).toBe('Noted Thu 1 Oct');
+    expect(personMeta(debtLine({ direction: 'i_owe', note: null }, { noted: true }), '2026-10-14', '2026-10-01')).toBe('Noted Thu 1 Oct');
   });
 
   it('words a history with no wallet as the phone does', () => {
@@ -186,13 +187,13 @@ describe('the hero and the People pickers', () => {
 
   it('gives each choice the phone’s meta', () => {
     expect(sideOptions(summary)).toEqual([
-      { value: 'all', label: 'Everyone', meta: '2 people' },
+      { value: 'all', label: 'Everyone', meta: '2 debts' },
       { value: 'owed_to_me', label: 'Owed to you', meta: 'RM150' },
       { value: 'i_owe', label: 'You owe', meta: 'RM40.50' },
     ]);
     expect(statusOptions(summary)).toEqual([
-      { value: 'open', label: 'Open', meta: '2 people' },
-      { value: 'closed', label: 'Settled and written off', meta: '1 person' },
+      { value: 'open', label: 'Open', meta: '2 debts' },
+      { value: 'closed', label: 'Settled and written off', meta: '1 debt' },
     ]);
   });
 });

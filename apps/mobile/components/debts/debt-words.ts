@@ -38,8 +38,6 @@ export const SIDE_WORDS = {
     saved: (name: string, amount: string) => `Saved. ${name} owes you ${amount}`,
     segment: 'They owe me',
     pastPeople: 'People who owed you',
-    existing: (name: string, amount: string) =>
-      `${name} already owes you ${amount}. This goes on ${name}'s page too.`,
   },
   i_owe: {
     tile: 'You owe',
@@ -73,8 +71,6 @@ export const SIDE_WORDS = {
     saved: (name: string, amount: string) => `Saved. You owe ${name} ${amount}`,
     segment: 'I owe them',
     pastPeople: 'People you owed',
-    existing: (name: string, amount: string) =>
-      `You already owe ${name} ${amount}. This goes on ${name}'s page too.`,
   },
 } as const satisfies Record<DebtSide, unknown>;
 

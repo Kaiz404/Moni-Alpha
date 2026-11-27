@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  combine,
   dateLabel,
   dayOfMonth,
   daysBetween,
@@ -11,11 +10,9 @@ import {
   planDebtActivity,
   planDebtActivityDelete,
   planDebtDelete,
-  planDebtEdit,
   weekdayShort,
   type DebtLine,
   type NewDebt,
-  type Planned,
 } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { useState } from 'react';
@@ -172,41 +169,9 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
     );
   };
 
-  /** As on the phone: someone who already owes the same way gets the new amount on that debt. */
+  /** As on the phone: every debt recorded is its own, even with someone who already owes the same way. */
   const saveDebt = (input: NewDebt) => {
     const now = () => new Date().toISOString();
-    const wallet = data.wallets.find((item) => item.id === input.walletId);
-    const debtCurrency = wallet?.currency ?? input.currency ?? currency;
-    const existing = data.summary.open.find(
-      (line) =>
-        line.debt.direction === input.direction &&
-        line.debt.currency === debtCurrency &&
-        line.debt.counterpartyName.trim().toLocaleLowerCase() === input.counterpartyName.trim().toLocaleLowerCase(),
-    );
-    if (existing) {
-      const ctx = planContext(ledger.userId);
-      const added = planDebtActivity(
-        existing.debt,
-        { kind: 'principal', amountMinor: input.amountMinor, walletId: input.walletId ?? null, note: input.note ?? null },
-        ledger.projection,
-        ctx,
-      );
-      const due = input.dueDate ? planDebtEdit(existing.debt, { dueDate: input.dueDate }, ctx) : null;
-      const activityId = added.kind === 'writes' ? added.result.activity.id : null;
-      const before = existing.debt.dueDate;
-      const saved = commit(
-        due ? combine<unknown>([added, due]) : (added as Planned<unknown>),
-        `Added ${formatMoney(input.amountMinor, existing.debt.currency)} to ${existing.debt.counterpartyName}`,
-        () => {
-          if (activityId) applyPlan(planDebtActivityDelete(existing.debt, activityId, ledgerViewNow(), { now: now() }));
-          if (due) applyPlan(planDebtEdit(existing.debt, { dueDate: before }, { now: now() }));
-        },
-      );
-      if (saved === null) return;
-      setDraft(emptyDraft());
-      setParams({ record: null, person: existing.debt.id });
-      return;
-    }
     const recorded = commit(
       planDebt(input, ledger.projection, planContext(ledger.userId)),
       ({ debt }) => `Recorded a debt with ${debt.counterpartyName}`,
@@ -332,10 +297,10 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
           )}
         </div>
         <SlideOver
-          label={recording ? 'Record a debt' : 'Person'}
+          label={recording ? 'Record a debt' : 'Debt'}
           name="person"
           back="Debts"
-          steps={selected ? { noun: 'person', position: index >= 0 ? `${index + 1} of ${order.length}` : '', onMove: move, first: index <= 0, last: index === order.length - 1 } : undefined}
+          steps={selected ? { noun: 'debt', position: index >= 0 ? `${index + 1} of ${order.length}` : '', onMove: move, first: index <= 0, last: index === order.length - 1 } : undefined}
           actions={
             selected && !recording && selected.state === 'open' ? (
               <button type="button" className="round-btn small pane-write-off" onClick={() => setWritingOffId(selected.debt.id)} aria-label={`Write off ${formatMoney(selected.balanceMinor, selected.debt.currency)}`}>
@@ -531,9 +496,9 @@ function PeopleCard({
   const sum = (direction: Side) => lines.filter((line) => line.debt.direction === direction).reduce((total, line) => total + line.balanceMinor, 0);
   const allSettled = status === 'open' && summary.open.length === 0;
   return (
-    <section className="card people-card" aria-label="People">
+    <section className="card people-card" aria-label="Records">
       <div className="card-head people-head">
-        <h2 className="card-title">People</h2>
+        <h2 className="card-title">Records</h2>
         <div className="people-filters" role="group" aria-label="Filters">
           <PeopleFilter name="Show" value={side} label={SIDE_LABEL[side]} options={sideOptions(summary)} changed={side !== 'all'} onChange={onSide} />
           <PeopleFilter name="Status" value={status} label={STATUS_LABEL[status]} options={statusOptions(summary)} changed={status !== 'open'} onChange={onStatus} />
@@ -550,12 +515,12 @@ function PeopleCard({
             </span>
           </div>
         ) : lines.length === 0 ? (
-          <p className="meta nobody">Nobody here right now.</p>
+          <p className="meta nobody">No debts here right now.</p>
         ) : (
-          <div role="grid" aria-label={status === 'open' ? 'Open debts by person' : 'Settled debts'}>
+          <div role="grid" aria-label={status === 'open' ? 'Open debts' : 'Settled debts'}>
             <div className="grid-head people-row" role="row" data-only="sidebar rail rail-one-column">
               <span role="columnheader" className="caps">
-                Person
+                Who
               </span>
               <span role="columnheader" className="caps" style={{ justifySelf: 'start' }}>
                 Due
