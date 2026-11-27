@@ -120,6 +120,62 @@ describe('SheetHost', () => {
     await expect(answer).resolves.toBe('travel');
   });
 
+  it('offers the suggested categories first while nothing is picked', async () => {
+    render(<SheetHost />);
+    let answer!: Promise<string | null>;
+    act(() => {
+      answer = openSheet({
+        kind: 'category',
+        title: 'Choose category',
+        currency: 'MYR',
+        selectedId: null,
+        suggestedIds: ['travel', 'gone', 'food'],
+        categories: [
+          tile('food', 'Food & Dining', 80, 100),
+          tile('transport', 'Transport', 140, 120),
+          tile('travel', 'Travel', 0, null),
+        ],
+      });
+    });
+
+    expect(screen.getByText('Suggested')).toBeTruthy();
+    expect(screen.getAllByText('Travel')).toHaveLength(2);
+    expect(screen.getAllByText('Transport')).toHaveLength(1);
+    fireEvent.press(screen.getByTestId('sheet.suggested.travel'));
+
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await expect(answer).resolves.toBe('travel');
+  });
+
+  it('drops the suggestions once a category is picked or the user searches', () => {
+    render(<SheetHost />);
+    act(() => {
+      void openSheet({
+        kind: 'category',
+        title: 'Choose category',
+        currency: 'MYR',
+        selectedId: 'food',
+        suggestedIds: ['travel'],
+        categories: [tile('food', 'Food & Dining', 80, 100), tile('travel', 'Travel', 0, null)],
+      });
+    });
+    expect(screen.queryByText('Suggested')).toBeNull();
+
+    act(() => dismissSheet());
+    act(() => {
+      void openSheet({
+        kind: 'category',
+        title: 'Choose category',
+        currency: 'MYR',
+        selectedId: null,
+        suggestedIds: ['travel'],
+        categories: [tile('food', 'Food & Dining', 80, 100), tile('travel', 'Travel', 0, null)],
+      });
+    });
+    fireEvent.changeText(screen.getByTestId('sheet.search'), 'Tra');
+    expect(screen.queryByText('Suggested')).toBeNull();
+  });
+
   it('resolves a wallet sheet with no default to walletId null from its None row', async () => {
     render(<SheetHost />);
     let answer!: Promise<{ walletId: string | null } | null>;

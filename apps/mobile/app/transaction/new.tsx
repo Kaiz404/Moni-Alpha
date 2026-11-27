@@ -57,7 +57,7 @@ import {
 } from '@/lib/transactions/prefetch-location';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow } from '@/lib/transactions/row';
-import { transactionRow } from '@repo/core';
+import { guessCategory, transactionRow } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
 import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
@@ -303,6 +303,14 @@ export default function TypeItScreen() {
         kind === 'expense' ? recentCategories.map((item) => item.id) : [],
       ),
       selectedId: categoryId,
+      suggestedIds:
+        kind === 'transfer'
+          ? []
+          : guessCategory(
+              { type: kind, merchant: note.trim() || null, text: null, sourceApp: null, categoryHint: null },
+              transactions,
+              categories,
+            ).suggestions,
       onCreate: () =>
         router.push({
           pathname: '/categories/form',

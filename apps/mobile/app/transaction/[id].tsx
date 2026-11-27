@@ -70,7 +70,7 @@ import {
   formatSignedMoney,
   moneySign,
 } from '@repo/core';
-import { BALANCE_CORRECTION_TITLE } from '@repo/core';
+import { BALANCE_CORRECTION_TITLE, guessCategory } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -284,6 +284,11 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         tx.currency,
       ),
       selectedId: tx.categoryId,
+      suggestedIds: guessCategory(
+        { type, merchant: tx.merchant, text: tx.description, sourceApp: null, categoryHint: null },
+        all,
+        categories,
+      ).suggestions,
       onCreate: () =>
         router.push({ pathname: '/categories/form', params: { type } }),
     });

@@ -56,7 +56,7 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@repo/design';
-import { retypeEdits, reviewStatus, timesFiled, type RejectedProposal } from '@repo/core';
+import { captureClues, guessCategory, retypeEdits, reviewStatus, timesFiled, type RejectedProposal } from '@repo/core';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
@@ -672,9 +672,10 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         mainCurrency,
       ),
       selectedId: selected,
+      suggestedIds: guessCategory(captureClues({ ...top, type: kind }), ledger, categories).suggestions,
     });
     if (picked) setEdit(top.id, { categoryId: picked });
-  }, [top, edits, categories, progress, mainCurrency, setEdit]);
+  }, [top, edits, categories, progress, mainCurrency, ledger, setEdit]);
 
   const pickType = useCallback(async () => {
     if (!top) return;

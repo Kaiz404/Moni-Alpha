@@ -51,11 +51,13 @@ const NOTE_TONE: Record<BudgetNote['tone'], string> = {
 };
 
 function Tile({
+  group = 'category',
   tile,
   currency,
   selected,
   onPick,
 }: {
+  group?: 'category' | 'suggested';
   tile: CategoryTile;
   currency: string;
   selected: boolean;
@@ -72,7 +74,7 @@ function Tile({
   );
   return (
     <Press
-      testID={tid('sheet', 'category', tile.id)}
+      testID={tid('sheet', group, tile.id)}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       accessibilityLabel={`${tile.name}, ${note.label}`}
@@ -124,7 +126,7 @@ function Tile({
   );
 }
 
-/** V2A-CategoryPick: search, three columns of Paper tiles with this month's budget bar. Tapping a tile saves and closes. */
+/** V2A-CategoryPick: search, up to three Suggested tiles while nothing is picked, three columns of Paper tiles with this month's budget bar. Tapping a tile saves and closes. */
 export function CategoryPickerSheet({
   request,
   onPick,
@@ -158,6 +160,10 @@ export function CategoryPickerSheet({
       icon: 'handshake-outline',
       onPress: onDebtPayment,
     });
+  const suggested =
+    q || request.selectedId
+      ? []
+      : (request.suggestedIds ?? []).flatMap((id) => request.categories.find((tile) => tile.id === id) ?? []);
   const cells: (CategoryTile | 'new')[] = request.onCreate
     ? [...tiles, 'new']
     : tiles;
@@ -194,6 +200,42 @@ export function CategoryPickerSheet({
         className="flex-1"
         contentContainerClassName="gap-2 pb-3"
       >
+        {suggested.length > 0 ? (
+          <>
+            <Text
+              variant="meta"
+              className="text-muted"
+            >
+              Suggested
+            </Text>
+            <View className="flex-row gap-2">
+              {[0, 1, 2].map((column) => {
+                const tile = suggested[column];
+                return tile ? (
+                  <Tile
+                    key={tile.id}
+                    group="suggested"
+                    tile={tile}
+                    currency={request.currency}
+                    selected={false}
+                    onPick={() => onPick(tile.id)}
+                  />
+                ) : (
+                  <View
+                    key={`empty-${column}`}
+                    className="flex-1"
+                  />
+                );
+              })}
+            </View>
+            <Text
+              variant="meta"
+              className="pt-2 text-muted"
+            >
+              All categories
+            </Text>
+          </>
+        ) : null}
         {rows.map((row, index) => (
           <View
             key={index}

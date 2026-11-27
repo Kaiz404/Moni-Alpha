@@ -44,6 +44,8 @@ type Sheets = {
       currency: string;
       categories: CategoryTile[];
       selectedId: string | null;
+      /** Best first, from `guessCategory`: shown above the grid under Suggested while nothing is picked. */
+      suggestedIds?: readonly string[];
       /** Shows the New category tile; the sheet closes before it runs. */
       onCreate?: () => void;
       /** The "Not counted in budgets" choices under the grid; the sheet closes before each runs. */
