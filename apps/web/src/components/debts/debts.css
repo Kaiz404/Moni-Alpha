@@ -313,6 +313,12 @@ html[data-layout='phone'] .net-split {
   animation: fade-in 200ms ease both;
 }
 
+/* The fading body paints over the chips' 44 hit areas where they reach into it, so the chips sit above it. */
+html[data-layout='phone'] .people-filters {
+  position: relative;
+  z-index: 1;
+}
+
 .people-row {
   grid-template-columns: minmax(0, 1fr) 120px 100px 100px 32px;
   column-gap: 16px;
@@ -645,6 +651,21 @@ html[data-layout='phone'] .pane-delete {
   border-radius: 9999px;
   padding: 2px 8px;
   margin-right: -8px;
+}
+
+/* A 24-tall capsule with a 44 hit area on the phone layout, like Activity's in-place pencils. */
+html[data-layout='phone'] .tl-amount-edit {
+  position: relative;
+}
+
+html[data-layout='phone'] .tl-amount-edit::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 
 .tl-amount-edit:hover {
