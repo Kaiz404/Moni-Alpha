@@ -345,9 +345,19 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onRemind={() => void remind(selected)}
               onWriteOff={() => setWritingOffId(selected.debt.id)}
               onDelete={() => setDeletingId(selected.debt.id)}
-              onEditAmount={(activityId, amountMinor) =>
-                commit(planDebtActivityAmount(selected.debt, activityId, amountMinor, ledgerViewNow(), { now: new Date().toISOString() }), 'Amount saved')
-              }
+              onEditAmount={(activityId, amountMinor) => {
+                const debt = selected.debt;
+                const before = ledgerViewNow().debtActivitiesById[activityId]?.amountMinor;
+                if (before === undefined || before === amountMinor) return;
+                const change = (to: MinorAmount) => planDebtActivityAmount(debt, activityId, to, ledgerViewNow(), { now: new Date().toISOString() });
+                commit(change(amountMinor), 'Amount saved', () => {
+                  try {
+                    applyPlan(change(before));
+                  } catch (error) {
+                    showToast({ text: error instanceof Error ? error.message : "Couldn't undo that", tone: 'error' });
+                  }
+                });
+              }}
               onRecordAgain={() => startRecord(selected.debt.counterpartyName, selected.debt.direction)}
               onClose={close}
             />

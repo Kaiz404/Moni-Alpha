@@ -26,6 +26,7 @@ import { debtActivities$, debts$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { commit, commitUndoable, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
+import { showToast } from '@/lib/toast/toast-store';
 
 type DebtRow = StoredRow<'debts'>;
 type ActivityRow = StoredRow<'debt_activities'>;
@@ -140,11 +141,23 @@ export function deleteDebtActivity(debt: Debt, activityId: string): void {
   commit(planDebtActivityDelete(debt, activityId, ledgerView(), { now: new Date().toISOString() }));
 }
 
-/** Changes what one entry moved, with its wallet row, in one write. Hands back the Undo. */
+/**
+ * Changes what one entry moved, with its wallet row, in one write. Hands back the Undo, itself a plan
+ * against the ledger as it is then, so an entry recorded since can't leave less than nothing owed.
+ */
 export function editDebtActivityAmount(debt: Debt, activityId: string, amountMinor: MinorAmount): () => void {
-  return commitUndoable(
-    planDebtActivityAmount(debt, activityId, amountMinor, ledgerView(), { now: new Date().toISOString() }),
-  ).undo;
+  const before = ledgerView().debtActivitiesById[activityId]?.amountMinor;
+  const change = (to: MinorAmount) =>
+    commit(planDebtActivityAmount(debt, activityId, to, ledgerView(), { now: new Date().toISOString() }));
+  change(amountMinor);
+  return () => {
+    if (before === undefined) return;
+    try {
+      change(before);
+    } catch (error) {
+      showToast({ text: error instanceof Error ? error.message : "Couldn't undo that", tone: 'removed' });
+    }
+  };
 }
 
 /**
