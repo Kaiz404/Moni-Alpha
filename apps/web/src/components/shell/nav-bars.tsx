@@ -7,6 +7,7 @@ import { Icon } from '@/components/icon';
 import { destinationOf, MAIN_NAV, SIDE_NAV } from '@/lib/nav';
 import { useOnline } from '@/components/states/connection';
 import { useShellApi } from './shell-context';
+import { MeFace } from './me-face';
 
 /** W2-Parts "Full sidebar", 1360 and wider: the phone's Ink tab bar turned upright. */
 export function Sidebar() {
@@ -62,7 +63,9 @@ export function Sidebar() {
         aria-current={current === 'settings' ? 'page' : undefined}
         onClick={(event) => run({ kind: 'account' }, event.currentTarget)}
       >
-        <span className="me-tile">{user.initial}</span>
+        <span className="me-tile">
+          <MeFace user={user} />
+        </span>
         <span className="sidebar-me-name">
           <span>{user.name}</span>
           <span>Settings</span>
@@ -120,7 +123,7 @@ export function Rail() {
       >
         <span className="ind" style={{ height: 40 }}>
           <span className="me-tile" style={{ width: 36, height: 36, borderRadius: 13, fontSize: 16 }}>
-            {user.initial}
+            <MeFace user={user} />
           </span>
         </span>
         {user.name}

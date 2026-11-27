@@ -12,4 +12,5 @@ export * from './ledger';
 export * from './money-month';
 export * from './read-model';
 export * from './receipts';
+export * from './user-photo';
 export * from './write-plans';

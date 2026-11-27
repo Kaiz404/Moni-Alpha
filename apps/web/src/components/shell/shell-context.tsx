@@ -11,6 +11,8 @@ export type ShellUser = {
   name: string;
   email: string;
   initial: string;
+  /** The sign-in provider's photo, such as Google's; null for an email sign-in. */
+  photoUrl: string | null;
   currency: string;
   /** The profile's finance timezone; null reads days in the browser's zone. */
   zone: string | null;

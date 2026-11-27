@@ -8,6 +8,7 @@ import type { IconName } from '@/lib/icons';
 import type { Mood } from '@repo/brand';
 import { OfflineBanner } from '@/components/states/connection';
 import { useShellApi, type ShellAction } from './shell-context';
+import { MeFace } from './me-face';
 
 /** How the page sits in the phone layout: a tab root (in the tab bar) or a page pushed over one. */
 export type PhoneRole = 'home' | 'tab' | 'tab-with-moni' | 'pushed';
@@ -87,7 +88,7 @@ export function Page({
         {phone === 'home' && (
           <>
             <Link href="/settings" className="me-tile phone-me press" aria-label="Profile and settings">
-              {user.initial}
+              <MeFace user={user} />
             </Link>
             <div className="phone-greeting-block">
               {phoneSub && <div className="meta">{phoneSub}</div>}

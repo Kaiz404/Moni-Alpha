@@ -29,7 +29,7 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { Page, PageScroll } from '@/components/ui/page';
 import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
-import { userPhotoUrl } from '@/lib/auth/user-photo';
+import { userPhotoUrl } from '@repo/core';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName, type FinanceTransaction } from '@repo/core';
 import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';

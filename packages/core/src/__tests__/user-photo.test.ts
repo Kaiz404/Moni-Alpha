@@ -1,8 +1,8 @@
-import type { User } from '@supabase/supabase-js';
+import { describe, expect, it } from 'vitest';
 
-import { userPhotoUrl } from '@/lib/auth/user-photo';
+import { userPhotoUrl } from '../user-photo';
 
-const user = (meta: Record<string, unknown>) => ({ user_metadata: meta }) as unknown as User;
+const user = (meta: Record<string, unknown>) => ({ user_metadata: meta });
 
 describe('userPhotoUrl', () => {
   it('reads the photo Google puts in avatar_url, or picture on older sessions', () => {
@@ -17,6 +17,7 @@ describe('userPhotoUrl', () => {
   it('has none for an email sign-in, no user, or a value that is not an https link', () => {
     expect(userPhotoUrl(user({ display_name: 'Kai' }))).toBeNull();
     expect(userPhotoUrl(null)).toBeNull();
+    expect(userPhotoUrl({})).toBeNull();
     expect(userPhotoUrl(user({ avatar_url: 'http://example.com/a.png' }))).toBeNull();
   });
 });

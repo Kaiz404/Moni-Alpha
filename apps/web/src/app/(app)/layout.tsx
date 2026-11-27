@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
+import { userPhotoUrl } from '@repo/core';
 import { userPreferencesSchema } from '@repo/types';
 import { Shell } from '@/components/shell/shell';
 import { StoreSync } from '@/components/store/store-sync';
@@ -26,7 +27,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <Suspense>
-      <Shell user={{ id: userId, name, email, initial: name.charAt(0).toUpperCase(), currency, zone }}>
+      <Shell user={{ id: userId, name, email, initial: name.charAt(0).toUpperCase(), photoUrl: userPhotoUrl(data.claims), currency, zone }}>
         <StoreSync />
         {children}
       </Shell>

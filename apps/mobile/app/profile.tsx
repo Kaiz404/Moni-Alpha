@@ -28,7 +28,7 @@ import { Text } from '@/components/ui/text';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAiConsent } from '@/lib/ai/consent/state';
 import { useAuth } from '@/lib/auth/auth-context';
-import { userPhotoUrl } from '@/lib/auth/user-photo';
+import { userPhotoUrl } from '@repo/core';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';

@@ -11,6 +11,7 @@ import type { ThemePref } from '@/lib/theme';
 import { useShellApi } from './shell-context';
 import { Glyph } from '@/components/ledger/glyph';
 import { dismissToast, undoToast, useToast, type ToastTone } from './shell-store';
+import { MeFace } from './me-face';
 
 /**
  * Open while mounted; a close plays the exit first, then hands back to the shell. The shell's overlay
@@ -110,7 +111,9 @@ export function AccountMenu({ anchor }: { anchor: DOMRect | null }) {
         onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="account-head">
-          <span className="me-tile">{user.initial}</span>
+          <span className="me-tile">
+            <MeFace user={user} />
+          </span>
           <span style={{ display: 'flex', flexDirection: 'column' }}>
             <strong style={{ fontSize: 16 }}>{user.name}</strong>
             <span style={{ fontSize: 13, color: 'var(--color-inactive)' }}>Main currency {user.currency}</span>
