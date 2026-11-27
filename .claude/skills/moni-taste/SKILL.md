@@ -42,9 +42,9 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 
 **3. The user's word, and labels that fit.**
 - Do: name the action by what it does for the user, and use a short generic verb when a specific one would truncate.
-- Don't: use internal or technical terms (`glossary.md` "Never use").
-- Example: "Archive" became "Delete" (#8). The button "Make it an expe…" became "Confirm" (#37), and so did "Use this place". "Start with a clearer view" became "Create your Moni account" (#67).
-- Owner: "from a user's perspective, it's effectively delete"
+- Don't: use internal or technical terms (`glossary.md` "Never use"). Don't build a button label from the form's values (a name, an amount, a date): the page already shows them, and a long value truncates the button (#137).
+- Example: "Archive" became "Delete" (#8). The button "Make it an expe…" became "Confirm" (#37), and so did "Use this place". "Start with a clearer view" became "Create your Moni account" (#67). "Record: Great Eastern owes you RM1,275.…" is to become "Record" (#137).
+- Owner: "from a user's perspective, it's effectively delete" "allowing the confirm button to be like free to form however they want makes it so that the button could have text that is like wrapped or truncated"
 
 **4. No middle-dot separators.**
 - Do: put two facts in two places (the right side, a second line), or set them apart with weight, colour or plain words.
