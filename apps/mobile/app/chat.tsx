@@ -59,7 +59,7 @@ import {
 } from '@/lib/speech/speech-recognition';
 import { tid } from '@/lib/test-ids';
 import MoniAndroidApps from '@/modules/moni-android-apps';
-import { dateLabel, parseDayKey } from '@repo/core';
+import { dateLabel, parseDayKey, type ForcedIntent } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function ThreadGap() {
@@ -267,14 +267,14 @@ export default function ChatScreen() {
 
   const withAi = useAiGate('chat');
   const send = useCallback(
-    (text: string) => {
+    (text: string, forcedIntent?: ForcedIntent) => {
       const image = attachedImage;
       if (!text.trim() && !image) return;
       withAi(() => {
         setInput('');
         setAttachedImage(null);
         setViewDay(todayThreadDay());
-        void sendChatMessage({ text, imageUri: image }).catch((error) =>
+        void sendChatMessage({ text, imageUri: image, forcedIntent }).catch((error) =>
           console.warn('[chat] send failed', error),
         );
       });
@@ -339,7 +339,7 @@ export default function ChatScreen() {
   const onNoticed = useCallback(
     (item: NoticedItem) => {
       if (item.target.kind === 'ask') {
-        sendRef.current(item.target.question);
+        sendRef.current(item.target.question, 'analyze');
         return;
       }
       const [first] = pendingProposals$(userId).peek();

@@ -5,7 +5,13 @@ const ANALYSIS_START =
 
 /** Topics that only make sense as questions, even when the message also names an amount. */
 const ANALYSIS_TOPIC =
-  /\b(afford|forecast|payday|pay day|subscriptions?|owe|owing|on track|run out|left to spend|overspen(d|t|ding))\b/i;
+  /\b(afford|forecast|payday|pay day|subscriptions?|owe|owing|on track|run out|left to spend|overspen(d|t|ding)|over budget)\b|\bover\s*\?+$/i;
+
+/** "Why is Transportation RM78 over?": a question word and a question mark make a question, amount or not. */
+const PLAIN_QUESTION = /^(how|what|why|when|where|which|who)\b.*\?$/is;
+
+/** Words that record money moving, which keep "why paid RM78 for grab?" open to both readings. */
+const CAPTURE_VERB = /\b(paid|bought|spent at)\b/i;
 
 const CURRENCY = '(?:rm|usd|myr|sgd|eur|gbp)';
 
@@ -25,6 +31,8 @@ export function classifyTextIntent(text: string, hasImage: boolean): RouteIntent
   const asks = trimmed.includes('?') || ANALYSIS_START.test(trimmed);
   const topic = ANALYSIS_TOPIC.test(trimmed);
   const hasTransactionSignal = TRANSACTION_SIGNAL.test(trimmed);
+
+  if (PLAIN_QUESTION.test(trimmed) && !CAPTURE_VERB.test(trimmed)) return 'analyze';
 
   if (asks && (topic || !hasTransactionSignal)) return 'analyze';
   if (hasTransactionSignal) return asks ? 'ambiguous' : 'extract';

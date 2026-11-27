@@ -280,10 +280,12 @@ Heuristic-first — no LLM call for most messages:
 | Photo attached                                                               | Always extract                                                           |
 | Question-like text (`?`, how/what/am I/show/list/will/…) without amount      | Analyze                                                                  |
 | Question about afford/forecast/payday/subscriptions/owe, even with an amount | Analyze                                                                  |
+| Starts with how/what/why/when/where/which/who and ends with `?`, no paid/bought/spent at | Analyze, even with an amount ("Why is Transportation RM78 over?") |
+| A question Moni wrote (a Moni noticed card)                                  | Analyze, never the clarify step (`forcedIntent: 'analyze'`)              |
 | Amount (`RM12`, `RM 12`, `12 rm`, `$12`) or merchant verbs                   | Extract; with a question → clarify chips                                 |
 | Default text                                                                 | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
 
-Table test: `lib/ai/chat/__tests__/routing.test.ts`.
+Table test: `packages/core/src/chat/__tests__/routing.test.ts`.
 
 Snapshot builder: `buildChatSnapshot` in `@repo/core` (`packages/core/src/chat/`; deterministic metrics from transactions, budgets and pending proposals, plus [finance facts](#finance-facts) — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; the clients and the chat prompt must never sum, compare, or infer a first/default currency across keys. Rows without a currency are skipped and logged, never defaulted. `pendingProposals` is a count plus expense and income totals per currency; a proposal takes its wallet's currency, and text and receipt proposals without a wallet are left out because their currency is a placeholder. `calendarMonth.dailyPaceVsPreviousMonthPct` compares average daily spend with last month and is `null` before day 7 and while one expense is over half of month-to-date spend, so rent on day 1 never reads as a forecast. `rolling30.deltas.*PctVsPrior` is `null` when the prior 30 days are empty.
 

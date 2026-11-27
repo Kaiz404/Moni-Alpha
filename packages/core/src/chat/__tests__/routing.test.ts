@@ -76,11 +76,19 @@ const cases: [string, RouteIntent][] = [
   ['payday is when?', 'analyze'],
   ['how much do I owe', 'analyze'],
   ['how much is left to spend on food', 'analyze'],
+  ['Why is Transportation RM78 over?', 'analyze'],
+  ['Why did I spend RM78 on Grab?', 'analyze'],
+  ['what was the RM45 at Shell for?', 'analyze'],
+  ['how much was the 12 rm coffee?', 'analyze'],
+  ['Transportation RM78 over?', 'analyze'],
 
   // Both readings are plausible: ask
   ['Did I pay RM45 to TNB?', 'ambiguous'],
   ['spent RM30 on lunch, how much is left?', 'ambiguous'],
-  ['how much was the 12 rm coffee?', 'ambiguous'],
+  ['paid RM78 for grab?', 'ambiguous'],
+  ['why paid RM78 for grab?', 'ambiguous'],
+  ['what about RM78 grab', 'ambiguous'],
+  ['bought shoes RM299, why?', 'ambiguous'],
 ];
 
 describe('chat routing', () => {
