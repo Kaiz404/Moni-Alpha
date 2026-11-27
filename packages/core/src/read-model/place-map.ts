@@ -1,7 +1,7 @@
 import { addMinor, type MinorAmount } from '@repo/types';
 
 import type { Point } from '../charts/month-charts';
-import type { LatLng, Place } from './places';
+import type { LatLng, Place, PlaceCategory } from './places';
 
 export type Region = LatLng & { latitudeDelta: number; longitudeDelta: number };
 
@@ -27,39 +27,69 @@ export type PinCluster = {
   lead: Place;
   members: Place[];
   totalMinor: MinorAmount;
+  /** Every member's spending by category, largest first. */
+  categories: PlaceCategory[];
 };
 
 const PIN_GAP = 4;
 const PIN_ROW = 36;
 
+/** The most category bubbles a pin stacks; past it the last slot reads "+N". */
+export const PIN_DISCS = 3;
+
+/**
+ * The bubbles a pin draws for its categories, largest first: all of them up to `PIN_DISCS`, or one
+ * fewer and a "+N" disc for the rest.
+ */
+export function pinMix(categories: readonly PlaceCategory[]): { shown: PlaceCategory[]; more: number } {
+  if (categories.length <= PIN_DISCS) return { shown: [...categories], more: 0 };
+  return { shown: categories.slice(0, PIN_DISCS - 1), more: categories.length - (PIN_DISCS - 1) };
+}
+
+function mergeCategories(a: readonly PlaceCategory[], b: readonly PlaceCategory[]): PlaceCategory[] {
+  const totals = new Map<string | null, MinorAmount>();
+  for (const { categoryId, totalMinor } of [...a, ...b])
+    totals.set(categoryId, addMinor(totals.get(categoryId) ?? 0, totalMinor));
+  return [...totals.entries()]
+    .map(([categoryId, totalMinor]) => ({ categoryId, totalMinor }))
+    .sort((x, y) => y.totalMinor - x.totalMinor);
+}
+
+/** A pin with one member, as `clusterPins` returns it when nothing merges. */
+export function singlePin(place: Place): PinCluster {
+  return { lead: place, members: [place], totalMinor: place.totalMinor, categories: place.categories };
+}
+
 /**
  * Merges pins whose capsules would overlap on screen, largest place first, as
  * `XM-Places` draws "RM328 2". `toScreen` maps a coordinate to view pixels;
- * `widthOf` estimates a capsule's width from its label and member count, and `row` is how far apart two
- * capsules' centres must sit up and down not to touch.
+ * `widthOf` estimates a capsule's width from its label, member count and how many category discs
+ * it stacks, and `row` is how far apart two capsules' centres must sit up and down not to touch.
  */
 export function clusterPins(
   places: readonly Place[],
   toScreen: (point: LatLng) => Point,
-  widthOf: (totalMinor: MinorAmount, members: number) => number,
+  widthOf: (totalMinor: MinorAmount, members: number, discs: number) => number,
   row = PIN_ROW,
 ): PinCluster[] {
+  const discs = (categories: readonly PlaceCategory[]) => Math.max(1, Math.min(categories.length, PIN_DISCS));
   const seeds: (PinCluster & Point & { width: number })[] = [];
   for (const place of [...places].sort((a, b) => b.totalMinor - a.totalMinor)) {
     const { x, y } = toScreen(place);
-    const width = widthOf(place.totalMinor, 1);
+    const width = widthOf(place.totalMinor, 1, discs(place.categories));
     const hit = seeds.find(
       (seed) => Math.abs(seed.x - x) < (seed.width + width) / 2 + PIN_GAP && Math.abs(seed.y - y) < row,
     );
     if (hit) {
       hit.members.push(place);
       hit.totalMinor = addMinor(hit.totalMinor, place.totalMinor);
-      hit.width = widthOf(hit.totalMinor, hit.members.length);
+      hit.categories = mergeCategories(hit.categories, place.categories);
+      hit.width = widthOf(hit.totalMinor, hit.members.length, discs(hit.categories));
     } else {
-      seeds.push({ lead: place, members: [place], totalMinor: place.totalMinor, x, y, width });
+      seeds.push({ ...singlePin(place), members: [place], x, y, width });
     }
   }
-  return seeds.map(({ lead, members, totalMinor }) => ({ lead, members, totalMinor }));
+  return seeds.map(({ lead, members, totalMinor, categories }) => ({ lead, members, totalMinor, categories }));
 }
 
 /** About a tenth of a zoom level's change in scale: pins can merge, and a pinch frame is cheap to skip. */

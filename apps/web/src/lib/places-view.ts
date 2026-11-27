@@ -162,9 +162,9 @@ export function flingSpeed(speed: Point, ms: number): Point {
   return { x: speed.x * keep, y: speed.y * keep };
 }
 
-/** W2-Places' capsule: the bubble and padding, about 9 a glyph, and the count badge. */
-export function pinWidth(label: string, members: number): number {
-  return 52 + label.length * 9 + (members > 1 ? 30 : 0);
+/** W2-Places' capsule: the bubble and padding, 18 more for each stacked bubble, about 9 a glyph, and the count badge. */
+export function pinWidth(label: string, members: number, discs = 1): number {
+  return 52 + (discs - 1) * 18 + label.length * 9 + (members > 1 ? 30 : 0);
 }
 
 /** A heat blob's width: 56 at nothing, 206 for the biggest place, by the square root of its share. */

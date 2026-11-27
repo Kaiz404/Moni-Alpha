@@ -164,9 +164,10 @@ describe('the map view', () => {
 });
 
 describe('pins and heat', () => {
-  it('sizes a capsule by its label and a cluster badge', () => {
+  it('sizes a capsule by its label, its stacked bubbles and a cluster badge', () => {
     expect(pinWidth('RM294', 1)).toBe(97);
     expect(pinWidth('RM100', 2)).toBe(127);
+    expect(pinWidth('RM100', 3, 3)).toBe(163);
   });
 
   it('sizes a blob by the square root of its share', () => {

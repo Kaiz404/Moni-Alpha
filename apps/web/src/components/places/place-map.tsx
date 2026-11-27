@@ -1,6 +1,6 @@
 'use client';
 
-import { clusterPins, fitFrame, formatMoney, googleZoom, type Box, type Insets, type Place, type Point } from '@repo/core';
+import { clusterPins, fitFrame, formatMoney, googleZoom, pinMix, type Box, type Insets, type Place, type PlaceCategory, type Point } from '@repo/core';
 import type { CurrencyCode } from '@repo/types';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
@@ -152,7 +152,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
   const view = useSlidingView(target, move.glide);
   const at = (place: Place) => (fitted && box ? toView(fitted(place), view, box) : { x: 0, y: 0 });
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
-  const widthOf = (total: number, members: number) => pinWidth(whole(total), members);
+  const widthOf = (total: number, members: number, discs: number) => pinWidth(whole(total), members, discs);
   // Pins group by where the camera is going, so they merge or split once per move, not on every frame of it.
   const clusters = fitted && box ? clusterPins(places, (point) => toView(fitted(point), target, box), widthOf, PIN_ROW) : [];
   const leadOf = new Map(clusters.flatMap((cluster) => cluster.members.map((member) => [member.id, cluster] as const)));
@@ -358,7 +358,6 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
           const on = members.some((member) => member.id === selectedId);
           const hot = members.some((member) => member.id === hoverId);
           const shown = lead && (!heat || on || hot);
-          const category = projectionCategory(ledger, (cluster?.lead ?? place).categories[0]?.categoryId ?? null);
           const { x, y } = at(lead ? place : (cluster?.lead ?? place));
           const names = members.map((member) => member.name).join(' and ');
           return (
@@ -381,7 +380,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
               onMouseLeave={() => onHover(null)}
             >
               <span className="pin-body">
-                <Bubble icon={category?.icon} color={category?.color ?? null} size={28} glyph={16} />
+                <PinBubbles ledger={ledger} categories={cluster?.categories ?? place.categories} />
                 <span className="num pin-amount">{whole(cluster?.totalMinor ?? place.totalMinor)}</span>
                 {members.length > 1 && <span className="num pin-count">{members.length}</span>}
               </span>
@@ -464,6 +463,20 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
         </span>
       </div>
     </div>
+  );
+}
+
+/** A pin's categories as overlapping bubbles, largest first, the last slot "+N" past three. */
+function PinBubbles({ ledger, categories }: { ledger: Ledger; categories: readonly PlaceCategory[] }) {
+  const { shown, more } = pinMix(categories);
+  return (
+    <span className="pin-bubbles">
+      {shown.map(({ categoryId }) => {
+        const category = projectionCategory(ledger, categoryId);
+        return <Bubble key={categoryId ?? 'none'} icon={category?.icon} color={category?.color ?? null} size={28} glyph={16} />;
+      })}
+      {more > 0 && <span className="bubble num pin-more">+{more}</span>}
+    </span>
   );
 }
 

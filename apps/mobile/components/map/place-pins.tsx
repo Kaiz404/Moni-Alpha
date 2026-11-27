@@ -8,13 +8,13 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { CategoryLook } from './use-places';
-import { clusterPins, formatMoney, projector, type PinCluster, type Place, type Region } from '@repo/core';
+import { clusterPins, formatMoney, pinMix, projector, singlePin, type PinCluster, type Place, type Region } from '@repo/core';
 
 type Size = { width: number; height: number };
 
-/** XM-Places capsule width: bubble and padding, ~8 per glyph, and the count badge. */
-function pinWidth(label: string, members: number): number {
-  return 40 + label.length * 8 + (members > 1 ? 26 : 0);
+/** XM-Places capsule width: bubble and padding, 18 more per stacked bubble, ~8 per glyph, and the count badge. */
+function pinWidth(label: string, members: number, discs: number): number {
+  return 40 + (discs - 1) * 18 + label.length * 8 + (members > 1 ? 26 : 0);
 }
 
 export function usePinClusters(
@@ -24,9 +24,9 @@ export function usePinClusters(
   currency: CurrencyCode,
 ): PinCluster[] {
   return useMemo(() => {
-    if (!region || !size) return places.map((place) => ({ lead: place, members: [place], totalMinor: place.totalMinor }));
-    return clusterPins(places, projector(region, size), (total: MinorAmount, members) =>
-      pinWidth(formatMoney(total, currency, { whole: true }), members),
+    if (!region || !size) return places.map(singlePin);
+    return clusterPins(places, projector(region, size), (total: MinorAmount, members, discs) =>
+      pinWidth(formatMoney(total, currency, { whole: true }), members, discs),
     );
   }, [places, region, size, currency]);
 }
@@ -46,11 +46,11 @@ export function PlacePins({ clusters, selectedId, currency, look, onPick }: Plac
     const names = cluster.members.map((member) => member.name).join(' and ');
     return (
       <PinMarker
-        key={`${cluster.lead.id}:${on}:${cluster.members.length}:${label}`}
+        key={`${cluster.lead.id}:${on}:${cluster.members.length}:${label}:${cluster.categories.map((category) => category.categoryId).join(',')}`}
         cluster={cluster}
         on={on}
         label={label}
-        look={look(cluster.lead.categories[0]?.categoryId ?? null)}
+        look={look}
         accessibilityLabel={`${names}, ${formatMoney(cluster.totalMinor, currency)}`}
         onPress={() => onPick(cluster)}
       />
@@ -74,7 +74,7 @@ function PinMarker({
   cluster: PinCluster;
   on: boolean;
   label: string;
-  look: CategoryLook;
+  look: (categoryId: string | null) => CategoryLook;
   accessibilityLabel: string;
   onPress: () => void;
 }) {
@@ -99,10 +99,10 @@ function PinMarker({
       <View
         className={`h-8 flex-row items-center gap-1.5 rounded-full border-[1.5px] pl-[3px] pr-2.5 ${on ? 'border-primary bg-primary' : 'border-hairline bg-card'}`}
       >
-        <PinBubble
+        <PinBubbles
+          cluster={cluster}
+          on={on}
           look={look}
-          size={24}
-          glyph={14}
         />
         <Text
           className={`text-[14px] leading-[19px] font-display-bold ${on ? 'text-primary-foreground' : 'text-foreground'}`}
@@ -121,6 +121,51 @@ function PinMarker({
         ) : null}
       </View>
     </Marker>
+  );
+}
+
+/** A pin's categories as overlapping bubbles, largest first, the last slot "+N" past three. */
+function PinBubbles({
+  cluster,
+  on,
+  look,
+}: {
+  cluster: PinCluster;
+  on: boolean;
+  look: (categoryId: string | null) => CategoryLook;
+}) {
+  const { shown, more } = pinMix(cluster.categories);
+  const ring = on ? 'border-primary' : 'border-card';
+  return (
+    <View className="flex-row items-center">
+      {shown.map(({ categoryId }, index) => {
+        const bubble = (
+          <PinBubble
+            key={categoryId ?? 'none'}
+            look={look(categoryId)}
+            size={24}
+            glyph={14}
+          />
+        );
+        return index ? (
+          <View
+            key={categoryId ?? 'none'}
+            className={`-ml-[10px] rounded-full border-2 ${ring}`}
+          >
+            {bubble}
+          </View>
+        ) : (
+          bubble
+        );
+      })}
+      {more ? (
+        <View className={`-ml-[10px] rounded-full border-2 ${ring}`}>
+          <View className="h-6 w-6 items-center justify-center rounded-full bg-sand">
+            <Text className="text-[10px] leading-[14px] font-display-bold text-foreground">+{more}</Text>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 

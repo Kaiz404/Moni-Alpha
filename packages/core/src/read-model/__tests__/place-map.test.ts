@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
 import { createCalendar } from '../../calendar';
-import { clusterPins, fitFrame, googleZoom, zoomMoved } from '../place-map';
+import { clusterPins, fitFrame, googleZoom, pinMix, zoomMoved } from '../place-map';
 import { groupPlaces } from '../places';
 import type { FinanceTransaction } from '../types';
 
@@ -85,6 +85,51 @@ describe('clusterPins', () => {
     const places = groupPlaces(rows, { currency: 'MYR' }, KL);
     const clusters = clusterPins([...places].reverse(), () => ({ x: 0, y: 0 }), () => 90);
     expect(clusters.map((cluster) => cluster.lead.name)).toEqual(['Mamak Ali']);
+  });
+
+  it('keeps every category in a merged pin, summed across its places, largest first', () => {
+    const mixed = [
+      ...rows,
+      row('m4', MAMAK, 700, { categoryId: 'transport' }),
+      row('k2', KLCC, 2400, {
+        categoryId: 'shopping',
+        locationName: 'Suria KLCC, Jalan Ampang, Kuala Lumpur, Wilayah Persekutuan',
+      }),
+      row('k3', KLCC, 300, {
+        categoryId: 'transport',
+        locationName: 'Suria KLCC, Jalan Ampang, Kuala Lumpur, Wilayah Persekutuan',
+      }),
+    ];
+    const places = groupPlaces(mixed, { currency: 'MYR' }, KL);
+    const [merged] = clusterPins(places, () => ({ x: 0, y: 0 }), () => 90);
+    expect(merged?.categories).toEqual([
+      { categoryId: 'food', totalMinor: 5560 },
+      { categoryId: 'shopping', totalMinor: 2400 },
+      { categoryId: 'transport', totalMinor: 1000 },
+    ]);
+  });
+
+  it('widens a capsule by the category discs it stacks, at most three', () => {
+    const many = ['food', 'transport', 'shopping', 'bills'].map((categoryId, index) =>
+      row(`m${index}`, MAMAK, 1000 - index, { categoryId }),
+    );
+    const places = groupPlaces(many, { currency: 'MYR' }, KL);
+    const discs: number[] = [];
+    clusterPins(places, () => ({ x: 0, y: 0 }), (_total, _members, count) => (discs.push(count), 90));
+    expect(discs).toEqual([3]);
+  });
+});
+
+describe('pinMix', () => {
+  const kinds = (n: number) =>
+    Array.from({ length: n }, (_, index) => ({ categoryId: `c${index}`, totalMinor: (100 - index) as MinorAmount }));
+
+  it('shows up to three categories whole', () => {
+    expect(pinMix(kinds(3))).toEqual({ shown: kinds(3), more: 0 });
+  });
+
+  it('gives the third slot to "+N" past three', () => {
+    expect(pinMix(kinds(5))).toEqual({ shown: kinds(2), more: 3 });
   });
 });
 
