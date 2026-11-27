@@ -85,13 +85,7 @@ tags:
       text: Hana owes you RM50\.00
     centerElement: true
 - takeScreenshot: d1-l5-new
-- scrollUntilVisible:
-    element:
-      id: debts.filter.status
-    centerElement: true
-- tapOn:
-    id: debts.filter.status
-- tapOn: Settled and written off
+# Every status is ticked by default, so settled debts list after the open ones.
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'

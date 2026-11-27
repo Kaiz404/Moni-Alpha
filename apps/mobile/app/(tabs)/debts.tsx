@@ -21,66 +21,70 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
-import type { DebtSide } from '@repo/core';
+import {
+  DEBT_SIDES,
+  DEBT_STATUS_CHOICES,
+  filterDebts,
+  type DebtFilter,
+  type DebtSide,
+  type DebtStatusChoice,
+} from '@repo/core';
 import { tid } from '@/lib/test-ids';
 
-type Side = DebtSide | 'all';
-type Status = 'open' | 'closed';
-
-const SIDE_LABEL: Record<Side, string> = {
-  all: 'Everyone',
+const SIDE_LABEL: Record<DebtSide, string> = {
   owed_to_me: SIDE_WORDS.owed_to_me.tile,
   i_owe: SIDE_WORDS.i_owe.tile,
 };
-const STATUS_LABEL: Record<Status, string> = {
+const STATUS_LABEL: Record<DebtStatusChoice, string> = {
   open: 'Open',
   closed: 'Settled',
 };
 const debtCount = (count: number) => `${count} ${count === 1 ? 'debt' : 'debts'}`;
+const isSide = (id: string): id is DebtSide => DEBT_SIDES.some((side) => side === id);
+const isStatus = (id: string): id is DebtStatusChoice =>
+  DEBT_STATUS_CHOICES.some((status) => status === id);
+
+/** A filter trigger's words: the default when every choice is ticked, else the one ticked choice. */
+function ticked<T extends string>(picked: readonly T[], labels: Record<T, string>, every: string) {
+  return picked.length === 1 ? labels[picked[0]!] : every;
+}
 
 export default function DebtsScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
   const clearance = useTabBarClearance();
   const summary = useDebtSummary();
-  const [side, setSide] = useState<Side>('all');
-  const [status, setStatus] = useState<Status>('open');
+  const [filter, setFilter] = useState<DebtFilter>({ sides: [], statuses: [] });
   const empty =
     summary.open.length === 0 && summary.closed.length === 0;
-  const allSettled = summary.open.length === 0 && !empty;
-  const onSide = <T extends { debt: { direction: DebtSide } }>(line: T) =>
-    side === 'all' || line.debt.direction === side;
-  const open = summary.open.filter(onSide);
-  const closed = summary.closed.filter(onSide);
-  const comingUp = summary.comingUp.filter((row) => onSide(row.line));
+  const onlyOpen = filter.statuses.length === 1 && filter.statuses[0] === 'open';
+  const allSettled = summary.open.length === 0 && !empty && onlyOpen;
+  const { lines, comingUp } = filterDebts(summary, filter);
 
-  const pickSide = async () => {
+  const pickSides = async () => {
     const picked = await openSheet({
-      kind: 'choice',
+      kind: 'choices',
       title: 'Show',
-      selected: side,
+      selectedIds: filter.sides,
       options: [
-        { id: 'all', label: SIDE_LABEL.all, icon: 'account-multiple-outline', meta: debtCount(summary.open.length) },
         { id: 'owed_to_me', label: SIDE_LABEL.owed_to_me, icon: 'arrow-bottom-left', meta: debtMoney(summary.owedToMeMinor, summary.currency) },
         { id: 'i_owe', label: SIDE_LABEL.i_owe, icon: 'arrow-top-right', meta: debtMoney(summary.iOweMinor, summary.currency) },
       ],
     });
-    if (picked === 'all' || picked === 'owed_to_me' || picked === 'i_owe') setSide(picked);
+    if (picked) setFilter((current) => ({ ...current, sides: picked.ids.filter(isSide) }));
   };
-  const pickStatus = async () => {
+  const pickStatuses = async () => {
     const picked = await openSheet({
-      kind: 'choice',
+      kind: 'choices',
       title: 'Status',
-      selected: status,
+      selectedIds: filter.statuses,
       options: [
         { id: 'open', label: 'Open', icon: 'handshake-outline', meta: debtCount(summary.open.length) },
         { id: 'closed', label: 'Settled and written off', icon: 'check', meta: debtCount(summary.closed.length) },
       ],
     });
-    if (picked === 'open' || picked === 'closed') setStatus(picked);
+    if (picked) setFilter((current) => ({ ...current, statuses: picked.ids.filter(isStatus) }));
   };
-
-  const lines = status === 'open' ? open : closed;
 
   return (
     <Page
@@ -117,29 +121,29 @@ export default function DebtsScreen() {
                   <FilterTrigger
                     testID={tid('debts', 'filter', 'side')}
                     name="Show"
-                    label={SIDE_LABEL[side]}
-                    active={side !== 'all'}
-                    onPress={() => void pickSide()}
+                    label={ticked(filter.sides, SIDE_LABEL, 'Everyone')}
+                    active={filter.sides.length > 0}
+                    onPress={() => void pickSides()}
                   />
                   <FilterTrigger
                     testID={tid('debts', 'filter', 'status')}
                     name="Status"
-                    label={STATUS_LABEL[status]}
-                    active={status !== 'open'}
-                    onPress={() => void pickStatus()}
+                    label={ticked(filter.statuses, STATUS_LABEL, 'All')}
+                    active={filter.statuses.length > 0}
+                    onPress={() => void pickStatuses()}
                   />
                 </View>
               </View>
               <Animated.View
-                key={`${status}-${side}`}
+                key={`${filter.statuses.join()}-${filter.sides.join()}`}
                 entering={FadeIn.duration(200)}
               >
-                {status === 'open' && allSettled ? (
+                {allSettled ? (
                   <AllSettledTile />
                 ) : lines.length > 0 ? (
                   <ListCard>
                     {lines.map((line) =>
-                      status === 'open' ? (
+                      line.state === 'open' ? (
                         <PersonRow
                           key={line.debt.id}
                           line={line}

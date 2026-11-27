@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { lastDueDate, summarizeDebts } from '../debt-summary';
+import { filterDebts, lastDueDate, summarizeDebts, tickedChoices } from '../debt-summary';
 import { createCalendar } from '../../calendar';
 import type { FinanceDebt, FinanceDebtActivity } from '../types';
 
@@ -160,6 +160,45 @@ describe('summarizeDebts', () => {
     );
 
     expect(summary.comingUp.map((row) => row.daysLeft)).toEqual([-2]);
+  });
+});
+
+describe('filterDebts', () => {
+  const summary = summarizeDebts(
+    [
+      debt('Aiman', { direction: 'owed_to_me' }),
+      debt('Mei', { direction: 'i_owe', dueDate: '2026-10-17' }),
+      debt('Hana', { direction: 'owed_to_me' }),
+    ],
+    [
+      activity('Aiman', 'principal', 100, '2026-09-27T04:00:00.000Z'),
+      activity('Mei', 'principal', 40, '2026-09-25T04:00:00.000Z'),
+      activity('Hana', 'principal', 20, '2026-09-20T04:00:00.000Z'),
+      activity('Hana', 'repayment', 20, '2026-10-01T04:00:00.000Z'),
+    ],
+    WED_14_OCT,
+    MYR,
+    KL,
+  );
+  const ids = (filter: Parameters<typeof filterDebts>[1]) =>
+    filterDebts(summary, filter).lines.map((line) => line.debt.id);
+
+  it('shows every debt, open first, when nothing is picked', () => {
+    expect(ids({ sides: [], statuses: [] })).toEqual(['Mei', 'Aiman', 'Hana']);
+  });
+
+  it('keeps to the ticked sides and statuses, with Coming up on the same sides', () => {
+    expect(ids({ sides: ['owed_to_me'], statuses: [] })).toEqual(['Aiman', 'Hana']);
+    expect(ids({ sides: [], statuses: ['closed'] })).toEqual(['Hana']);
+    expect(ids({ sides: ['i_owe'], statuses: ['closed'] })).toEqual([]);
+    expect(filterDebts(summary, { sides: ['owed_to_me'], statuses: [] }).comingUp).toEqual([]);
+  });
+});
+
+describe('tickedChoices', () => {
+  it('reads an empty list as every choice, in their order', () => {
+    expect(tickedChoices([], ['open', 'closed'])).toEqual(['open', 'closed']);
+    expect(tickedChoices(['closed', 'open'], ['open', 'closed'])).toEqual(['open', 'closed']);
   });
 });
 

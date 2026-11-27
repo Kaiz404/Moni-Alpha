@@ -234,7 +234,6 @@ type KindSheetProps<
     | 'walletType'
     | 'transactionType'
     | 'activityKind'
-    | 'choice'
     | 'date'
     | 'notificationApp'
     | 'person',
@@ -317,28 +316,31 @@ export function WalletSheet({
 }
 
 /**
- * Several wallets at once: rows tick and untick, and nothing changes until Apply. No filter opens
- * with every wallet ticked; Select all and Clear sit in the title row, and ticking every wallet
- * applies as no filter.
+ * Several choices at once: rows tick and untick, and nothing changes until Apply. No filter opens
+ * with every row ticked; Select all and Clear sit in the title row, and ticking every row applies
+ * as no filter (an empty list).
  */
-export function WalletsSheet({
-  request,
+function MultiPickSheet({
+  title,
+  options,
+  selectedIds,
   onApply,
   ...frame
 }: SheetFrameProps & {
-  request: SheetRequestOf<'wallets'>;
-  onApply: (result: SheetResult<'wallets'>) => void;
+  title: string;
+  options: readonly PickerOption[];
+  selectedIds: readonly string[];
+  onApply: (ids: string[]) => void;
 }) {
   const [draft, setDraft] = useState<ReadonlySet<string>>(
     () =>
       new Set(
-        request.selectedIds.length > 0
-          ? request.selectedIds
-          : request.wallets.map((wallet) => wallet.id),
+        selectedIds.length > 0
+          ? selectedIds
+          : options.map((option) => option.id),
       ),
   );
-  const options = useWalletOptions(request.wallets);
-  const every = request.wallets.every((wallet) => draft.has(wallet.id));
+  const every = options.every((option) => draft.has(option.id));
   const toggle = (id: string) => {
     const next = new Set(draft);
     if (!next.delete(id)) next.add(id);
@@ -348,13 +350,13 @@ export function WalletsSheet({
     <Sheet
       {...frame}
       size="fit"
-      title={request.title}
+      title={title}
       headerAction={
         <Chip
           testID={tid('sheet', 'select-all')}
           label={every ? 'Clear' : 'Select all'}
           onPress={() =>
-            setDraft(new Set(every ? [] : request.wallets.map((wallet) => wallet.id)))
+            setDraft(new Set(every ? [] : options.map((option) => option.id)))
           }
         />
       }
@@ -375,11 +377,11 @@ export function WalletsSheet({
             label="Apply"
             disabled={draft.size === 0}
             onPress={() =>
-              onApply({
-                walletIds: every
+              onApply(
+                every
                   ? []
-                  : request.wallets.filter((wallet) => draft.has(wallet.id)).map((wallet) => wallet.id),
-              })
+                  : options.filter((option) => draft.has(option.id)).map((option) => option.id),
+              )
             }
           />
         </>
@@ -402,6 +404,59 @@ export function WalletsSheet({
         />
       </PressRows>
     </Sheet>
+  );
+}
+
+export function WalletsSheet({
+  request,
+  onApply,
+  ...frame
+}: SheetFrameProps & {
+  request: SheetRequestOf<'wallets'>;
+  onApply: (result: SheetResult<'wallets'>) => void;
+}) {
+  return (
+    <MultiPickSheet
+      {...frame}
+      title={request.title}
+      options={useWalletOptions(request.wallets)}
+      selectedIds={request.selectedIds}
+      onApply={(walletIds) => onApply({ walletIds })}
+    />
+  );
+}
+
+/** Plain choices ticked together, such as the Debts filters. */
+export function ChoicesSheet({
+  request,
+  onApply,
+  ...frame
+}: SheetFrameProps & {
+  request: SheetRequestOf<'choices'>;
+  onApply: (result: SheetResult<'choices'>) => void;
+}) {
+  const tokens = useThemeTokens();
+  return (
+    <MultiPickSheet
+      {...frame}
+      title={request.title}
+      options={request.options.map((option) => ({
+        id: option.id,
+        name: option.label,
+        meta: option.meta,
+        leading: (
+          <Bubble>
+            <IconSymbol
+              name={option.icon}
+              size={20}
+              color={tokens.foreground}
+            />
+          </Bubble>
+        ),
+      }))}
+      selectedIds={request.selectedIds}
+      onApply={(ids) => onApply({ ids })}
+    />
   );
 }
 
@@ -554,37 +609,6 @@ export function ActivityKindSheet({
         const picked = ACTIVITY_KINDS.find((kind) => kind === id);
         if (picked) onPick(picked);
       }}
-    />
-  );
-}
-
-export function ChoiceSheet({
-  request,
-  onPick,
-  ...frame
-}: KindSheetProps<'choice'>) {
-  const tokens = useThemeTokens();
-  const options: PickerOption[] = request.options.map((option) => ({
-    id: option.id,
-    name: option.label,
-    meta: option.meta,
-    leading: (
-      <Bubble>
-        <IconSymbol
-          name={option.icon}
-          size={20}
-          color={tokens.foreground}
-        />
-      </Bubble>
-    ),
-  }));
-  return (
-    <OptionPickerSheet
-      {...frame}
-      title={request.title}
-      options={options}
-      selectedId={request.selected}
-      onPick={onPick}
     />
   );
 }

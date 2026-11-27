@@ -84,14 +84,14 @@ type Sheets = {
   currency: { request: { selected: string }; result: string };
   walletType: { request: { selected: WalletKind }; result: WalletKind };
   transactionType: { request: { selected: TransactionType | null }; result: TransactionType };
-  /** A short list of plain choices, such as the Debts filters; resolves to the picked id. */
-  choice: {
+  /** A short list of plain choices ticked together, such as the Debts filters. An empty list means every choice. */
+  choices: {
     request: {
       title: string;
       options: { id: string; label: string; meta?: string; icon: IconSymbolName }[];
-      selected: string;
+      selectedIds: readonly string[];
     };
-    result: string;
+    result: { ids: string[] };
   };
   /** Activity's Type filter. */
   activityKind: { request: { selected: ActivityKind }; result: ActivityKind };

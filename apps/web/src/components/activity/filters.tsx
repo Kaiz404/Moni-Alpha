@@ -25,7 +25,7 @@ function names(ids: readonly string[], lookup: (id: string) => string | undefine
 }
 
 /** A filter chip and its popover; the whole chip opens it. */
-function FilterChip({
+export function FilterChip({
   label,
   value,
   changed,
@@ -61,7 +61,7 @@ function FilterChip({
   );
 }
 
-function Check({ on, children, onToggle }: { on: boolean; children: ReactNode; onToggle: () => void }) {
+export function Check({ on, children, onToggle }: { on: boolean; children: ReactNode; onToggle: () => void }) {
   return (
     <button type="button" role="menuitemcheckbox" aria-checked={on} className="popover-row" onClick={onToggle}>
       <span className="cbx" aria-hidden="true" data-on={on || undefined}>

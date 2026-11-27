@@ -17,9 +17,13 @@ tags:
 - assertVisible:
     id: debts.record-debt
 - takeScreenshot: d1-l2-pair
+# Both sides start ticked: untick You owe to keep to Owed to you.
 - tapOn:
     id: debts.filter.side
-- tapOn: Owed to you
+- tapOn:
+    id: sheet.option.i-owe
+- tapOn:
+    id: sheet.apply
 - assertVisible:
     id: 'debts\.person\..*'
     text: '.* owes you .*'
@@ -29,7 +33,10 @@ tags:
 - takeScreenshot: d1-l3-filter
 - tapOn:
     id: debts.filter.side
-- tapOn: Everyone
+- tapOn:
+    id: sheet.select-all
+- tapOn:
+    id: sheet.apply
 - assertVisible: Records
 - scrollUntilVisible:
     element:

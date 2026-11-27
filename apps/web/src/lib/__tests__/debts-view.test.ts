@@ -7,14 +7,16 @@ import {
   NO_WALLET,
   openLabel,
   owedBar,
-  peopleView,
   personMeta,
+  readChoices,
   repaidWords,
   repayAction,
   repayWallet,
   sideOptions,
   statusOptions,
+  tickedLabel,
   timeline,
+  toggleChoice,
   WALLET_WORDS,
   walletField,
   writeOffWords,
@@ -154,7 +156,7 @@ describe('debts that moved no money', () => {
   });
 });
 
-describe('the hero and the People pickers', () => {
+describe('the hero and the Records filters', () => {
   const aiman = debtLine({});
   const mei = debtLine({ id: 'd2', counterpartyName: 'Mei', direction: 'i_owe' }, { balanceMinor: m(4000) });
   const hana = debtLine({ id: 'd3', counterpartyName: 'Hana' }, { state: 'settled' });
@@ -166,7 +168,6 @@ describe('the hero and the People pickers', () => {
     iOweMinor: m(4050),
     currency: 'MYR',
   };
-  const names = (lines: readonly DebtLine[]) => lines.map((line) => line.debt.counterpartyName);
 
   it('sizes owed against owe and leaves out an empty side', () => {
     expect(owedBar({ owedToMeMinor: m(15000), iOweMinor: m(4000) })).toEqual([
@@ -177,17 +178,23 @@ describe('the hero and the People pickers', () => {
     expect(owedBar({ owedToMeMinor: m(0), iOweMinor: m(0) })).toBeNull();
   });
 
-  it('filters People and Coming up by side, and People by status', () => {
-    expect(names(peopleView(summary, 'all', 'open').lines)).toEqual(['Aiman', 'Mei']);
-    expect(names(peopleView(summary, 'i_owe', 'open').lines)).toEqual(['Mei']);
-    expect(peopleView(summary, 'i_owe', 'open').comingUp.map((row) => row.line.debt.counterpartyName)).toEqual(['Mei']);
-    expect(names(peopleView(summary, 'all', 'closed').lines)).toEqual(['Hana']);
-    expect(names(peopleView(summary, 'i_owe', 'closed').lines)).toEqual([]);
+  it('ticks and unticks a choice, every one ticked reading as no filter, and never none', () => {
+    const every = ['open', 'closed'] as const;
+    expect(toggleChoice([], 'closed', every)).toEqual(['open']);
+    expect(toggleChoice(['open'], 'closed', every)).toEqual([]);
+    expect(toggleChoice(['open'], 'open', every)).toEqual(['open']);
+  });
+
+  it('names the chip by its default or its one choice, and reads the address', () => {
+    const labels = { open: 'Open', closed: 'Settled' };
+    expect(tickedLabel([], labels, 'All')).toBe('All');
+    expect(tickedLabel(['closed'], labels, 'All')).toBe('Settled');
+    expect(readChoices('closed,nope', ['open', 'closed'])).toEqual(['closed']);
+    expect(readChoices(null, ['open', 'closed'])).toEqual([]);
   });
 
   it('gives each choice the phone’s meta', () => {
     expect(sideOptions(summary)).toEqual([
-      { value: 'all', label: 'Everyone', meta: '2 debts' },
       { value: 'owed_to_me', label: 'Owed to you', meta: 'RM150' },
       { value: 'i_owe', label: 'You owe', meta: 'RM40.50' },
     ]);

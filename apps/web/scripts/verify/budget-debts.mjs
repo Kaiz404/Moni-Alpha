@@ -304,9 +304,9 @@ export async function verifyBudgetDebts(t) {
   await ready(d);
   const debts = query('debts');
   const openNames = debts.filter((row) => row.status === 'open').map((row) => row.counterparty_name).sort();
-  const shownNames = (await d.locator('.people-card').first().locator('.people-row[data-debt] .row-name .row-text b').allTextContents()).sort();
-  check("the people table lists the e2e user's open debts", JSON.stringify(shownNames) === JSON.stringify(openNames), { shownNames, openNames });
-  const people = await d.locator('.people-card').first().locator('.people-row[data-debt]').evaluateAll((els) =>
+  const shownNames = (await d.locator('.people-card').first().locator('.people-row[data-debt][data-state="open"] .row-name .row-text b').allTextContents()).sort();
+  check("the Records table lists each of the e2e user's open debts", JSON.stringify(shownNames) === JSON.stringify(openNames), { shownNames, openNames });
+  const people = await d.locator('.people-card').first().locator('.people-row[data-debt][data-state="open"]').evaluateAll((els) =>
     els.map((el) => ({ id: el.dataset.debt, owesYou: el.querySelector('[data-col="owes-you"]')?.textContent ?? '', youOwe: el.querySelector('[data-col="you-owe"]')?.textContent ?? '' })),
   );
   const owed = people.reduce((sum, row) => sum + (row.owesYou ? ringgit(row.owesYou) : 0), 0);
@@ -330,21 +330,25 @@ export async function verifyBudgetDebts(t) {
     bar.length === [owed, owe].filter((value) => value > 0).length && bar.every((part) => part.height === 10 && near(part.grow / 100, part.side === 'owed_to_me' ? owed : owe)),
     bar,
   );
-  const pickFilter = async (trigger, option) => {
-    await d.locator(`.people-filters [aria-label^="${trigger}"]`).click();
-    await d.getByRole('option', { name: new RegExp(`^${option}`) }).click();
+  const closedShown = await d.locator('.people-row[data-debt]:not([data-state="open"])').count();
+  check('every side and status starts ticked, so the closed debts list under the open ones', closedShown === debts.filter((row) => row.status !== 'open').length, closedShown);
+  const toggleFilter = async (chip, option) => {
+    await d.locator('.people-filters .filter-chip', { hasText: chip }).click();
+    await d.getByRole('menuitemcheckbox', { name: new RegExp(`^${option}`) }).click();
+    await d.keyboard.press('Escape');
   };
-  await pickFilter('Show: Everyone', 'Owed to you');
+  await toggleFilter('Show', 'You owe');
   await d.waitForURL(/side=owed_to_me/);
   const filtered = await d.locator('.people-card').first().locator('.people-row[data-debt] [data-col="you-owe"]').allTextContents();
   const coming = await d.locator('.coming-row .row-text b').allTextContents();
-  check('Owed to you filters the table and Coming up to what others owe', filtered.every((text) => text === '') && coming.every((text) => !text.startsWith('Pay ')), { filtered, coming });
-  await pickFilter('Show: Owed to you', 'Everyone');
-  await pickFilter('Status: Open', 'Settled and written off');
+  check('unticking You owe filters the table and Coming up to what others owe', filtered.every((text) => text === '') && coming.every((text) => !text.startsWith('Pay ')), { filtered, coming });
+  await toggleFilter('Show', 'You owe');
+  await d.waitForURL((url) => !url.search.includes('side='));
+  await toggleFilter('Status', 'Open');
   await d.waitForURL(/status=closed/);
-  const closedCount = await d.locator('[aria-label="Settled debts"] .people-row[data-debt]').count();
-  check('Settled and written off lists the closed ones', closedCount === debts.filter((row) => row.status !== 'open').length, closedCount);
-  await pickFilter('Status: Settled', 'Open');
+  const openLeft = await d.locator('.people-row[data-debt][data-state="open"]').count();
+  check('unticking Open leaves the settled and written off ones', openLeft === 0 && (await d.locator('.people-row[data-debt]').count()) === closedShown, openLeft);
+  await toggleFilter('Status', 'Open');
   await d.waitForURL((url) => !url.search.includes('status='));
 
   const target = people.find((row) => row.owesYou) ?? people[0];

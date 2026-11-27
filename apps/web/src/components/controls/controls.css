@@ -41,6 +41,10 @@
   min-width: max(220px, var(--anchor-width, 0px));
 }
 
+.filter-pop {
+  width: 260px;
+}
+
 .popover-row {
   box-sizing: border-box;
   flex: none;

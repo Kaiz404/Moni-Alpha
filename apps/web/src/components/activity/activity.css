@@ -224,10 +224,6 @@
   background: var(--color-sand-light);
 }
 
-.filter-pop {
-  width: 260px;
-}
-
 .filter-scroll {
   max-height: 320px;
   overflow: auto;

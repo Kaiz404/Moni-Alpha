@@ -25,13 +25,7 @@ tags:
 - takeScreenshot: d1-l6-settled
 - tapOn:
     id: debts.done
-- scrollUntilVisible:
-    element:
-      id: debts.filter.status
-    centerElement: true
-- tapOn:
-    id: debts.filter.status
-- tapOn: Settled and written off
+# Every status is ticked by default, so settled debts list after the open ones.
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'

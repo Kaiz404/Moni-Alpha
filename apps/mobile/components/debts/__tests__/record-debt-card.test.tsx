@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 
 import DebtsScreen from '@/app/(tabs)/debts';
 import { useDebtSummary } from '@/components/debts/use-debts';
+import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -31,6 +32,7 @@ jest.mock('@/components/debts/coming-up', () => ({
   },
 }));
 jest.mock('@/components/debts/person-row', () => ({ PersonRow: () => null }));
+jest.mock('@/components/debts/closed-row', () => ({ ClosedRow: () => null }));
 jest.mock('@/components/debts/use-debts', () => ({ useDebtSummary: jest.fn() }));
 
 function order(): string[] {
@@ -48,9 +50,10 @@ beforeEach(() => {
   jest.mocked(useDebtSummary).mockReturnValue({
     comingUp: [],
     closed: [],
-    open: [{ debt: { id: 'mei', direction: 'i_owe' } }],
+    open: [{ debt: { id: 'mei', direction: 'i_owe' }, state: 'open' }],
   } as never);
 });
+afterEach(() => act(() => dismissSheet()));
 
 describe('Record a debt on the Debts tab', () => {
   it('sits right under the overall card and opens the new debt page', () => {
@@ -71,13 +74,19 @@ describe('Record a debt on the Debts tab', () => {
     expect(router.push).toHaveBeenCalledWith('/debt/new');
   });
 
-  it('shows one happy cat on the all settled tile', () => {
+  it('shows one happy cat on the all settled tile, once only Open is ticked', async () => {
     jest.mocked(useDebtSummary).mockReturnValue({
       comingUp: [],
-      closed: [{ debt: { id: 'ali', direction: 'owed_to_me' } }],
+      closed: [{ debt: { id: 'ali', direction: 'owed_to_me' }, state: 'settled' }],
       open: [],
     } as never);
     render(<DebtsScreen />);
+    expect(screen.queryByText('Nobody owes anybody')).toBeNull();
+    fireEvent.press(screen.getByTestId('debts.filter.status'));
+    await act(() => {
+      (getOpenSheet() as unknown as { settle: (value: unknown) => void }).settle({ ids: ['open'] });
+      return Promise.resolve();
+    });
     expect(screen.getByText('Nobody owes anybody')).toBeTruthy();
     expect(screen.getAllByLabelText(/^Moni/)).toHaveLength(1);
     expect(screen.getByLabelText('Moni, happy')).toBeTruthy();

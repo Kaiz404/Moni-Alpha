@@ -3,8 +3,10 @@ import {
   dayLabel,
   dueWords,
   formatMoney,
+  tickedChoices,
   type DebtLine,
   type DebtSide,
+  type DebtStatusChoice,
   type DebtSummary,
   type FinanceDebtActivity,
 } from '@repo/core';
@@ -117,38 +119,42 @@ export function timeline(
     });
 }
 
-/** Who the People list shows: everyone, or one side. */
-export type SideFilter = DebtSide | 'all';
-/** Which debts the People list shows: the open ones, or the settled and written off. */
-export type StatusFilter = 'open' | 'closed';
+export const SIDE_LABEL: Record<DebtSide, string> = { owed_to_me: 'Owed to you', i_owe: 'You owe' };
+export const STATUS_LABEL: Record<DebtStatusChoice, string> = { open: 'Open', closed: 'Settled' };
 
-export const SIDE_LABEL: Record<SideFilter, string> = { all: 'Everyone', owed_to_me: 'Owed to you', i_owe: 'You owe' };
-export const STATUS_LABEL: Record<StatusFilter, string> = { open: 'Open', closed: 'Settled' };
-
-function onSide(side: SideFilter, line: Pick<DebtLine, 'debt'>): boolean {
-  return side === 'all' || line.debt.direction === side;
+/** A filter chip's value: its default when every choice is ticked, else the one choice ticked. */
+export function tickedLabel<T extends string>(picked: readonly T[], labels: Record<T, string>, every: string): string {
+  return picked.length === 1 ? labels[picked[0]!] : every;
 }
 
-/** The People list under its two pickers, and Coming up on the same side. */
-export function peopleView(summary: Pick<DebtSummary, 'open' | 'closed' | 'comingUp'>, side: SideFilter, status: StatusFilter) {
-  return {
-    lines: (status === 'open' ? summary.open : summary.closed).filter((line) => onSide(side, line)),
-    comingUp: summary.comingUp.filter((row) => onSide(side, row.line)),
-  };
+/**
+ * Ticks or unticks one choice. Ticking every one reads as no filter (an empty list), and the last
+ * ticked choice stays ticked, as the phone's Apply waits for at least one.
+ */
+export function toggleChoice<T extends string>(picked: readonly T[], value: T, every: readonly T[]): T[] {
+  const ticked = tickedChoices(picked, every);
+  const next = ticked.includes(value) ? ticked.filter((choice) => choice !== value) : every.filter((choice) => choice === value || ticked.includes(choice));
+  if (next.length === 0) return [...picked];
+  return next.length === every.length ? [] : next;
+}
+
+/** A filter in the address: `owed_to_me,i_owe`, read back to the known choices only. */
+export function readChoices<T extends string>(value: string | null, every: readonly T[]): T[] {
+  const picked = (value ?? '').split(',');
+  return every.filter((choice) => picked.includes(choice));
 }
 
 export type FilterOption<T extends string> = { value: T; label: string; meta: string };
 
-/** Everyone, Owed to you and You owe, each with the people count or the amount, as the phone's picker. */
-export function sideOptions(summary: Pick<DebtSummary, 'open' | 'owedToMeMinor' | 'iOweMinor' | 'currency'>): FilterOption<SideFilter>[] {
+/** Owed to you and You owe, each with its amount, as the phone's picker. */
+export function sideOptions(summary: Pick<DebtSummary, 'owedToMeMinor' | 'iOweMinor' | 'currency'>): FilterOption<DebtSide>[] {
   return [
-    { value: 'all', label: SIDE_LABEL.all, meta: debtCount(summary.open.length) },
     { value: 'owed_to_me', label: SIDE_LABEL.owed_to_me, meta: debtMoney(summary.owedToMeMinor, summary.currency) },
     { value: 'i_owe', label: SIDE_LABEL.i_owe, meta: debtMoney(summary.iOweMinor, summary.currency) },
   ];
 }
 
-export function statusOptions(summary: Pick<DebtSummary, 'open' | 'closed'>): FilterOption<StatusFilter>[] {
+export function statusOptions(summary: Pick<DebtSummary, 'open' | 'closed'>): FilterOption<DebtStatusChoice>[] {
   return [
     { value: 'open', label: 'Open', meta: debtCount(summary.open.length) },
     { value: 'closed', label: 'Settled and written off', meta: debtCount(summary.closed.length) },

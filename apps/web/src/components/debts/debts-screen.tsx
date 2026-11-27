@@ -4,13 +4,18 @@ import {
   dateLabel,
   dayOfMonth,
   daysBetween,
+  DEBT_SIDES,
+  DEBT_STATUS_CHOICES,
   dueWords,
+  filterDebts,
   formatMoney,
+  tickedChoices,
   planDebt,
   planDebtActivity,
   planDebtActivityDelete,
   planDebtDelete,
   weekdayShort,
+  type DebtFilter,
   type DebtLine,
   type NewDebt,
 } from '@repo/core';
@@ -18,8 +23,7 @@ import type { MinorAmount } from '@repo/types';
 import { useState } from 'react';
 import { Cat } from '@/components/brand';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { Select } from '@/components/controls/select';
-import { Icon } from '@/components/icon';
+import { Check, FilterChip } from '@/components/activity/filters';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { SlideOver } from '@/components/ledger/slide-over';
@@ -32,17 +36,17 @@ import {
   NO_WALLET,
   openLabel,
   owedBar,
-  peopleView,
   personMeta,
+  readChoices,
   repayWallet,
   SIDE_LABEL,
   sideOptions,
   STATUS_LABEL,
   statusOptions,
+  tickedLabel,
+  toggleChoice,
   writeOffWords,
   type FilterOption,
-  type SideFilter,
-  type StatusFilter,
 } from '@/lib/debts-view';
 import { applyPlan, commit, ledgerViewNow, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
@@ -84,9 +88,8 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const [params, setParams] = useQueryParams();
   const currency = ledger.currency;
   const today = ledger.calendar.dayKey(ledger.now);
-  const side: SideFilter = (['owed_to_me', 'i_owe'] as const).find((value) => value === params.get('side')) ?? 'all';
-  const status: StatusFilter = params.get('status') === 'closed' ? 'closed' : 'open';
-  const view = peopleView(summary, side, status);
+  const filter: DebtFilter = { sides: readChoices(params.get('side'), DEBT_SIDES), statuses: readChoices(params.get('status'), DEBT_STATUS_CHOICES) };
+  const view = filterDebts(summary, filter);
   const order = view.lines;
   const recording = params.get('record') === 'debt';
   const selectedId = recording ? null : params.get('person');
@@ -285,13 +288,11 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               <PeopleCard
                 lines={view.lines}
                 summary={data.summary}
-                side={side}
-                status={status}
+                filter={filter}
                 selectedId={selectedId}
                 today={today}
                 onPick={pick}
-                onSide={(next) => setParams({ side: next === 'all' ? null : next })}
-                onStatus={(next) => setParams({ status: next === 'open' ? null : next })}
+                onFilter={(next) => setParams({ side: next.sides.join(',') || null, status: next.statuses.join(',') || null })}
               />
             </>
           )}
@@ -395,21 +396,34 @@ function NetStrip({ data, currency }: { data: DebtsData; currency: string }) {
   );
 }
 
-/** A People picker: the Activity filter capsule with only its value, Ink once it differs from the default. */
-function PeopleFilter<T extends string>({ name, value, label, options, changed, onChange }: { name: string; value: T; label: string; options: FilterOption<T>[]; changed: boolean; onChange: (value: T) => void }) {
+/** A Records filter: Activity's chip and its popover of ticks, every choice ticked by default. */
+function TickFilter<T extends string>({
+  name,
+  picked,
+  every,
+  labels,
+  options,
+  onChange,
+}: {
+  name: string;
+  picked: readonly T[];
+  every: string;
+  labels: Record<T, string>;
+  options: FilterOption<T>[];
+  onChange: (picked: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const choices = options.map((option) => option.value);
+  const ticked = tickedChoices(picked, choices);
   return (
-    <Select
-      label={name}
-      className={`filter-chip press${changed ? ' filter-chip-on' : ''}`}
-      align="end"
-      value={value}
-      text={label}
-      options={options.map((option) => ({ value: option.value, label: option.label, side: <span className="num meta">{option.meta}</span> }))}
-      onChange={onChange}
-    >
-      <span className="filter-value">{label}</span>
-      <Icon name="chevron-down" size={16} />
-    </Select>
+    <FilterChip label={name} value={tickedLabel(picked, labels, every)} changed={picked.length > 0} open={open} onOpen={setOpen}>
+      {options.map((option) => (
+        <Check key={option.value} on={ticked.includes(option.value)} onToggle={() => onChange(toggleChoice(picked, option.value, choices))}>
+          <span className="popover-row-text">{option.label}</span>
+          <span className="num meta">{option.meta}</span>
+        </Check>
+      ))}
+    </FilterChip>
   );
 }
 
@@ -475,36 +489,34 @@ function PersonRow({ line, today, selected, onPick }: { line: DebtLine; today: s
 function PeopleCard({
   lines,
   summary,
-  side,
-  status,
+  filter,
   selectedId,
   today,
   onPick,
-  onSide,
-  onStatus,
+  onFilter,
 }: {
   lines: readonly DebtLine[];
   summary: DebtsData['summary'];
-  side: SideFilter;
-  status: StatusFilter;
+  filter: DebtFilter;
   selectedId: string | null;
   today: string;
   onPick: (id: string) => void;
-  onSide: (side: SideFilter) => void;
-  onStatus: (status: StatusFilter) => void;
+  onFilter: (filter: DebtFilter) => void;
 }) {
-  const sum = (direction: Side) => lines.filter((line) => line.debt.direction === direction).reduce((total, line) => total + line.balanceMinor, 0);
-  const allSettled = status === 'open' && summary.open.length === 0;
+  const open = lines.filter((line) => line.state === 'open');
+  const sum = (direction: Side) => open.filter((line) => line.debt.direction === direction).reduce((total, line) => total + line.balanceMinor, 0);
+  const onlyOpen = filter.statuses.length === 1 && filter.statuses[0] === 'open';
+  const allSettled = onlyOpen && summary.open.length === 0;
   return (
     <section className="card people-card" aria-label="Records">
       <div className="card-head people-head">
         <h2 className="card-title">Records</h2>
         <div className="people-filters" role="group" aria-label="Filters">
-          <PeopleFilter name="Show" value={side} label={SIDE_LABEL[side]} options={sideOptions(summary)} changed={side !== 'all'} onChange={onSide} />
-          <PeopleFilter name="Status" value={status} label={STATUS_LABEL[status]} options={statusOptions(summary)} changed={status !== 'open'} onChange={onStatus} />
+          <TickFilter name="Show" picked={filter.sides} every="Everyone" labels={SIDE_LABEL} options={sideOptions(summary)} onChange={(sides) => onFilter({ ...filter, sides })} />
+          <TickFilter name="Status" picked={filter.statuses} every="All" labels={STATUS_LABEL} options={statusOptions(summary)} onChange={(statuses) => onFilter({ ...filter, statuses })} />
         </div>
       </div>
-      <div className="people-body" key={`${status}-${side}`}>
+      <div className="people-body" key={`${filter.statuses.join()}-${filter.sides.join()}`}>
         {allSettled ? (
           <div className="dashed-tile all-settled">
             <Cat mood="happy" size={44} id="all-settled" />
@@ -517,7 +529,7 @@ function PeopleCard({
         ) : lines.length === 0 ? (
           <p className="meta nobody">No debts here right now.</p>
         ) : (
-          <div role="grid" aria-label={status === 'open' ? 'Open debts' : 'Settled debts'}>
+          <div role="grid" aria-label="Debts">
             <div className="grid-head people-row" role="row" data-only="sidebar rail rail-one-column">
               <span role="columnheader" className="caps">
                 Who
@@ -536,9 +548,9 @@ function PeopleCard({
             {lines.map((line) => (
               <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={onPick} />
             ))}
-            {status === 'open' && (
+            {open.length > 0 && (
               <div className="grid-total people-row" role="row" data-testid="people-total">
-                <b className="open-label">{openLabel(lines)}</b>
+                <b className="open-label">{openLabel(open)}</b>
                 <span data-col="due" />
                 <span className="num tone-in" data-col="owes-you">
                   {formatMoney(sum('owed_to_me'), summary.currency)}

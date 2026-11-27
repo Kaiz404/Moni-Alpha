@@ -122,3 +122,33 @@ export function summarizeDebts(
       .sort((a, b) => b.lastAt.localeCompare(a.lastAt)),
   };
 }
+
+/** The Debts list's two status choices: still open, or settled and written off. */
+export type DebtStatusChoice = 'open' | 'closed';
+export const DEBT_SIDES = ['owed_to_me', 'i_owe'] as const satisfies readonly DebtSide[];
+export const DEBT_STATUS_CHOICES = ['open', 'closed'] as const satisfies readonly DebtStatusChoice[];
+
+/** What the Debts list shows. An empty list shows every choice, as Activity's wallet filter does. */
+export type DebtFilter = { sides: readonly DebtSide[]; statuses: readonly DebtStatusChoice[] };
+
+/** The ticked choices in their own order, an empty list read as every one. */
+export function tickedChoices<T extends string>(picked: readonly T[], every: readonly T[]): T[] {
+  return picked.length === 0 ? [...every] : every.filter((choice) => picked.includes(choice));
+}
+
+/** The list under the filters, open debts first, and Coming up on the same sides. */
+export function filterDebts(
+  summary: Pick<DebtSummary, 'open' | 'closed' | 'comingUp'>,
+  filter: DebtFilter,
+): { lines: DebtLine[]; comingUp: ComingUpRow[] } {
+  const sides = tickedChoices(filter.sides, DEBT_SIDES);
+  const statuses = tickedChoices(filter.statuses, DEBT_STATUS_CHOICES);
+  const onSide = (line: DebtLine) => sides.includes(line.debt.direction);
+  return {
+    lines: [
+      ...(statuses.includes('open') ? summary.open : []),
+      ...(statuses.includes('closed') ? summary.closed : []),
+    ].filter(onSide),
+    comingUp: summary.comingUp.filter((row) => onSide(row.line)),
+  };
+}
