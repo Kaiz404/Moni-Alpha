@@ -1,4 +1,4 @@
-import type { MinorAmount } from '@repo/types';
+import { noCategoryIcon, type MinorAmount } from '@repo/types';
 import { glyphOn } from '@/lib/theme/glyph-on';
 import {
   createContext,
@@ -114,7 +114,7 @@ function ringArcs(slices: readonly RingSlice[]): RingArc[] {
       color: slice.color,
       icon: slice.categoryId
         ? resolveTransactionIcon(slice.icon, 'expense')
-        : 'help-circle-outline',
+        : noCategoryIcon,
       amountMinor: segment.value,
       members: [],
     };

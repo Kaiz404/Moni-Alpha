@@ -38,6 +38,9 @@ export const categoryIconNames = [
 
 export const categoryIconSchema = z.enum(categoryIconNames);
 
+/** The "?" bubble a payment with no category wears, on the phone and the web, on its Sand ground. */
+export const noCategoryIcon = 'help-circle-outline';
+
 /** Reusable choices for user-created categories (the Current+ sharpened catalogue). */
 export const customCategoryColors = [
   '#FC7F78',

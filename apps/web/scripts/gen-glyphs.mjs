@@ -23,7 +23,6 @@ const names = [
     ...literals('packages/types/src/category.ts', 'categoryIconNames'),
     // Glyphs only the web boards draw: Customise, saved views, Clear filters, sorting.
     'view-dashboard-edit-outline',
-    'circle-medium',
     'filter-remove-outline',
     'bookmark-outline',
     'bookmark',

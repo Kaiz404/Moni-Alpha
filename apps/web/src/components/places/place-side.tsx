@@ -105,7 +105,7 @@ function PlacesList({ ledger, data, hoverId, onPick, onHover, onSort, categoryWo
   const total = placesTotal(places);
   const max = places.reduce((top, place) => Math.max(top, place.totalMinor), 0);
   const looseTotal = loose.reduce((sum, transaction) => sum + transaction.amountMinor, 0) as MinorAmount;
-  const categoryName = (id: string | null) => projectionCategory(ledger, id)?.name ?? 'Other';
+  const categoryName = (id: string | null) => projectionCategory(ledger, id)?.name ?? 'No category';
   return (
     <div className="side-list fade-swap">
       <div className="side-summary">
@@ -195,7 +195,7 @@ function PlacePane({ ledger, data, place, categoryWords }: { ledger: Ledger; dat
   return (
     <div className="place-pane">
       <div className="pane-title-row">
-        <Bubble icon={lead?.icon} color={lead?.color ?? null} size={48} glyph={24} />
+        <Bubble icon={lead?.icon ?? 'map-marker'} color={lead?.color ?? null} size={48} glyph={24} />
         <div className="pane-title-text">
           <h2>{place.name}</h2>
           <span className="meta">{placeSub(place)}</span>
@@ -236,7 +236,7 @@ function PlacePane({ ledger, data, place, categoryWords }: { ledger: Ledger; dat
           return (
             <div key={part.categoryId ?? 'none'} className="bought-row">
               <Bubble icon={category?.icon} color={category?.color ?? null} size={24} glyph={14} />
-              <span className="bought-name">{category?.name ?? 'Other'}</span>
+              <span className="bought-name">{category?.name ?? 'No category'}</span>
               <span className="bought-track" aria-hidden="true">
                 <span className="grow-x" style={{ width: `${share}%`, ['--bar' as string]: category?.color ? legacyColor(category.color) : undefined }} />
               </span>

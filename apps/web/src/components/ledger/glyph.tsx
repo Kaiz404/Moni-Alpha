@@ -1,11 +1,11 @@
 import { legacyColor } from '@repo/types';
 import type { CSSProperties } from 'react';
-import { GLYPHS } from '@/lib/glyphs.generated';
+import { glyphPath } from '@/lib/glyph-path';
 import './glyph.css';
 
-/** An MDI glyph a row names as data (a category's or a wallet's icon); unknown names draw a dot. */
+/** An MDI glyph a row names as data (a category's or a wallet's icon). No name draws the "?" of no category. */
 export function Glyph({ name, size = 20, className }: { name: string | null | undefined; size?: number; className?: string }) {
-  const path = (name && GLYPHS[name]) || GLYPHS['circle-medium'] || 'M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z';
+  const path = glyphPath(name);
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} className={className} style={{ flex: 'none' }}>
       <path d={path} fill="currentColor" />

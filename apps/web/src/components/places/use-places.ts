@@ -67,7 +67,7 @@ export function usePlaces(ledger: Ledger, params: URLSearchParams): PlacesData {
         .sort((a, b) => b[1] - a[1])
         .map(([id, amountMinor]) => {
           const category = projection.categoriesById[id];
-          return { id, label: category?.name ?? 'Other', icon: category?.icon ?? null, color: category?.color ?? null, amountMinor };
+          return { id, label: category?.name ?? 'No category', icon: category?.icon ?? null, color: category?.color ?? null, amountMinor };
         }),
     ];
     const walletOptions: FilterOption[] = [
