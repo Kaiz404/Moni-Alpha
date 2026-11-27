@@ -17,10 +17,12 @@ import { getShell, setShell } from '@/components/shell/shell-store';
 import { activityItems, monthSoFar, rowsInView } from '@/lib/activity-items';
 import type { ActivityQuery } from '@/lib/activity-query';
 import { changeAiConsent, currentAiConsent, webAiClient } from '@/lib/ai';
-import { friendlyFailure, historyForApi, type ChatMessage, type DraftState } from '@/lib/chat-thread';
+import { friendlyFailure, historyForApi, type DraftState } from '@/lib/chat-thread';
 import { commit, planContext } from '@/lib/ledger/commit';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { moniStore } from '@/lib/moni-store';
+import { answerBudgetStep, askBudgetQuestions, openBudgetStep } from './budget-ask';
+import { append, replace } from './thread';
 
 /** What a question is asked from: the ledger as it is, and the view (Activity's query and ticks). */
 export type AskFrom = {
@@ -31,29 +33,6 @@ export type AskFrom = {
   /** The one category the view shows, which a spending question without one is about. */
   viewCategoryId: string | null;
 };
-
-type MoniMessage = Extract<ChatMessage, { role: 'moni' }>;
-type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
-
-const newId = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
-
-function append(message: DistributiveOmit<ChatMessage, 'id' | 'at'>): string {
-  const id = newId();
-  setShell((shell) => ({ chat: [...shell.chat, { ...message, id, at: now() } as ChatMessage] }));
-  return id;
-}
-
-function replace(id: string, next: DistributiveOmit<MoniMessage, 'id' | 'at'>) {
-  setShell((shell) => ({
-    chat: shell.chat.map((message) => (message.id === id ? ({ ...next, id, at: now() } as ChatMessage) : message)),
-  }));
-}
-
-function questionText(id: string): string | null {
-  const message = getShell().chat.find((each) => each.id === id);
-  return message?.role === 'user' ? message.text : null;
-}
 
 /** The main currency's rows as the draft reads them, newest first. */
 function draftRows(ledger: Ledger): DraftRow[] {
@@ -84,6 +63,8 @@ function categoriesOf(ledger: Ledger) {
 export async function ask(text: string, from: AskFrom): Promise<void> {
   const question = text.trim();
   if (!question) return;
+  const step = openBudgetStep(getShell().chat);
+  if (step) return answerBudgetStep(step, question, from.ledger);
   const id = append({ role: 'user', kind: 'text', text: question });
 
   const history = draftRows(from.ledger);
@@ -122,8 +103,10 @@ export async function turnOnAndAnswer(from: AskFrom): Promise<void> {
     append({ role: 'moni', kind: 'text', text: "Moni couldn't save your choice. Try again.", tone: 'error', analysis: false });
     return;
   }
-  const question = waiting && questionText(waiting);
-  if (question) await answer(question, from);
+  const asked = getShell().chat.find((each) => each.id === waiting);
+  if (asked?.role !== 'user') return;
+  if (asked.budget) return askBudgetQuestions(asked.budget.target, asked.id, from.ledger);
+  await answer(asked.text, from);
 }
 
 /** "Not now", or closing the dialog: recorded the first time, and the question stays unanswered. */

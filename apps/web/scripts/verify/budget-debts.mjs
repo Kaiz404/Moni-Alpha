@@ -508,18 +508,17 @@ export async function verifyBudgetDebts(t) {
   await totalInput.press('Escape');
   check('Esc closes it without a write', (await totalInput.count()) === 0 && (await totalCell.isVisible()));
   await r.getByRole('button', { name: 'Ask Moni to suggest' }).click();
-  const suggest = r.getByRole('dialog', { name: 'Ask Moni to suggest a budget' });
-  await suggest.waitFor({ timeout: 5000 }).catch(() => {});
-  const rows = await suggest.locator('.suggest-row b').allInnerTexts();
-  const lines = await suggest.locator('.suggest-row .num').allInnerTexts();
+  const chatPane = r.getByRole('complementary', { name: 'Moni chat' });
+  await chatPane.getByText('Which budget should I suggest?').last().waitFor({ timeout: 5000 }).catch(() => {});
+  const choices = await chatPane.locator('.chat-choice').allInnerTexts();
   check(
-    'Ask Moni to suggest opens on Monthly total and the categories, each with last month',
-    rows[0] === 'Monthly total' && rows.length > 1 && lines.every((line) => / last month$/.test(line)),
-    { rows, lines },
+    'Ask Moni to suggest asks in Moni chat which budget, Monthly total first, then the categories',
+    choices[0] === 'Monthly total' && choices.length > 1,
+    { choices },
   );
   await shot(r, 'budget-820-suggest-pick');
   await r.keyboard.press('Escape');
-  check('Esc closes it without asking Moni', (await suggest.count()) === 0);
+  check('Esc closes Moni chat without asking Moni', (await chatPane.count()) === 0);
 
   await open(r, '/debts');
   await ready(r);

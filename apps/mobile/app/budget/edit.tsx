@@ -272,7 +272,7 @@ export default function EditBudgetsScreen() {
             testID={tid('budget', 'edit', 'ask-moni')}
             label="Ask Moni to suggest"
             accessibilityLabel="Ask Moni to suggest a budget"
-            href={{ pathname: '/budget/suggest', params: { from: 'edit' } }}
+            href={{ pathname: '/chat', params: { suggest: 'pick', into: 'edit' } }}
             disabled={editing !== null}
           />
         </View>

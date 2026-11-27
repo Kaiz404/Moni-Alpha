@@ -1,6 +1,6 @@
 'use client';
 
-import { dayHeading } from '@repo/core';
+import { dayHeading, suggestTargetName } from '@repo/core';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
@@ -17,6 +17,8 @@ import { PANE_SPANS } from '@/lib/sizes';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { AnswerCardView } from './answer-card';
 import { ask, notNowForChat, turnOnAndAnswer, type AskFrom } from './ask';
+import { answerBudgetStep } from './budget-ask';
+import { BudgetDraftCard } from './budget-draft-card';
 import { ConsentDialog } from './consent-dialog';
 import { DraftCard } from './draft-card';
 import './chat.css';
@@ -47,7 +49,8 @@ function MoniTurn({ id, mood = 'neutral', children }: { id: string; mood?: 'neut
   );
 }
 
-function Message({ message, from }: { message: ChatMessage; from: AskFrom }) {
+/** `open`: the thread's last message, so a budget question still takes its choices. */
+function Message({ message, from, open }: { message: ChatMessage; from: AskFrom; open: boolean }) {
   const { run } = useShellApi();
   if (message.role === 'user')
     return (
@@ -105,6 +108,30 @@ function Message({ message, from }: { message: ChatMessage; from: AskFrom }) {
           </div>
         </MoniTurn>
       );
+    case 'budget_pick':
+    case 'budget_question': {
+      const choices = message.kind === 'budget_pick' ? message.targets.map(suggestTargetName) : message.choices;
+      return (
+        <MoniTurn id={message.id}>
+          <p className="chat-bubble chat-bubble-moni">{message.text}</p>
+          {open && choices.length > 0 && (
+            <div className="chat-choices" role="group" aria-label="Answers">
+              {choices.map((choice) => (
+                <button key={choice} type="button" className="chat-choice press" onClick={() => void answerBudgetStep(message, choice, from.ledger)}>
+                  {choice}
+                </button>
+              ))}
+            </div>
+          )}
+        </MoniTurn>
+      );
+    }
+    case 'budget_draft':
+      return (
+        <MoniTurn id={message.id}>
+          <BudgetDraftCard message={message} ledger={from.ledger} />
+        </MoniTurn>
+      );
   }
 }
 
@@ -156,6 +183,7 @@ export function ChatPane() {
     box.current?.focus();
   };
   const first = chat.length === 0;
+  const waitingOnBudget = chat.some((message) => message.id === chatAsk && message.role === 'user' && message.budget);
   const [width, setWidth] = useStoredSize('pane-chat', PANE_SPANS.chat);
   useRootWidth('--chat-pane-width', width, true);
   const today = ledger.mounted ? ledger.calendar.dayKey(ledger.now) : null;
@@ -197,8 +225,8 @@ export function ChatPane() {
         ) : (
           <>
             {today && <span className="caps chat-day">{dayHeading(today, today)}</span>}
-            {chat.map((message) => (
-              <Message key={message.id} message={message} from={from} />
+            {chat.map((message, index) => (
+              <Message key={message.id} message={message} from={from} open={index === chat.length - 1} />
             ))}
           </>
         )}
@@ -240,7 +268,7 @@ export function ChatPane() {
         </div>
         {first && <span className="meta chat-note">Moni chat uses AI and can get things wrong. Nothing is saved until you approve it.</span>}
       </form>
-      {chatAsk && <ConsentDialog use="chat" onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
+      {chatAsk && <ConsentDialog use={waitingOnBudget ? 'budget' : 'chat'} onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
     </aside>
     <ResizeHandle label="Resize Moni chat" span={PANE_SPANS.chat} value={width} grows="left" sizes="previous" onChange={setWidth} className="pane-resize" />
     </>

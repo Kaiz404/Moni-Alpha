@@ -18,13 +18,13 @@ import {
   weekday,
   type BudgetInput,
 } from '@repo/core';
-import { updateProfilePreferences } from '@repo/data';
-import { userPreferencesSchema, type MinorAmount } from '@repo/types';
+import type { MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
 import { MonthField } from '@/components/controls/date-picker';
 import { SlideOver } from '@/components/ledger/slide-over';
 import { Page } from '@/components/shell/page';
+import { useShellApi } from '@/components/shell/shell-context';
 import { showToast } from '@/components/shell/shell-store';
 import { useLayout } from '@/components/shell/use-layout';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -33,11 +33,11 @@ import { useScreenKeys } from '@/lib/screen-keys';
 import { parseBudgetDraft, type BudgetLine } from '@/lib/budget-view';
 import { applyPlan, budgetRowsNow, commit, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
-import { moniStore } from '@/lib/moni-store';
+import { saveMonthlyTotal } from '@/lib/budget-save';
+import { startBudgetAsk } from '@/components/chat/budget-ask';
 import { BudgetEditor, type BudgetEdit } from './budget-editor';
 import { CategoryPane } from './category-pane';
 import { SpendRing } from './spend-ring';
-import { SuggestDialog, type SuggestTarget } from './suggest-dialog';
 import { useBudget, type BudgetData } from './use-budget';
 import '@/components/ledger/ledger.css';
 import '@/components/ledger/table-pane.css';
@@ -64,25 +64,6 @@ function wholeText(minor: number | null): string {
   return minor ? String(Math.floor(minor / 100)) : '';
 }
 
-/**
- * Shows the monthly total at once, then writes `preferences.monthly_budget` in whole units, as the
- * phone's Edit budgets does; a refused write puts the old one back. Null goes back to the budgets' sum.
- */
-async function saveMonthlyTotal(totalMinor: MinorAmount | null): Promise<boolean> {
-  const store = moniStore();
-  const previous = store.profilePreferences$.peek();
-  const monthly_budget = totalMinor === null ? null : Number(totalMinor) / 100;
-  store.profilePreferences$.set({ ...userPreferencesSchema.parse(previous ?? {}), monthly_budget });
-  try {
-    store.profilePreferences$.set(await updateProfilePreferences(store.supabase, { monthly_budget }));
-    return true;
-  } catch {
-    store.profilePreferences$.set(previous);
-    showToast({ text: "Couldn't save the monthly total. Try again.", tone: 'error' });
-    return false;
-  }
-}
-
 function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const phone = useLayout() === 'phone';
   const [params, setParams] = useQueryParams();
@@ -91,7 +72,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const view = params.get('view') === 'calendar' ? 'calendar' : 'month';
   const [edit, setEdit] = useState<BudgetEdit | null>(null);
   const [totalDraft, setTotalDraft] = useState<string | null>(null);
-  const [suggesting, setSuggesting] = useState(false);
+  const { pane, run } = useShellApi();
   const { money, table, month, current, history } = data;
   const currency = ledger.currency;
   const lines = [...table.budgeted, ...table.unbudgeted];
@@ -174,18 +155,6 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
         tone: 'done',
         undo: () => void saveMonthlyTotal(savedTotal),
       });
-    });
-  };
-
-  const setSuggested = (target: SuggestTarget, amountMinor: MinorAmount) => {
-    setSuggesting(false);
-    const text = `${target.kind === 'total' ? 'Monthly total' : target.name} set to ${formatMoney(amountMinor, currency, { whole: true })}`;
-    if (target.kind === 'category') {
-      writeBudgets([{ categoryId: target.id, currency, amountMinor }], text);
-      return;
-    }
-    void saveMonthlyTotal(amountMinor).then((kept) => {
-      if (kept) showToast({ text, tone: 'done', undo: () => void saveMonthlyTotal(savedTotal) });
     });
   };
 
@@ -313,7 +282,10 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                   {showTable && (
                     <>
                       {editable && (
-                        <button type="button" className="btn btn-out press suggest-btn" onClick={() => setSuggesting(true)}>
+                        <button type="button" className="btn btn-out press suggest-btn" onClick={() => {
+                            if (pane !== 'chat') run({ kind: 'ask' });
+                            startBudgetAsk(null, ledger);
+                          }}>
                           <AskMoniMark size={20} id="suggest-open" />
                           Ask Moni to suggest
                         </button>
@@ -385,9 +357,6 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
           )}
         </SlideOver>
       </div>
-      {suggesting && (
-        <SuggestDialog ledger={ledger} categories={data.ledger.categories} onSet={setSuggested} onClose={() => setSuggesting(false)} />
-      )}
     </Page>
   );
 }

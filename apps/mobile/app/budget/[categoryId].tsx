@@ -415,7 +415,7 @@ export default function CategoryBudgetScreen() {
                   testID={tid('budget', 'category', 'ask-moni')}
                   label="Ask Moni"
                   accessibilityLabel={`Ask Moni to suggest a budget for ${category.name}`}
-                  href={{ pathname: '/budget/suggest', params: { category: category.id } }}
+                  href={{ pathname: '/chat', params: { suggest: category.id } }}
                 />
               </View>
             )

@@ -1,7 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client/mock';
 import {
   AI_CONSENT_REASON,
   pickAnswerCard,
@@ -18,9 +17,9 @@ import { getUserId } from '@/lib/supabase/client';
 
 import { analyzeUserFinances } from './analyze';
 import { peekAnswerSnapshot } from './answer-snapshot';
-import { markFresh } from './fresh-replies';
-import { appendMessage, replaceMessage, type ChatMessage, type QuickReplyOption } from './messages';
-import { threadDay } from './sessions';
+import { answerBudgetStep, openBudgetStep } from './budget-ask';
+import { appendMessage, readTodayThread, type QuickReplyOption } from './messages';
+import { startTurn, type Turn } from './turn';
 
 export type SendChatInput = {
   text: string;
@@ -30,53 +29,17 @@ export type SendChatInput = {
 
 const CLARIFY_TEXT = 'Did you want to add a transaction or ask about your money?';
 
-/** Raw backend reasons stay in the log; the thread only ever shows these (V2F-States). */
-function friendlyFailure(reason: string): string {
-  console.warn('[chat] failed:', reason);
-  if (reason === AI_UNAVAILABLE_REASON) return "Moni can't answer in this build yet. You can still add spends here.";
-  if (reason === AI_CONSENT_REASON) return "Moni's AI is off for chat. Turn it on in Profile › Moni's AI.";
-  if (/network request failed|failed to fetch|timed? ?out|keys are not loaded|backend error \(5\d\d\)/i.test(reason)) {
-    return "Moni can't answer right now. Check your connection and try again.";
-  }
-  if (/rate limit|too many/i.test(reason)) {
-    return 'Moni is busy right now. Try again in a minute.';
-  }
-  if (/not authenticated|invalid or expired token|missing bearer/i.test(reason)) {
-    return 'Sign in again, then try once more.';
-  }
-  return "Moni couldn't answer that. Try asking another way.";
-}
 
-/** One assistant turn: starts as the thinking card and is replaced in place by its result. */
-function startTurn(thinking: string) {
-  const createdAt = new Date().toISOString();
-  const id = randomUUID();
-  const day = threadDay(createdAt);
-  appendMessage({ id, role: 'assistant', kind: 'assistant_status', content: thinking, createdAt });
-  return {
-    finish(next: DistributiveOmit<ChatMessage, 'id' | 'createdAt'>) {
-      markFresh(id);
-      replaceMessage(day, id, { ...next, id, createdAt } as ChatMessage);
-    },
-    fail(reason: string) {
-      this.finish({
-        role: 'assistant',
-        kind: 'assistant_text',
-        content: friendlyFailure(reason),
-        status: 'error',
-      });
-    },
-  };
-}
-
-type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
-type Turn = ReturnType<typeof startTurn>;
-
-/** Writes the message and Moni's turn into today's thread; the chat page listens with subscribeThreads. */
+/**
+ * Writes the message and Moni's turn into today's thread; the chat page listens with subscribeThreads.
+ * While a budget question waits, typed words answer it.
+ */
 export async function sendChatMessage(input: SendChatInput): Promise<void> {
   const text = input.text.trim();
   const imageUri = input.imageUri ?? null;
   if (!text && !imageUri) return;
+  const step = imageUri ? null : openBudgetStep(readTodayThread().messages);
+  if (step) return answerBudgetStep(step, text);
 
   const createdAt = new Date().toISOString();
   appendMessage(

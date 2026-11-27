@@ -162,6 +162,65 @@
 
 /* ---------- cards in the thread ---------- */
 
+.chat-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-choice {
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-choice:hover {
+  background: var(--color-sand-light);
+}
+
+.budget-draft {
+  gap: 10px;
+  padding: 14px;
+}
+
+.budget-draft-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.budget-draft-amount input {
+  width: 140px;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+  font: inherit;
+}
+
+.budget-draft-note {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.budget-draft .btn {
+  align-self: flex-start;
+}
+
 .chat-card {
   display: flex;
   flex-direction: column;

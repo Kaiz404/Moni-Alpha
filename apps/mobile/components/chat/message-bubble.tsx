@@ -7,14 +7,17 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { isFresh, settle } from '@/lib/ai/chat/fresh-replies';
+import type { OpenBudgetStep } from '@/lib/ai/chat/budget-ask';
 import type { ChatMessage, NoticedItem, QuickReplyOption } from '@/lib/ai/chat/messages';
 import { tid } from '@/lib/test-ids';
+import { suggestTargetName } from '@repo/core';
 
 import { AnswerCard } from './answer-card';
+import { BudgetDraftCard } from './budget-draft-card';
 import { chatTime } from './chat-time';
 import { DraftCard } from './draft-card';
 import { NoticedCard } from './noticed-card';
-import { QuickReplyChips } from './quick-reply-chips';
+import { QuickReplyChips, ReplyChips } from './quick-reply-chips';
 import { RevealText } from './reveal-text';
 import { ThinkingCard } from './thinking-card';
 
@@ -23,6 +26,9 @@ type MessageBubbleProps = {
   asked: ReadonlySet<string>;
   onQuickReply: (option: QuickReplyOption, message: ChatMessage) => void;
   onNoticed: (item: NoticedItem) => void;
+  /** The thread's last message: a budget question shows its choices only while it is. */
+  open: boolean;
+  onBudgetReply: (step: OpenBudgetStep, answer: string) => void;
 };
 
 /** A 280-wide bubble with its time under it: the user's on the right, Moni's on the left. */
@@ -76,7 +82,9 @@ export const MessageBubble = memo(function MessageBubble(props: MessageBubblePro
   const typed =
     (message.kind === 'assistant_text' && message.status !== 'error') ||
     message.kind === 'assistant_clarify' ||
-    (message.kind === 'assistant_card' && message.content.length > 0);
+    (message.kind === 'assistant_card' && message.content.length > 0) ||
+    message.kind === 'assistant_budget_pick' ||
+    message.kind === 'assistant_budget_question';
   return (
     <Arrive
       id={message.id}
@@ -87,7 +95,7 @@ export const MessageBubble = memo(function MessageBubble(props: MessageBubblePro
   );
 });
 
-function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubbleProps) {
+function ThreadItem({ message, asked, onQuickReply, onNoticed, open, onBudgetReply }: MessageBubbleProps) {
   const tokens = useThemeTokens();
   switch (message.kind) {
     case 'user_text':
@@ -188,5 +196,35 @@ function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubblePr
           />
         </Bubble>
       );
+    case 'assistant_budget_pick':
+    case 'assistant_budget_question': {
+      const labels =
+        message.kind === 'assistant_budget_pick' ? message.targets.map(suggestTargetName) : message.choices;
+      return (
+        <Bubble
+          mine={false}
+          fill="bg-moni-card"
+          createdAt={message.createdAt}
+        >
+          <RevealText
+            messageId={message.id}
+            text={message.content}
+            color={tokens.onMoniCard}
+          />
+          {open && labels.length ? (
+            <ReplyChips
+              replies={labels.map((label, index) => ({
+                value: label,
+                label,
+                testID: tid('chat', 'budget', 'choice', index),
+              }))}
+              onSelect={(label) => onBudgetReply(message, label)}
+            />
+          ) : null}
+        </Bubble>
+      );
+    }
+    case 'assistant_budget_draft':
+      return <BudgetDraftCard message={message} />;
   }
 }

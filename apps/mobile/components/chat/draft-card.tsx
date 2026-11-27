@@ -326,7 +326,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   );
 }
 
-function DoneRow({
+export function DoneRow({
   outcome,
   undoable,
   id,
@@ -391,7 +391,7 @@ function inkOn(fill: string, color: string | undefined, tokens: ReturnType<typeo
   return fill === 'bg-sand' ? tokens.foreground : tokens.onPastel;
 }
 
-function ActionButton({
+export function ActionButton({
   testID,
   label,
   icon,

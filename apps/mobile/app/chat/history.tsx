@@ -97,6 +97,8 @@ function previewOf(messages: readonly ChatMessage[]): string {
       case 'user_image':
       case 'assistant_clarify':
       case 'assistant_card':
+      case 'assistant_budget_pick':
+      case 'assistant_budget_question':
         if (message.content) return message.content;
         break;
       case 'assistant_text':
@@ -108,6 +110,7 @@ function previewOf(messages: readonly ChatMessage[]): string {
           return `${proposal.merchant ?? proposal.description ?? 'Capture'}, ${formatSignedMoney(proposal.type ?? 'expense', proposal.amountMinor, proposal.currency).replace(/^[−+]/, '')}`;
         break;
       }
+      case 'assistant_budget_draft':
       case 'assistant_status':
       case 'assistant_noticed':
         break;

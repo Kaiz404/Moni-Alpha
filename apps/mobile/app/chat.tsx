@@ -42,11 +42,13 @@ import {
   type NoticedItem,
   type QuickReplyOption,
 } from '@/lib/ai/chat/messages';
+import { answerBudgetStep, startBudgetAsk, type OpenBudgetStep } from '@/lib/ai/chat/budget-ask';
 import { noticedItems } from '@/lib/ai/chat/noticed';
 import { handleQuickReply, sendChatMessage } from '@/lib/ai/chat/orchestrator';
 import { todayThreadDay } from '@/lib/ai/chat/sessions';
 import { useAiGate } from '@/lib/ai/consent/use-ai-gate';
 import { useAuth } from '@/lib/auth/auth-context';
+import { financeProjection$ } from '@/lib/finance/projection';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 import {
@@ -83,13 +85,14 @@ type ThreadProps = {
   folded: number;
   onQuickReply: (option: QuickReplyOption, message: ChatMessage) => void;
   onNoticed: (item: NoticedItem) => void;
+  onBudgetReply: (step: OpenBudgetStep, answer: string) => void;
 };
 
 /**
  * The thread, apart from the composer so typing never re-renders it. Bubbles are memoised and
  * keep their message objects across thread writes, so a new message renders only itself.
  */
-const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNoticed }: ThreadProps) {
+const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNoticed, onBudgetReply }: ThreadProps) {
   const tokens = useThemeTokens();
   const [unfolded, setUnfolded] = useState(false);
   const listRef = useRef<FlatList<ChatMessage>>(null);
@@ -109,6 +112,7 @@ const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNot
     () => new Set(messages.flatMap((message) => (message.kind === 'user_text' ? [message.content] : []))),
     [messages],
   );
+  const lastId = messages.at(-1)?.id;
   const renderItem = useCallback(
     ({ item }: { item: ChatMessage }) => (
       <MessageBubble
@@ -116,9 +120,14 @@ const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNot
         asked={item.kind === 'assistant_noticed' ? asked : NOTHING_ASKED}
         onQuickReply={onQuickReply}
         onNoticed={onNoticed}
+        open={
+          item.id === lastId &&
+          (item.kind === 'assistant_budget_pick' || item.kind === 'assistant_budget_question')
+        }
+        onBudgetReply={onBudgetReply}
       />
     ),
-    [asked, onQuickReply, onNoticed],
+    [asked, onQuickReply, onNoticed, lastId, onBudgetReply],
   );
 
   return (
@@ -193,7 +202,15 @@ export default function ChatScreen() {
     }, []),
   );
   const { user } = useAuth();
-  const params = useLocalSearchParams<{ draft?: string; day?: string; focus?: string }>();
+  const params = useLocalSearchParams<{
+    draft?: string;
+    day?: string;
+    focus?: string;
+    /** Suggest a budget (#139): `total`, a category id, or `pick` to ask which. */
+    suggest?: string;
+    /** `edit` hands the suggested amount back to Edit budgets. */
+    into?: string;
+  }>();
   const today = todayThreadDay();
   const [viewDay, setViewDay] = useState(params.day ?? today);
   const isToday = viewDay === today;
@@ -328,6 +345,30 @@ export default function ChatScreen() {
     ExpoSpeechRecognitionModule.stop();
   };
 
+  useEffect(() => {
+    const suggest = params.suggest;
+    if (!suggest) return;
+    router.setParams({ suggest: undefined, into: undefined });
+    const category = financeProjection$.categoriesById[suggest].peek();
+    const target =
+      suggest === 'total'
+        ? ({ kind: 'total' } as const)
+        : category
+          ? ({ kind: 'category', id: category.id, name: category.name } as const)
+          : null;
+    const into = params.into === 'edit' ? 'edit' : 'save';
+    withAi(() => {
+      setViewDay(todayThreadDay());
+      void startBudgetAsk(target, into).catch((error) => console.warn('[chat] budget ask failed', error));
+    });
+  }, [params.suggest, params.into, withAi]);
+
+  const onBudgetReply = useCallback(
+    (step: OpenBudgetStep, answer: string) =>
+      withAi(() => void answerBudgetStep(step, answer).catch((error) => console.warn('[chat] budget reply failed', error))),
+    [withAi],
+  );
+
   const onQuickReply = useCallback((option: QuickReplyOption, message: ChatMessage) => {
     if (message.kind !== 'assistant_clarify') return;
     withAi(() => void handleQuickReply(option, message.pendingContext, message.pendingImageUri));
@@ -391,6 +432,7 @@ export default function ChatScreen() {
           folded={folded.current}
           onQuickReply={onQuickReply}
           onNoticed={onNoticed}
+          onBudgetReply={onBudgetReply}
         />
         {blank ? <StarterCards onStarter={setInput} /> : null}
         <ChatInputBar

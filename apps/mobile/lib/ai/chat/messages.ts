@@ -3,7 +3,7 @@ import { createMMKV } from 'react-native-mmkv';
 
 import type { SoftTint } from '@/components/chat/ink-card';
 
-import type { AnswerCard } from '@repo/core';
+import type { AnswerCard, BudgetAsk, SuggestTarget } from '@repo/core';
 import { threadDay, todayThreadDay } from './sessions';
 
 const storage = createMMKV({ id: 'moni-chat' });
@@ -30,6 +30,9 @@ export type NoticedItem = {
   tint?: SoftTint;
   target: { kind: 'ask'; question: string } | { kind: 'review' };
 };
+
+/** Where a suggested budget goes: saved by Set budget, or into Edit budgets' draft (#139). */
+export type BudgetInto = 'save' | 'edit';
 
 type Base = { id: string; createdAt: string };
 
@@ -59,6 +62,30 @@ export type ChatMessage = Base &
     /** `content` is the model's caption; empty when the model could not answer. */
     | { role: 'assistant'; kind: 'assistant_card'; card: AnswerCard; content: string; analysis: boolean }
     | { role: 'assistant'; kind: 'assistant_noticed'; items: NoticedItem[] }
+    /** "Which budget should I suggest?", with each budget as a choice. */
+    | { role: 'assistant'; kind: 'assistant_budget_pick'; content: string; targets: SuggestTarget[]; into: BudgetInto }
+    /** One of Moni's budget questions; `content` is `ask.questions[ask.answers.length].text`. */
+    | {
+        role: 'assistant';
+        kind: 'assistant_budget_question';
+        content: string;
+        choices: string[];
+        ask: BudgetAsk;
+        into: BudgetInto;
+      }
+    | {
+        role: 'assistant';
+        kind: 'assistant_budget_draft';
+        target: SuggestTarget;
+        into: BudgetInto;
+        /** Whole units in minor units; the user can change it before setting it. */
+        amountMinor: number;
+        note: string;
+        /** "You averaged RM450 over 3 months", or null with no history. */
+        average: string | null;
+        /** Set budget was pressed: the card shows what was set. */
+        done?: boolean;
+      }
   );
 
 export type ChatMessageKind = ChatMessage['kind'];
