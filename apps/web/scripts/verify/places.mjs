@@ -93,7 +93,7 @@ export async function verifyPlaces(t) {
       const mapActive = phone || (await p.locator(`${navFor[size.layout]} [aria-current="page"]`).first().getAttribute('href'))?.startsWith('/home/places');
       const lower = await p.locator('section[aria-label="Day by day"]').isVisible();
       check(
-        `${where}: ${size.layout}, ${phone ? 'a pushed page with Back and no tab bar' : 'Home ›, Spending map lit in the nav'}, ${theme} ground, ${phone ? 'no Day by day' : 'Day by day below'}, no sideways scroll`,
+        `${where}: ${size.layout}, ${phone ? 'a pushed page with Back and no tab bar' : 'Home ›, Map lit in the nav'}, ${theme} ground, ${phone ? 'no Day by day' : 'Day by day below'}, no sideways scroll`,
         state.layout === size.layout && nav && back && mapActive && state.bg === background[theme] && lower === !phone && !(await scrolls(p)),
         { ...state, nav, back, mapActive, lower },
       );

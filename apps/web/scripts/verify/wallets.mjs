@@ -1,4 +1,4 @@
-// All wallets and a wallet's page in web-verify (`--only wallets`): the sidebar's Wallets and Spending map
+// All wallets and a wallet's page in web-verify (`--only wallets`): the sidebar's Wallets and Map
 // open their pages and light themselves, All wallets asks the check-in, every
 // wallet's balance against the e2e user's wallet_balances, Home's wallet strip with a mouse drag undone by Ctrl Z, net worth in the main currency, a wallet's
 // page with its transactions, Edit amount saved then undone with Ctrl Z, and the New wallet and Edit
@@ -96,9 +96,9 @@ export async function verifyWallets(t) {
   }
   check('Home in landscape has the wallet strip and no Wallets card or check-in', (await p.locator('section[aria-label="Wallets"]').count()) === 0 && !(await p.getByRole('region', { name: 'Check-in' }).isVisible()));
   const nav = p.getByRole('navigation', { name: 'Moni' });
-  await nav.getByRole('link', { name: 'Spending map', exact: true }).click();
+  await nav.getByRole('link', { name: 'Map', exact: true }).click();
   await p.waitForURL(/\/home\/places$/);
-  check("the sidebar's Spending map opens Where you spend and lights itself, not Home", (await nav.getByRole('link', { name: 'Spending map', exact: true }).getAttribute('aria-current')) === 'page' && (await nav.getByRole('link', { name: 'Home', exact: true }).getAttribute('aria-current')) === null, p.url());
+  check("the sidebar's Map opens Where you spend and lights itself, not Home", (await nav.getByRole('link', { name: 'Map', exact: true }).getAttribute('aria-current')) === 'page' && (await nav.getByRole('link', { name: 'Home', exact: true }).getAttribute('aria-current')) === null, p.url());
   await nav.getByRole('link', { name: 'Wallets', exact: true }).click();
   await p.waitForURL(/\/home\/wallets$/);
   await p.locator('[data-screen="wallets"]').waitFor({ timeout: 20_000 });

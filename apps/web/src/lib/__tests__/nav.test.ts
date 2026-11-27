@@ -11,8 +11,9 @@ describe('nav', () => {
     expect(destinationOf('/homework')).toBeNull();
   });
 
-  it('puts Wallets and Spending map in the sidebar after Debts, and keeps the tab bar to four', () => {
-    expect(SIDE_NAV.map((item) => item.label)).toEqual(['Home', 'Activity', 'Budget', 'Debts', 'Wallets', 'Spending map']);
+  it('puts Wallets and Map in the sidebar after Debts, one word each, and keeps the tab bar to four', () => {
+    expect(SIDE_NAV.map((item) => item.label)).toEqual(['Home', 'Activity', 'Budget', 'Debts', 'Wallets', 'Map']);
+    expect(SIDE_NAV.filter((item) => item.label.includes(' '))).toEqual([]);
     expect(MAIN_NAV.map((item) => item.label)).toEqual(['Home', 'Activity', 'Budget', 'Debts']);
   });
 });

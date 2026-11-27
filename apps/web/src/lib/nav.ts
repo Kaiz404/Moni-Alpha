@@ -11,8 +11,6 @@ export type Destination = 'home' | 'activity' | 'budget' | 'debts' | 'wallets' |
 export type NavItem = {
   key: Destination;
   label: string;
-  /** The rail's label when the full one would wrap in its 72 px. */
-  short?: string;
   href: string;
   icon: IconName;
   /** The letter after G that goes here. */
@@ -30,7 +28,7 @@ export const NAV: readonly NavItem[] = [
   { key: 'budget', label: 'Budget', href: '/budget', icon: 'chart-box', go: 'b', section: 'main' },
   { key: 'debts', label: 'Debts', href: '/debts', icon: 'handshake-outline', go: 'd', section: 'main' },
   { key: 'wallets', label: 'Wallets', href: '/home/wallets', icon: 'wallet-outline', go: 'w', section: 'home-page' },
-  { key: 'places', label: 'Spending map', short: 'Map', href: '/home/places', icon: 'map-marker-outline', go: 'm', section: 'home-page' },
+  { key: 'places', label: 'Map', href: '/home/places', icon: 'map-marker-outline', go: 'm', section: 'home-page' },
   { key: 'review', label: 'Review', href: reviewHref(), icon: 'tray-full', go: 'r', section: 'drawer' },
   { key: 'settings', label: 'Settings', href: '/settings', icon: 'cog-outline', go: 's', section: 'account' },
 ];
@@ -38,7 +36,7 @@ export const NAV: readonly NavItem[] = [
 /** The phone tab bar's four: Home, Activity, Budget and Debts. */
 export const MAIN_NAV = NAV.filter((item) => item.section === 'main');
 
-/** The sidebar and the rail: the four, then Wallets and Spending map. */
+/** The sidebar and the rail: the four, then Wallets and Map. */
 export const SIDE_NAV = NAV.filter((item) => item.section === 'main' || item.section === 'home-page');
 
 export function navItem(key: Destination): NavItem {

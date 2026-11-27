@@ -96,11 +96,11 @@ export function Rail() {
       </button>
       <span aria-hidden="true" style={{ height: 6 }} />
       {SIDE_NAV.map((item) => (
-        <Link key={item.key} href={hrefWithPane(item.href)} aria-label={item.short ? item.label : undefined} title={item.short ? item.label : undefined} aria-current={current === item.key ? 'page' : undefined}>
+        <Link key={item.key} href={hrefWithPane(item.href)} aria-current={current === item.key ? 'page' : undefined}>
           <span className="ind">
             <Icon name={item.icon} size={22} />
           </span>
-          {item.short ?? item.label}
+          {item.label}
         </Link>
       ))}
       <span className="rail-rule" aria-hidden="true" />

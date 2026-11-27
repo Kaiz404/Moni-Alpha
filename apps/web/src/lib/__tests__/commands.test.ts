@@ -7,7 +7,7 @@ const titles = (query: string, resolvedTheme: 'light' | 'dark' = 'light') =>
 describe('filterCommands', () => {
   it('lists every place and action when nothing is typed', () => {
     expect(titles('')).toEqual([
-      ['Go to', ['Home', 'Activity', 'Budget', 'Debts', 'Wallets', 'Spending map', 'Review', 'Settings']],
+      ['Go to', ['Home', 'Activity', 'Budget', 'Debts', 'Wallets', 'Map', 'Review', 'Settings']],
       ['Actions', ['Add a transaction', 'Ask Moni', 'Switch to dark theme', 'Fold or open the sidebar', 'Keyboard shortcuts', 'Sign out']],
     ]);
   });
