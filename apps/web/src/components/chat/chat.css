@@ -93,8 +93,8 @@
 
 .chat-bubble-me {
   max-width: 300px;
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  background: var(--color-moni-card);
+  color: var(--color-on-moni-card);
   border-bottom-right-radius: 6px;
 }
 
