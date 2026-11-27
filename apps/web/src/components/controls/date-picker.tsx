@@ -70,7 +70,9 @@ export function MonthCalendar({
   const [focused, setFocused] = useState<DayKey>(start);
   const grid = useRef<HTMLDivElement>(null);
   const tabStop =
-    monthOf(focused) === month ? focused : `${month}-01`;
+    monthOf(focused) === month ? focused : clampDay(`${month}-01`, min, max);
+  const pickable = (day: DayKey) =>
+    (!min || day >= min) && (!max || day <= max);
 
   const keys = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = STEPS[event.key];
@@ -155,7 +157,7 @@ export function MonthCalendar({
             key={week.find(Boolean)}
           >
             {week.map((day, at) =>
-              day ? (
+              day && pickable(day) ? (
                 <span
                   key={day}
                   role="gridcell"
@@ -170,9 +172,6 @@ export function MonthCalendar({
                     aria-label={`${dateLabel(day, today)}${SPAN_WORDS[spanOf(day) ?? ''] ?? ''}`}
                     data-focus-first={day === tabStop || undefined}
                     aria-current={day === today ? 'date' : undefined}
-                    disabled={
-                      (!!min && day < min) || (!!max && day > max)
-                    }
                     onFocus={() => setFocused(day)}
                     onClick={() => onPick(day)}
                   >
@@ -287,7 +286,7 @@ export function DateField({
 
 /**
  * A chip that shows a month and opens a year of months a page, with arrows between years; months
- * outside `first` to `last` can't be picked. The phone's Choose month grid (#111).
+ * outside `first` to `last` are empty slots. The phone's Choose month grid (#111).
  */
 export function MonthField({
   label,
@@ -398,19 +397,22 @@ function MonthGrid({
         </button>
       </div>
       <div className="month-grid">
-        {page.months.map((month) => (
-          <button
-            key={month}
-            type="button"
-            role="option"
-            aria-selected={month === value}
-            aria-label={`${monthName(month)} ${page.year}`}
-            disabled={month < first || month > last}
-            onClick={() => onPick(month)}
-          >
-            {monthShort(month)}
-          </button>
-        ))}
+        {page.months.map((month) =>
+          month < first || month > last ? (
+            <span key={month} />
+          ) : (
+            <button
+              key={month}
+              type="button"
+              role="option"
+              aria-selected={month === value}
+              aria-label={`${monthName(month)} ${page.year}`}
+              onClick={() => onPick(month)}
+            >
+              {monthShort(month)}
+            </button>
+          ),
+        )}
       </div>
     </div>
   );

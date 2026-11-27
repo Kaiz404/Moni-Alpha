@@ -66,6 +66,6 @@ describe('BirthMonthField', () => {
     renderField({ month: 4, year: 1987 });
     fireEvent.press(screen.getByTestId('auth.birth.year'));
     expect(screen.getByText('1980s')).toBeTruthy();
-    expect(screen.getByTestId('sheet.option.1987').props.accessibilityState).toEqual({ selected: true, disabled: false });
+    expect(screen.getByTestId('sheet.option.1987').props.accessibilityState).toEqual({ selected: true });
   });
 });

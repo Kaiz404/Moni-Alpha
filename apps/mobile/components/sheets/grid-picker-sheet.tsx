@@ -12,23 +12,24 @@ import { tid } from '@/lib/test-ids';
 
 const PAGE_IN = FadeIn.duration(160);
 
+/** An arrow to the next page; at the last page in its direction it leaves its space empty. */
 function Arrow({
   direction,
   label,
-  disabled,
+  shown,
   onPress,
 }: {
   direction: 'previous' | 'next';
   label: string;
-  disabled: boolean;
+  shown: boolean;
   onPress: () => void;
 }) {
   const tokens = useThemeTokens();
+  if (!shown) return <View className="h-11 w-11" />;
   return (
     <Press
       testID={tid('sheet', 'page', direction)}
       accessibilityLabel={label}
-      disabled={disabled}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-sand-light"
       className="h-11 w-11 items-center justify-center bg-sand"
@@ -37,7 +38,7 @@ function Arrow({
       <IconSymbol
         name={direction === 'previous' ? 'chevron-left' : 'chevron-right'}
         size={22}
-        color={disabled ? tokens.muted : tokens.foreground}
+        color={tokens.foreground}
       />
     </Press>
   );
@@ -57,15 +58,14 @@ function Cell({
       testID={tid('sheet', 'option', cell.id)}
       accessibilityRole="radio"
       accessibilityLabel={cell.accessibilityLabel}
-      accessibilityState={{ selected, disabled: cell.disabled }}
-      disabled={cell.disabled}
+      accessibilityState={{ selected }}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName={selected ? 'bg-primary-pressed' : 'bg-sand'}
       className={`h-11 flex-1 items-center justify-center ${selected ? 'bg-primary' : ''}`}
       onPress={onPress}
     >
       <Text
-        className={`text-[16px] leading-[22px] font-display-semibold ${cell.disabled ? 'text-muted' : selected ? 'text-primary-foreground' : 'text-foreground'}`}
+        className={`text-[16px] leading-[22px] font-display-semibold ${selected ? 'text-primary-foreground' : 'text-foreground'}`}
       >
         {cell.label}
       </Text>
@@ -118,7 +118,7 @@ export function GridPickerSheet({
             <Arrow
               direction="previous"
               label="Earlier"
-              disabled={index === 0}
+              shown={index > 0}
               onPress={() => setIndex(index - 1)}
             />
             <Text
@@ -131,7 +131,7 @@ export function GridPickerSheet({
             <Arrow
               direction="next"
               label="Later"
-              disabled={index === layout.pages.length - 1}
+              shown={index < layout.pages.length - 1}
               onPress={() => setIndex(index + 1)}
             />
           </View>

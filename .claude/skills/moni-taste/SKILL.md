@@ -120,11 +120,11 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 - Example: Delete your account was a page, and became a sheet (#74). Archive and write-off moved from `Alert.alert` to the sheet (`3b0830bc`).
 - Owner: "goes against all the common consistent design flow… confirmation drawers are bottom-up app drawers"
 
-**16. Compact pickers.**
-- Do: pick a month, year or day from a grid one page at a time (`grid-picker-sheet.tsx`), and use one date pattern everywhere. On the web, use Moni's popover and calendar.
-- Don't: use a long radio list in a bottom sheet, or the browser's `<select>` or `<input type="date">`.
-- Example: birth year list became a decade grid (#77). Due date list became a month calendar (#81). Web native controls (#99, #101, #107).
-- Owner: "It should not be bottom of drawer like this. It's kind of weird." "I don't like how the dates are displayed as a long bottom drawer option"
+**16. Compact pickers that show only what can be picked.**
+- Do: pick a month, year or day from a grid one page at a time (`grid-picker-sheet.tsx`), and use one date pattern everywhere. On the web, use Moni's popover and calendar. Hide an option or control that can't apply; in a fixed grid (12 months, a month of days) leave its cell empty so the grid keeps its shape.
+- Don't: use a long radio list in a bottom sheet, or the browser's `<select>` or `<input type="date">`. Don't leave an option on screen a shade greyer than the rest.
+- Example: birth year list became a decade grid (#77). Due date list became a month calendar (#81). Web native controls (#99, #101, #107). Choose month greyed Jan to Jun and Dec beside Jul to Nov; those months became empty cells, and a page arrow with nowhere to go leaves its space empty (#141).
+- Owner: "It should not be bottom of drawer like this. It's kind of weird." "I don't like how the dates are displayed as a long bottom drawer option" "If a button is like not a valid choice, then like why even show it?"
 
 ## Charts
 
@@ -192,6 +192,6 @@ For each screenshot of a changed screen, phone or web, answer each question. Rep
 5. Do actions sit inside the content instead of the pinned bar or thumb reach? (7, 10)
 6. On a phone tab root, is the key content below y 744? (11)
 7. Is there a card inside a card or a sheet, or a square fill past a rounded shape? (14)
-8. Is a picker a long list, or a native browser control? (16)
+8. Is a picker a long list or a native browser control, or does it show a greyed option it could hide? (16)
 9. Does a chart have a legend or numbers at rest, or differ from its twin on another screen? (17)
 10. On the web in landscape, is there an empty pane, or is it the phone layout made wider? (23)

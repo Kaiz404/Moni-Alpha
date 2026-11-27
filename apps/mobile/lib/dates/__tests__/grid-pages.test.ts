@@ -10,18 +10,18 @@ describe('monthGrid', () => {
     expect(grid.pages[0].cells.map((cell) => cell?.label)).toEqual([
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ]);
-    expect(grid.pages[0].cells[3]).toEqual({ id: '4', label: 'Apr', accessibilityLabel: 'April', disabled: false });
+    expect(grid.pages[0].cells[3]).toEqual({ id: '4', label: 'Apr', accessibilityLabel: 'April' });
   });
 });
 
 describe('yearMonthGrid', () => {
-  it('pages each year Jan to Dec and greys the months outside the range', () => {
+  it('pages each year Jan to Dec and leaves the months outside the range empty', () => {
     const grid = yearMonthGrid('2025-11', '2026-10');
     expect(grid.columns).toBe(4);
     expect(grid.pages.map((page) => page.label)).toEqual(['2025', '2026']);
-    expect(grid.pages[0].cells.filter((cell) => !cell?.disabled).map((cell) => cell?.id)).toEqual(['2025-11', '2025-12']);
-    expect(grid.pages[1].cells[9]).toEqual({ id: '2026-10', label: 'Oct', accessibilityLabel: 'October 2026', disabled: false });
-    expect(grid.pages[1].cells[10]?.disabled).toBe(true);
+    expect(ids(grid.pages[0].cells)).toEqual([null, null, null, null, null, null, null, null, null, null, '2025-11', '2025-12']);
+    expect(grid.pages[1].cells[9]).toEqual({ id: '2026-10', label: 'Oct', accessibilityLabel: 'October 2026' });
+    expect(grid.pages[1].cells[10]).toBeNull();
     expect(pageOf(grid, '2025-12')).toBe(0);
   });
 });
@@ -39,21 +39,21 @@ describe('yearGrid', () => {
 });
 
 describe('dayGrid', () => {
-  it('lays a month out Sunday first and greys the days outside the range', () => {
+  it('lays a month out Sunday first and leaves the days outside the range empty', () => {
     const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14');
     expect(grid.columns).toBe(7);
     expect(grid.heads).toEqual(['S', 'M', 'T', 'W', 'T', 'F', 'S']);
     expect(grid.pages.map((page) => page.label)).toEqual(['October 2026', 'November 2026']);
 
     const october = grid.pages[0].cells;
-    expect(ids(october.slice(0, 5))).toEqual([null, null, null, null, '2026-10-01']);
-    expect(october[4 + 12]).toEqual({ id: '2026-10-13', label: '13', accessibilityLabel: 'Yesterday', disabled: true });
-    expect(october[4 + 13]).toEqual({ id: '2026-10-14', label: '14', accessibilityLabel: 'Today', disabled: false });
+    expect(october).toHaveLength(4 + 31);
+    expect(ids(october.slice(0, 4 + 13))).toEqual(Array(4 + 13).fill(null));
+    expect(october[4 + 13]).toEqual({ id: '2026-10-14', label: '14', accessibilityLabel: 'Today' });
 
     const november = grid.pages[1].cells;
     expect(ids(november.slice(0, 1))).toEqual(['2026-11-01']);
-    expect(november.find((cell) => cell?.id === '2026-11-13')?.disabled).toBe(false);
-    expect(november.find((cell) => cell?.id === '2026-11-14')?.disabled).toBe(true);
+    expect(ids(november).at(-1)).toBeNull();
+    expect(ids(november).filter(Boolean).at(-1)).toBe('2026-11-13');
   });
 });
 
@@ -61,7 +61,7 @@ describe('dayGrid with a date already set', () => {
   it('adds the months back to an earlier date and keeps only that day pickable', () => {
     const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14', '2026-08-31');
     expect(grid.pages.map((page) => page.label)).toEqual(['August 2026', 'September 2026', 'October 2026', 'November 2026']);
-    const days = grid.pages.flatMap((page) => page.cells).filter((cell) => cell && !cell.disabled);
+    const days = grid.pages.flatMap((page) => page.cells).filter((cell) => cell);
     expect(days[0]?.id).toBe('2026-08-31');
     expect(days[1]?.id).toBe('2026-10-14');
   });
@@ -69,7 +69,7 @@ describe('dayGrid with a date already set', () => {
   it('adds the months on to a later date', () => {
     const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14', '2027-01-02');
     expect(grid.pages.map((page) => page.label)).toEqual(['October 2026', 'November 2026', 'December 2026', 'January 2027']);
-    expect(grid.pages[3].cells.find((cell) => cell?.id === '2027-01-02')?.disabled).toBe(false);
+    expect(ids(grid.pages[3].cells).filter(Boolean)).toEqual(['2027-01-02']);
   });
 });
 

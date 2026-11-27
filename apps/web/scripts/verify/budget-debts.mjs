@@ -131,9 +131,10 @@ export async function verifyBudgetDebts(t) {
       await p.locator('.month-nav .chip').filter({ visible: true }).first().locator('svg').last().click();
       const months = p.getByRole('listbox', { name: 'Month' });
       check("the month chip's chevron opens Moni's month grid with this month picked", (await months.isVisible()) && (await months.getByRole('option', { selected: true }).count()) === 1);
-      const cells = await months.getByRole('option').evaluateAll((all) => all.map((cell) => ({ name: cell.ariaLabel, picked: cell.ariaSelected === 'true', off: cell.disabled })));
+      const cells = await months.locator('.month-grid > *').evaluateAll((all) => all.map((cell) => ({ name: cell.ariaLabel, picked: cell.ariaSelected === 'true', shown: cell.matches('button') })));
       const picked = cells.findIndex((cell) => cell.picked);
-      check('the month grid shows a year, Jan to Dec, and no month after this one', cells.length === 12 && cells.slice(picked + 1).every((cell) => cell.off), cells);
+      check('the month grid shows a year, Jan to Dec, and leaves every month after this one empty', cells.length === 12 && cells.slice(picked + 1).every((cell) => !cell.shown), cells);
+      check('the month grid names its year', /^\d{4}$/.test((await months.locator('.calendar-title').textContent())?.trim() ?? ''));
       await p.keyboard.press('Escape');
       check('Esc closes the month grid and gives the chip the focus back', !(await months.isVisible()) && (await p.evaluate(() => document.activeElement?.matches('.month-nav .chip'))));
     }

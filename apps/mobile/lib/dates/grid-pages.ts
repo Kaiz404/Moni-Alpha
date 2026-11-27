@@ -18,10 +18,12 @@ export type GridCell = {
   id: string;
   label: string;
   accessibilityLabel: string;
-  disabled: boolean;
 };
 
-/** One screen of the grid picker; `null` holds an empty slot, such as the days before the 1st. */
+/**
+ * One screen of the grid picker. `null` holds an empty slot: the days before the 1st, or a month
+ * or day that can't be picked, so the grid keeps its shape without showing it (#141).
+ */
 export type GridPage = { label: string; cells: readonly (GridCell | null)[] };
 
 export type GridLayout = { columns: number; heads?: readonly string[]; pages: readonly GridPage[] };
@@ -44,25 +46,23 @@ export function monthGrid(): GridLayout {
           id: String(index + 1),
           label,
           accessibilityLabel: monthName(`2000-${String(index + 1).padStart(2, '0')}`),
-          disabled: false,
         })),
       },
     ],
   };
 }
 
-/** A year a page, oldest first; ids are `YYYY-MM`, and months outside `first` to `last` can't be picked. */
+/** A year a page, oldest first; ids are `YYYY-MM`, and months outside `first` to `last` are empty. */
 export function yearMonthGrid(first: MonthKey, last: MonthKey): GridLayout {
   return {
     columns: 4,
     pages: yearsOfMonths(first, last).map(({ year, months }) => ({
       label: year,
-      cells: months.map((month) => ({
-        id: month,
-        label: shortMonth(Number(month.slice(5))),
-        accessibilityLabel: `${monthName(month)} ${year}`,
-        disabled: month < first || month > last,
-      })),
+      cells: months.map((month) =>
+        month < first || month > last
+          ? null
+          : { id: month, label: shortMonth(Number(month.slice(5))), accessibilityLabel: `${monthName(month)} ${year}` },
+      ),
     })),
   };
 }
@@ -75,7 +75,7 @@ export function yearGrid(newest: number, count: number): GridLayout {
     const cells = Array.from({ length: 10 }, (_, index) => {
       const year = decade + index;
       if (year < oldest || year > newest) return null;
-      return { id: String(year), label: String(year), accessibilityLabel: String(year), disabled: false };
+      return { id: String(year), label: String(year), accessibilityLabel: String(year) };
     });
     pages.push({ label: `${decade}s`, cells });
   }
@@ -83,7 +83,7 @@ export function yearGrid(newest: number, count: number): GridLayout {
 }
 
 /**
- * A month a page, Sunday first, from `first`'s month to `last`'s; days outside them can't be picked.
+ * A month a page, Sunday first, from `first`'s month to `last`'s; days outside them are empty.
  * `kept`, the date already set, stays pickable and its month is shown even when it falls outside,
  * such as an overdue due date.
  */
@@ -93,14 +93,10 @@ export function dayGrid(first: DayKey, last: DayKey, today: DayKey, kept: DayKey
   const pages = Array.from({ length: monthsBetween(start, end) + 1 }, (_, offset) => {
     const month = shiftMonth(start, offset);
     const firstOfMonth = firstDayOf(month);
-    const days = Array.from({ length: daysInMonth(month) }, (_, index): GridCell => {
+    const days = Array.from({ length: daysInMonth(month) }, (_, index): GridCell | null => {
       const day = addDays(firstOfMonth, index);
-      return {
-        id: day,
-        label: String(dayOfMonth(day)),
-        accessibilityLabel: dayLabel(day, today),
-        disabled: day !== kept && (day < first || day > last),
-      };
+      if (day !== kept && (day < first || day > last)) return null;
+      return { id: day, label: String(dayOfMonth(day)), accessibilityLabel: dayLabel(day, today) };
     });
     return {
       label: `${monthName(month)} ${month.slice(0, 4)}`,

@@ -24,7 +24,7 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-const pickable = (id: string) => !screen.getByTestId(`sheet.option.${id}`).props.accessibilityState.disabled;
+const pickable = (id: string) => screen.queryByTestId(`sheet.option.${id}`) !== null;
 
 describe('Bill due date', () => {
   it('opens on this month, today to 30 days ahead, and says a monthly bill repeats', () => {
@@ -39,7 +39,7 @@ describe('Bill due date', () => {
     expect(screen.getByText('November 2026')).toBeTruthy();
     expect(pickable('2026-11-13')).toBe(true);
     expect(pickable('2026-11-14')).toBe(false);
-    expect(screen.getByTestId('sheet.page.next').props.accessibilityState.disabled).toBe(true);
+    expect(screen.queryByTestId('sheet.page.next')).toBeNull();
 
     fireEvent.press(screen.getByTestId('sheet.option.2026-11-02'));
     expect(onPick).toHaveBeenCalledWith('2026-11-02');
@@ -71,7 +71,7 @@ describe('Debt due date', () => {
     expect(screen.getByTestId('sheet.option.2026-08-03').props.accessibilityState.selected).toBe(true);
     expect(pickable('2026-08-03')).toBe(true);
     expect(pickable('2026-08-04')).toBe(false);
-    expect(screen.getByTestId('sheet.page.previous').props.accessibilityState.disabled).toBe(true);
+    expect(screen.queryByTestId('sheet.page.previous')).toBeNull();
 
     fireEvent.press(screen.getByTestId('sheet.page.next'));
     expect(screen.getByText('September 2026')).toBeTruthy();
