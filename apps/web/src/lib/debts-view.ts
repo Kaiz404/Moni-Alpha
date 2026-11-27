@@ -10,6 +10,7 @@ import {
   type DebtSummary,
   type FinanceDebtActivity,
 } from '@repo/core';
+import type { MinorAmount } from '@repo/types';
 
 /** Money on the Debts screen, as the phone writes it: whole ringgit when there are no sen. */
 export function debtMoney(minor: number, currency: string): string {
@@ -88,6 +89,7 @@ export type TimelineItem = {
   meta: string;
   /** Signed for money that came in: "+RM50.00" on a debt owed to the user. */
   amount: string;
+  amountMinor: MinorAmount;
 };
 
 /** The pane's history, newest first: each activity in the debt's words. */
@@ -112,6 +114,7 @@ export function timeline(
             title: mine ? 'Lent' : 'Borrowed',
             meta: wallet ? `${day} ${mine ? 'from' : 'into'} ${wallet}` : mine ? day : `${day}, ${name} paid directly`,
             amount: money,
+            amountMinor: activity.amountMinor,
           };
         case 'repayment':
           return {
@@ -120,9 +123,10 @@ export function timeline(
             title: mine ? 'Paid you back' : 'You paid back',
             meta: wallet ? `${day} ${mine ? 'into' : 'from'} ${wallet}` : day,
             amount: mine ? `+${money}` : money,
+            amountMinor: activity.amountMinor,
           };
         case 'write_off':
-          return { id: activity.id, kind: activity.kind, title: 'Written off', meta: day, amount: money };
+          return { id: activity.id, kind: activity.kind, title: 'Written off', meta: day, amount: money, amountMinor: activity.amountMinor };
       }
     });
 }

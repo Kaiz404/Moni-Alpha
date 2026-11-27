@@ -254,6 +254,41 @@ export function planDebtActivityDelete(
   );
 }
 
+/**
+ * Changes what one entry moved, lent, borrowed or paid back: the activity, its wallet row and the debt's
+ * status in one write, so the wallet balance follows. The balance left can't go below nothing, and a
+ * written-off debt keeps its amounts, since its write-off settled exactly what was left.
+ */
+export function planDebtActivityAmount(
+  debt: FinanceDebt,
+  activityId: string,
+  amountMinor: MinorAmount,
+  view: Pick<LedgerView, 'debtActivitiesById' | 'transactionsById'>,
+  ctx: Pick<PlanContext, 'now'>,
+): Planned<null> {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return refused('Amount must be positive');
+  const activities = activitiesOfDebt(view, debt.id);
+  const activity = activities.find((item) => item.id === activityId);
+  if (!activity) return refused('Debt activity not found');
+  if (activities.some((item) => item.kind === 'write_off')) return refused('A written-off debt keeps its amounts');
+  if (activity.amountMinor === amountMinor) return planned({}, null);
+  const next = activities.map((item) => (item.id === activityId ? { ...item, amountMinor } : item));
+  if (debtBalance(next) < 0) {
+    return refused(activity.kind === 'principal' ? "That's less than what was paid back" : "That's more than what was owed");
+  }
+  const amount = minorToDecimal(amountMinor);
+  return planned(
+    {
+      patch: [
+        { table: 'debt_activities', id: activity.id, patch: { amount, updated_at: ctx.now } },
+        ...liveMirrors([activity], view).map((id) => ({ table: 'transactions' as const, id, patch: { amount, updated_at: ctx.now } })),
+        { table: 'debts', id: debt.id, patch: { status: debtStatus(next), updated_at: ctx.now } },
+      ],
+    },
+    null,
+  );
+}
+
 /** Changes a debt's own fields: who, when it is due, its note. Unnamed fields stay as they are. */
 export function planDebtEdit(
   debt: FinanceDebt,

@@ -1,5 +1,4 @@
 import { useValue } from '@legendapp/state/react';
-import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { SIDE_WORDS } from '@/components/debts/debt-words';
@@ -7,14 +6,21 @@ import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
+import { InPlaceField } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { financeProjection$ } from '@/lib/finance/projection';
+import { editDebtActivityAmount } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
-import { compactWalletNames } from '@repo/core';
-import { type FinanceDebt, type FinanceDebtActivity, dayLabel, formatMoney } from '@repo/core';
+import {
+  compactWalletNames,
+  currencySymbol,
+  type FinanceDebt,
+  type FinanceDebtActivity,
+  dayLabel,
+  formatMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const GLYPHS: Record<FinanceDebtActivity['kind'], IconSymbolName> = {
@@ -23,7 +29,13 @@ const GLYPHS: Record<FinanceDebtActivity['kind'], IconSymbolName> = {
   write_off: 'cancel',
 };
 
-/** Every activity on a debt, newest first. Rows that moved money open their transaction. */
+/** Amounts must stay below this: the column is DECIMAL(12,2). */
+const MAX_MINOR = 1_000_000_000_000;
+
+/**
+ * Every activity on a debt, newest first. What was lent, borrowed or paid back edits in place, with its
+ * wallet row; a written-off debt keeps its amounts.
+ */
 export function DebtHistory({
   debt,
   activities,
@@ -36,6 +48,7 @@ export function DebtHistory({
   const compactNames = compactWalletNames(Object.values(walletsById ?? {}));
   const words = SIDE_WORDS[debt.direction];
   const owedToMe = debt.direction === 'owed_to_me';
+  const writtenOff = activities.some((activity) => activity.kind === 'write_off');
   return (
     <View className="gap-2 pt-1">
       <Text
@@ -74,7 +87,7 @@ export function DebtHistory({
             .filter(Boolean)
             .join(', ');
           const body = (
-            <>
+            <View className="flex-row items-center gap-3.5">
               <View
                 className={`h-[42px] w-[42px] items-center justify-center rounded-full ${activity.kind === 'repayment' ? 'bg-primary-muted' : 'bg-sand'}`}
               >
@@ -112,34 +125,55 @@ export function DebtHistory({
               >
                 {amount}
               </Text>
-            </>
+            </View>
           );
           const label = `${title} ${amount}, ${meta}`;
-          const transactionId = activity.cashTransactionId;
-          return transactionId ? (
-            <Press
+          if (writtenOff || activity.kind === 'write_off')
+            return (
+              <View
+                key={activity.id}
+                accessible
+                accessibilityLabel={label}
+                className="px-[18px] py-3"
+              >
+                {body}
+              </View>
+            );
+          return (
+            <InPlaceField
               key={activity.id}
               testID={tid('debts', 'history', activity.id)}
-              accessibilityLabel={label}
-              className="flex-row items-center gap-3.5 px-[18px] py-3"
-              onPress={() =>
-                router.push({
-                  pathname: '/transaction/[id]',
-                  params: { id: transactionId },
-                })
+              label="Amount"
+              kind="amount"
+              prefix={currencySymbol(debt.currency)}
+              max={MAX_MINOR}
+              value={activity.amountMinor}
+              onSave={(amountMinor) =>
+                amountMinor === activity.amountMinor
+                  ? undefined
+                  : { undo: editDebtActivityAmount(debt, activity.id, amountMinor) }
               }
             >
-              {body}
-            </Press>
-          ) : (
-            <View
-              key={activity.id}
-              accessible
-              accessibilityLabel={label}
-              className="flex-row items-center gap-3.5 px-[18px] py-3"
-            >
-              {body}
-            </View>
+              {({ editable, editor }) =>
+                editor ? (
+                  <View className="gap-1.5 px-[18px] py-3">
+                    <Text
+                      variant="meta"
+                      className="text-muted"
+                    >
+                      {title}
+                    </Text>
+                    {editor}
+                  </View>
+                ) : (
+                  editable(body, {
+                    accessibilityLabel: `Edit amount, ${label}`,
+                    className: 'flex-row items-center gap-2 px-[18px] py-3',
+                    pressedClassName: 'bg-sand-light',
+                  })
+                )
+              }
+            </InPlaceField>
           );
         })}
       </ListCard>

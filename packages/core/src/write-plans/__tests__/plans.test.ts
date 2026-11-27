@@ -6,6 +6,7 @@ import { planBalanceCorrection } from '../balance-correction';
 import {
   planDebt,
   planDebtActivity,
+  planDebtActivityAmount,
   planDebtActivityDelete,
   planDebtDelete,
   planDebtEdit,
@@ -525,6 +526,48 @@ describe('debt plans', () => {
       writes: { insert: [], patch: [], softDelete: [] },
       result: null,
     });
+  });
+
+  it('changes a principal with its wallet row and the status in one write', () => {
+    const ledger = view({
+      debtActivitiesById: { a1: activity('a1', 'principal', 10000), a2: activity('a2', 'repayment', 2500) },
+      transactionsById: {
+        'cash-a1': transaction('cash-a1', 'maybank', { debtActivityId: 'a1' }),
+        'cash-a2': transaction('cash-a2', 'maybank', { debtActivityId: 'a2' }),
+      },
+    });
+    expect(planDebtActivityAmount(DEBT, 'a1', minor(2500), ledger, context())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        softDelete: [],
+        patch: [
+          { table: 'debt_activities', id: 'a1', patch: { amount: '25.00', updated_at: NOW } },
+          { table: 'transactions', id: 'cash-a1', patch: { amount: '25.00', updated_at: NOW } },
+          { table: 'debts', id: 'debt-1', patch: { status: 'settled', updated_at: NOW } },
+        ],
+      },
+      result: null,
+    });
+  });
+
+  it('refuses an amount that leaves less than nothing owed, and any change once written off', () => {
+    const ledger = view({
+      debtActivitiesById: { a1: activity('a1', 'principal', 10000), a2: activity('a2', 'repayment', 2500, { cashTransactionId: null }) },
+    });
+    expect(planDebtActivityAmount(DEBT, 'a1', minor(2000), ledger, context())).toEqual({ kind: 'error', message: "That's less than what was paid back" });
+    expect(planDebtActivityAmount(DEBT, 'a2', minor(10001), ledger, context())).toEqual({ kind: 'error', message: "That's more than what was owed" });
+    expect(planDebtActivityAmount(DEBT, 'a2', minor(0), ledger, context())).toEqual({ kind: 'error', message: 'Amount must be positive' });
+    const plan = planDebtActivityAmount(DEBT, 'a2', minor(3000), ledger, context());
+    expect(plan.kind === 'writes' && plan.writes.patch.map(({ table, id }) => `${table}/${id}`)).toEqual(['debt_activities/a2', 'debts/debt-1']);
+
+    const writtenOff = view({
+      debtActivitiesById: {
+        a1: activity('a1', 'principal', 10000),
+        a3: activity('a3', 'write_off', 10000, { cashTransactionId: null }),
+      },
+    });
+    expect(planDebtActivityAmount(DEBT, 'a1', minor(5000), writtenOff, context())).toEqual({ kind: 'error', message: 'A written-off debt keeps its amounts' });
   });
 
   it('edits only the fields it is given, and refuses an empty name', () => {

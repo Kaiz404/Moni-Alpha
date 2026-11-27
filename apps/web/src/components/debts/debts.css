@@ -635,3 +635,35 @@ html[data-layout='phone'] .pane-delete {
   width: 44px;
   height: 44px;
 }
+
+.tl-amount-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  margin-right: -8px;
+}
+
+.tl-amount-edit:hover {
+  background: var(--color-sand-light);
+}
+
+.tl-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tl-edit input {
+  width: 112px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-field);
+  border: 2px solid var(--color-foreground);
+  background: var(--color-card);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  outline: none;
+}

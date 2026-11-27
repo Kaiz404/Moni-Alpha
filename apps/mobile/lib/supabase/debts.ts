@@ -13,6 +13,7 @@ import {
   debtBalance,
   planDebt,
   planDebtActivity,
+  planDebtActivityAmount,
   planDebtActivityDelete,
   planDebtDelete,
   planDebtMirrorRepair,
@@ -137,6 +138,13 @@ export async function writeOffDebt(debt: Debt, note?: string | null) {
 
 export function deleteDebtActivity(debt: Debt, activityId: string): void {
   commit(planDebtActivityDelete(debt, activityId, ledgerView(), { now: new Date().toISOString() }));
+}
+
+/** Changes what one entry moved, with its wallet row, in one write. Hands back the Undo. */
+export function editDebtActivityAmount(debt: Debt, activityId: string, amountMinor: MinorAmount): () => void {
+  return commitUndoable(
+    planDebtActivityAmount(debt, activityId, amountMinor, ledgerView(), { now: new Date().toISOString() }),
+  ).undo;
 }
 
 /**

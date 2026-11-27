@@ -12,6 +12,7 @@ import {
   tickedChoices,
   planDebt,
   planDebtActivity,
+  planDebtActivityAmount,
   planDebtActivityDelete,
   planDebtDelete,
   weekdayShort,
@@ -344,6 +345,9 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onRemind={() => void remind(selected)}
               onWriteOff={() => setWritingOffId(selected.debt.id)}
               onDelete={() => setDeletingId(selected.debt.id)}
+              onEditAmount={(activityId, amountMinor) =>
+                commit(planDebtActivityAmount(selected.debt, activityId, amountMinor, ledgerViewNow(), { now: new Date().toISOString() }), 'Amount saved')
+              }
               onRecordAgain={() => startRecord(selected.debt.counterpartyName, selected.debt.direction)}
               onClose={close}
             />

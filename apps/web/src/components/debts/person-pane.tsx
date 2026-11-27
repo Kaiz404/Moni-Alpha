@@ -2,6 +2,7 @@
 
 import { addDays, dateLabel, formatMoney, type DebtLine } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
+import { useState } from 'react';
 import { parseAmountDraft } from '@/lib/budget-view';
 import { NO_WALLET, repayAction, repaidWords, timeline, WALLET_WORDS, walletField } from '@/lib/debts-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
@@ -39,6 +40,7 @@ export function PersonPane({
   onRemind,
   onWriteOff,
   onDelete,
+  onEditAmount,
   onRecordAgain,
   onClose,
 }: {
@@ -53,6 +55,8 @@ export function PersonPane({
   onRemind: () => void;
   onWriteOff: () => void;
   onDelete: () => void;
+  /** Changes what one entry moved, lent, borrowed or paid back. */
+  onEditAmount: (activityId: string, amountMinor: MinorAmount) => void;
   onRecordAgain: () => void;
   onClose: () => void;
 }) {
@@ -71,6 +75,14 @@ export function PersonPane({
   const walletWords = WALLET_WORDS[debt.direction];
   const principal = activities.find((activity) => activity.kind === 'principal');
   const lent = walletField(walletWords.principal, principal?.walletId ?? NO_WALLET, (id) => data.walletNames[id]);
+  const [editing, setEditing] = useState<{ id: string; draft: string } | null>(null);
+  const editable = !activities.some((activity) => activity.kind === 'write_off');
+  const saveAmount = () => {
+    const minor = editing ? parseAmountDraft(editing.draft) : undefined;
+    if (!editing || !minor) return;
+    setEditing(null);
+    onEditAmount(editing.id, minor);
+  };
   const paid = repay ? walletField(walletWords.repay, repay.walletId, (id) => data.walletNames[id]) : null;
   const caps = open ? (mine ? 'Owes you' : 'You owe') : line.state === 'settled' ? 'Paid in full' : 'Written off';
   const wallets = data.wallets.filter((wallet) => wallet.currency === debt.currency);
@@ -171,7 +183,37 @@ export function PersonPane({
                 <b>{item.title}</b>
                 <span>{item.meta}</span>
               </span>
-              <span className={`num tl-amount${item.kind === 'repayment' && mine ? ' tone-in' : ''}`}>{item.amount}</span>
+              {editing?.id === item.id ? (
+                <span className="tl-edit">
+                  <input
+                    aria-label={`${item.title}, amount in ringgit`}
+                    autoFocus
+                    inputMode="decimal"
+                    className="num"
+                    value={editing.draft}
+                    onChange={(event) => setEditing({ id: item.id, draft: event.target.value })}
+                    onKeyDown={stopKeys(saveAmount, () => setEditing(null))}
+                  />
+                  <button type="button" className="icon-round press" aria-label="Cancel" onClick={() => setEditing(null)}>
+                    <Glyph name="close" size={16} />
+                  </button>
+                  <button type="button" className="icon-round icon-round-ink press" aria-label="Save" onClick={saveAmount}>
+                    <Glyph name="check" size={16} />
+                  </button>
+                </span>
+              ) : editable && item.kind !== 'write_off' ? (
+                <button
+                  type="button"
+                  className={`num tl-amount tl-amount-edit press${item.kind === 'repayment' && mine ? ' tone-in' : ''}`}
+                  aria-label={`Edit amount, ${item.title} ${item.amount}`}
+                  onClick={() => setEditing({ id: item.id, draft: (item.amountMinor / 100).toFixed(2) })}
+                >
+                  {item.amount}
+                  <Glyph name="pencil-outline" size={14} />
+                </button>
+              ) : (
+                <span className={`num tl-amount${item.kind === 'repayment' && mine ? ' tone-in' : ''}`}>{item.amount}</span>
+              )}
             </div>
           ))}
         </div>
