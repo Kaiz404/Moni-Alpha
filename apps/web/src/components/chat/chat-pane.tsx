@@ -11,6 +11,7 @@ import { useShellApi } from '@/components/shell/shell-context';
 import { setShell, useShell } from '@/components/shell/shell-store';
 import { activityItems } from '@/lib/activity-items';
 import { parseActivityQuery } from '@/lib/activity-query';
+import { chatStarters } from '@/lib/chat-starters';
 import { lookingAt, type ChatMessage } from '@/lib/chat-thread';
 import { destinationOf } from '@/lib/nav';
 import { PANE_SPANS } from '@/lib/sizes';
@@ -22,13 +23,6 @@ import { BudgetDraftCard } from './budget-draft-card';
 import { ConsentDialog } from './consent-dialog';
 import { DraftCard } from './draft-card';
 import './chat.css';
-
-/** W2-Empty's three starters: each fills the box and waits for Enter. */
-const STARTERS = [
-  { icon: 'silverware-fork-knife', title: 'Log a lunch', words: '12.50 at Mamak Ali' },
-  { icon: 'calendar-blank', title: 'Set a budget', words: 'RM450 for food' },
-  { icon: 'chat-question-outline', title: 'Ask Moni', words: 'What can you do?' },
-] as const;
 
 function Typing() {
   return (
@@ -183,6 +177,11 @@ export function ChatPane() {
     box.current?.focus();
   };
   const first = chat.length === 0;
+  const starters = chatStarters({
+    destination: destinationOf(pathname),
+    ticked: from.ticked.length,
+    category: from.viewCategoryId ? (ledger.projection.categoriesById[from.viewCategoryId]?.name ?? null) : null,
+  });
   const waitingOnBudget = chat.some((message) => message.id === chatAsk && message.role === 'user' && message.budget);
   const [width, setWidth] = useStoredSize('pane-chat', PANE_SPANS.chat);
   useRootWidth('--chat-pane-width', width, true);
@@ -220,7 +219,7 @@ export function ChatPane() {
         {first ? (
           <div className="chat-hello">
             <span>Hi {user.name}.</span>
-            <span className="chat-hello-ask">What did you spend?</span>
+            <span className="chat-hello-ask">Ask about what you&apos;re looking at.</span>
           </div>
         ) : (
           <>
@@ -240,7 +239,7 @@ export function ChatPane() {
       >
         {first && (
           <div className="chat-starters">
-            {STARTERS.map((starter) => (
+            {starters.map((starter) => (
               <button type="button" key={starter.title} className="chat-starter press" onClick={() => fill(starter.words)}>
                 <span className="chat-starter-icon">
                   <Glyph name={starter.icon} size={17} />

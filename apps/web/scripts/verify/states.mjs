@@ -38,7 +38,7 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       { path: '/debts', name: 'debts', text: 'No debts yet' },
       { path: '/home/places', name: 'places', text: 'No places yet' },
       { path: '/settings/merchants', name: 'merchants', text: 'No codes to name yet' },
-      { path: '/activity?pane=chat', name: 'chat', text: 'What did you spend?' },
+      { path: '/activity?pane=chat', name: 'chat', text: "Ask about what you're looking at." },
     ];
     for (const theme of ['light', 'dark']) {
       for (const size of widths) {
