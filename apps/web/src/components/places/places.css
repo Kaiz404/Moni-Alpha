@@ -1016,6 +1016,18 @@ html[data-layout='phone'] .side-step {
   white-space: nowrap;
 }
 
+/* The top amount stays inside the chart: over a bar near either end it lines up with that end. */
+.visit-top[data-edge='start'] {
+  left: 0;
+  transform: none;
+}
+
+.visit-top[data-edge='end'] {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .visit-tick {
   position: absolute;
   top: calc(100% + 4px);

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bubble } from '@/components/ledger/glyph';
 import { rowDay } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
-import { hotSpot, placeMeta, placeSub, type PlacesQuery } from '@/lib/places-view';
+import { hotSpot, placeMeta, placeSub, visitColumns, type PlacesQuery } from '@/lib/places-view';
 import { Mdi } from './mdi';
 import { projectionCategory } from './place-map';
 import type { PlacesData } from './use-places';
@@ -186,9 +186,8 @@ function PlacePane({ ledger, data, place, categoryWords }: { ledger: Ledger; dat
   const { places, days, range, query } = data;
   const { currency, calendar, now } = ledger;
   const index = places.indexOf(place);
-  const byDay = placeByDay(place, calendar);
-  const dayMax = Math.max(1, ...days.map((day) => byDay[day.day]?.totalMinor ?? 0));
-  const many = days.length > 14;
+  const columns = visitColumns(days, placeByDay(place, calendar));
+  const columnMax = Math.max(1, ...columns.map((column) => column.totalMinor));
   const lead = projectionCategory(ledger, place.categories[0]?.categoryId ?? null);
   const each = Math.round(place.totalMinor / place.count) as MinorAmount;
   const top = query.sort === 'spent' && index === 0 && places.length > 1;
@@ -212,19 +211,17 @@ function PlacePane({ ledger, data, place, categoryWords }: { ledger: Ledger; dat
       </span>
       <section className="pane-section" aria-label="Visits by day">
         <span className="caps">By day, {range.label}</span>
-        <div className="visit-bars" style={{ gap: many ? 3 : 6 }}>
-          {days.map((day, at) => {
-            const value = byDay[day.day];
-            const height = value ? Math.max(6, Math.round((46 * value.totalMinor) / dayMax)) : 0;
-            const category = projectionCategory(ledger, value?.categoryId ?? null);
-            const label = at === days.length - 1 ? 'Today' : `${day.date}${day.month ? ` ${day.month}` : ''}`;
-            const tick = at === 0 || at === days.length - 1 || day.date === 1 || (!many && at % 2 === 0);
+        <div className="visit-bars" style={{ gap: columns.length > 30 ? 1 : columns.length > 14 ? 3 : 6 }}>
+          {columns.map((column, at) => {
+            const height = column.totalMinor ? Math.max(6, Math.round((46 * column.totalMinor) / columnMax)) : 0;
+            const category = projectionCategory(ledger, column.categoryId);
+            const topEdge = at < columns.length / 5 ? 'start' : at >= (columns.length * 4) / 5 ? 'end' : undefined;
             return (
-              <span key={day.day} className="visit-col" title={value ? `${formatMoney(value.totalMinor, currency)} on ${day.date}${day.month ? ` ${day.month}` : ''}` : undefined}>
+              <span key={column.key} className="visit-col" title={column.totalMinor ? `${formatMoney(column.totalMinor, currency)}, ${column.name}` : undefined}>
                 <span className="visit-bar grow" style={{ height, ['--bar' as string]: category?.color ? legacyColor(category.color) : undefined }}/>
-                {value && value.totalMinor === dayMax && <span className="num visit-top">{formatMoney(value.totalMinor, currency)}</span>}
-                <span className="visit-tick" data-edge={at === 0 ? 'start' : at === days.length - 1 ? 'end' : undefined}>
-                  {tick ? label : ''}
+                {column.totalMinor > 0 && column.totalMinor === columnMax && <span className="num visit-top" data-edge={topEdge}>{formatMoney(column.totalMinor, currency)}</span>}
+                <span className="visit-tick" data-edge={at === 0 ? 'start' : at === columns.length - 1 ? 'end' : undefined}>
+                  {column.tick ?? ''}
                 </span>
               </span>
             );

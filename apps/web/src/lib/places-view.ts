@@ -1,4 +1,5 @@
-import { placesTotal, sharePercent, type Box, type Place, type PlaceRangeKey, type Point } from '@repo/core';
+import { addMinor, type MinorAmount } from '@repo/types';
+import { monthOf, monthShort, placesTotal, sharePercent, shortDate, type Box, type Place, type PlaceDay, type PlaceDayTotal, type PlaceRangeKey, type Point } from '@repo/core';
 
 /** Where you spend's state in the URL, so a reload or the 700 crossing keeps it. */
 export type PlacesQuery = {
@@ -170,4 +171,66 @@ export function pinWidth(label: string, members: number, discs = 1): number {
 /** A heat blob's width: 56 at nothing, 206 for the biggest place, by the square root of its share. */
 export function heatSize(totalMinor: number, maxMinor: number): number {
   return Math.round(56 + 150 * Math.sqrt(maxMinor > 0 ? totalMinor / maxMinor : 0));
+}
+
+/** One bar of a place's By day chart: a day, or whole weeks once the range runs past `MAX_COLUMNS` days. */
+export type VisitColumn = {
+  key: string;
+  /** "22 Jul", "Week of 22 Jul" or "2 weeks from 22 Jul". */
+  name: string;
+  totalMinor: MinorAmount;
+  /** The column's largest day's category, which colours its bar. */
+  categoryId: string | null;
+  /** The axis label under it, or null when it would crowd its neighbour. */
+  tick: string | null;
+};
+
+/** Past this many columns a bar is too thin to see in the side card, so days group into weeks. */
+export const MAX_COLUMNS = 45;
+
+/** Most labels the axis shows, so each has room in the narrowest side card. */
+const MAX_TICKS = 6;
+
+/**
+ * The By day chart's columns over `days` (oldest first, the last one today). Long ranges group into weeks
+ * that end on today, as many to a column as keep it to `MAX_COLUMNS`. The first column, each month's start, Today and, over two weeks or less, every day
+ * can take a label; one closer than a sixth of the axis to the label before it, or to Today, is dropped.
+ */
+export function visitColumns(days: readonly PlaceDay[], byDay: Readonly<Record<string, PlaceDayTotal>>): VisitColumn[] {
+  const size = days.length > MAX_COLUMNS ? 7 * Math.ceil(days.length / (7 * MAX_COLUMNS)) : 1;
+  const groups: PlaceDay[][] = [];
+  for (let end = days.length; end > 0; end -= size) groups.unshift(days.slice(Math.max(0, end - size), end));
+  const columns = groups.map((group, at): VisitColumn => {
+    let totalMinor = 0 as MinorAmount;
+    let categoryId: string | null = null;
+    let largest = -1;
+    for (const day of group) {
+      const value = byDay[day.day];
+      if (!value) continue;
+      totalMinor = addMinor(totalMinor, value.totalMinor);
+      if (value.totalMinor > largest) [largest, categoryId] = [value.totalMinor, value.categoryId];
+    }
+    const first = group[0]!;
+    const monthStart = group.find((day) => day.date === 1);
+    const last = at === groups.length - 1;
+    const tick = last
+      ? 'Today'
+      : at === 0 || (size === 1 && first.month)
+        ? shortDate(first.day)
+        : monthStart && size > 1
+          ? monthShort(monthOf(monthStart.day))
+          : size === 1 && days.length <= 14
+            ? String(first.date)
+            : null;
+    return { key: first.day, name: size === 1 ? shortDate(first.day) : size === 7 ? `Week of ${shortDate(first.day)}` : `${size / 7} weeks from ${shortDate(first.day)}`, totalMinor, categoryId, tick };
+  });
+  const gap = Math.max(1, Math.ceil(columns.length / MAX_TICKS));
+  let previous = -Infinity;
+  columns.forEach((column, at) => {
+    const last = at === columns.length - 1;
+    if (!column.tick) return;
+    if (last || (at - previous >= gap && columns.length - 1 - at >= gap)) previous = at;
+    else column.tick = null;
+  });
+  return columns;
 }

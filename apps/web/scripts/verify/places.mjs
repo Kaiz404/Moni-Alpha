@@ -54,6 +54,23 @@ export async function verifyPlaces(t) {
     await ctx.clock.setFixedTime(seed.pin);
     return ctx;
   };
+  /** The open place's By day chart: bars drawn, bars under 2 px wide, the top amount inside the card, and labels that overlap. */
+  function visitChart() {
+    return p.locator('.side-detail .place-pane').evaluate((pane) => {
+      const card = pane.getBoundingClientRect();
+      const drawn = [...pane.querySelectorAll('.visit-bar')].map((el) => el.getBoundingClientRect()).filter((box) => box.height > 0);
+      const top = pane.querySelector('.visit-top')?.getBoundingClientRect();
+      const ticks = [...pane.querySelectorAll('.visit-tick')].filter((el) => el.textContent).map((el) => ({ text: el.textContent, box: el.getBoundingClientRect() }));
+      const overlaps = ticks.slice(1).filter((tick, index) => tick.box.left < ticks[index].box.right + 2).map((tick, index) => `${ticks[index].text}|${tick.text}`);
+      return {
+        bars: drawn.length,
+        thin: drawn.filter((box) => box.width < 2).length,
+        topInside: !top || (top.left >= card.left && top.right <= card.right),
+        overlaps,
+      };
+    });
+  }
+
   async function until(name, test, ms = 20_000) {
     const end = Date.now() + ms;
     let rows = query(name);
@@ -178,6 +195,16 @@ export async function verifyPlaces(t) {
   await p.waitForURL(/range=all/);
   const sAll = await summary();
   check(`All time counts every located expense: ${cents(ever.totalMinor)}`, Math.round(sAll.total * 100) === ever.totalMinor && sAll.rows === ever.places, sAll);
+  await p.locator('.place-row').first().click();
+  await p.locator('.side-detail .place-pane h2').waitFor();
+  await settle(p);
+  const allTimeChart = await visitChart();
+  check(
+    'over All time a place\'s By day shows a bar you can see for each paid day or week, its top amount inside the card and no two labels touching',
+    allTimeChart.bars > 0 && allTimeChart.thin === 0 && allTimeChart.topInside && allTimeChart.overlaps.length === 0,
+    allTimeChart,
+  );
+  await p.keyboard.press('Escape');
   await p.locator('.pseg[aria-label="Range"] button', { hasText: 'Last 30 days' }).click();
   await p.waitForURL((url) => !url.search.includes('range='));
 
@@ -212,6 +239,8 @@ export async function verifyPlaces(t) {
   const visits = await p.locator('.visit-col').count();
   const bars = await p.locator('.visit-bar').evaluateAll((els) => els.filter((el) => el.getBoundingClientRect().height > 0).length);
   check('its visits by day draw a bar on each day it was paid', visits === 30 && bars > 0, { visits, bars });
+  const monthChart = await visitChart();
+  check('its top amount sits inside the card and no two day labels touch', monthChart.topInside && monthChart.overlaps.length === 0, monthChart);
   await p.keyboard.press('k');
   await p.waitForURL((url) => url.searchParams.get('place') === order[0]).catch(() => {});
   check('K moves back', new URL(p.url()).searchParams.get('place') === order[0], p.url());

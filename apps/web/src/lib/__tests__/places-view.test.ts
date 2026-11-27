@@ -1,4 +1,4 @@
-import type { Place } from '@repo/core';
+import { placeDays, type Place } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 import {
@@ -10,6 +10,7 @@ import {
   panView,
   pinchView,
   pinWidth,
+  visitColumns,
   placeMeta,
   placeSub,
   readPlacesQuery,
@@ -174,5 +175,34 @@ describe('pins and heat', () => {
     expect(heatSize(100, 100)).toBe(206);
     expect(heatSize(25, 100)).toBe(131);
     expect(heatSize(0, 0)).toBe(56);
+  });
+});
+
+describe('visitColumns', () => {
+  const byDay = {
+    '2026-07-22': { totalMinor: 14050 as MinorAmount, categoryId: null },
+    '2026-07-23': { totalMinor: 900 as MinorAmount, categoryId: 'food' },
+  };
+  const allTime = placeDays({ from: '2026-07-22', to: '2026-11-28' });
+
+  it("groups a long range into weeks ending today, each with its biggest day's category, so no bar is too thin to see", () => {
+    const columns = visitColumns(allTime, byDay);
+    expect(columns).toHaveLength(19);
+    expect(columns.at(-1)?.key).toBe('2026-11-22');
+    expect(columns[0]).toMatchObject({ key: '2026-07-22', name: 'Week of 22 Jul', totalMinor: 14950, categoryId: null });
+  });
+
+  it('drops a label that would crowd the one before it, and keeps Today', () => {
+    expect(visitColumns(allTime, byDay).map((column) => column.tick).filter(Boolean)).toEqual(['22 Jul', 'Sep', 'Oct', 'Today']);
+  });
+
+  it('keeps a column a day up to 45 days, labelling the first, each 1st and Today', () => {
+    const columns = visitColumns(placeDays({ from: '2026-09-15', to: '2026-10-14' }), {});
+    expect(columns).toHaveLength(30);
+    expect(columns.map((column) => column.tick).filter(Boolean)).toEqual(['15 Sep', '1 Oct', 'Today']);
+  });
+
+  it('labels every other day over a week', () => {
+    expect(visitColumns(placeDays({ from: '2026-10-08', to: '2026-10-14' }), {}).map((column) => column.tick)).toEqual(['8 Oct', null, '10', null, '12', null, 'Today']);
   });
 });
