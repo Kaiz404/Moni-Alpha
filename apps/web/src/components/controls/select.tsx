@@ -89,6 +89,8 @@ export function Select<T extends string>({
             onKeyDown={(event) => {
               if (!state.open && letter(event)) return;
               onKeyDown?.(event);
+              // The list kept focus on its trigger and took Esc to close; the pane or form around it must not close too.
+              if (event.key === 'Escape' && event.defaultPrevented) event.stopPropagation();
             }}
           />
         )}

@@ -238,6 +238,7 @@ export async function verifyReview(t) {
   const walletList = drawer(p).getByRole('listbox', { name: 'Wallet' });
   await walletList.waitFor({ timeout: 3000 });
   await p.keyboard.press('Escape');
+  await walletList.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
   check('Esc in the wallet picker shuts the picker and leaves the drawer open', !(await visible(walletList)) && (await visible(drawer(p))) && p.url().includes(`capture=${chat.id}`), p.url());
   await walletField.click();
   await walletList.getByRole('option').first().click();
