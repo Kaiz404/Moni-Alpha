@@ -8,6 +8,7 @@ import {
   dateLabel,
   dayHeading,
   dayLabel,
+  daysAgo,
   dueWhen,
   dueWords,
   formatMoney,
@@ -76,6 +77,38 @@ describe('day words', () => {
     };
     expect(label('Asia/Kuala_Lumpur')).toBe('Today');
     expect(label('America/New_York')).toBe('Yesterday');
+  });
+});
+
+describe('daysAgo', () => {
+  const today = '2026-10-14';
+
+  it('says nothing for today, yesterday or a day to come, which the date already says', () => {
+    expect(daysAgo('2026-10-14', today)).toBeNull();
+    expect(daysAgo('2026-10-13', today)).toBeNull();
+    expect(daysAgo('2026-10-15', today)).toBeNull();
+  });
+
+  it('counts days, then weeks, months and years', () => {
+    expect(daysAgo('2026-10-12', today)).toBe('2 days ago');
+    expect(daysAgo('2026-10-08', today)).toBe('6 days ago');
+    expect(daysAgo('2026-10-07', today)).toBe('1 week ago');
+    expect(daysAgo('2026-09-16', today)).toBe('4 weeks ago');
+    expect(daysAgo('2026-09-14', today)).toBe('1 month ago');
+    expect(daysAgo('2026-04-14', today)).toBe('6 months ago');
+    expect(daysAgo('2025-10-14', today)).toBe('1 year ago');
+    expect(daysAgo('2023-10-01', today)).toBe('3 years ago');
+  });
+
+  it('counts the days each zone is on for one instant', () => {
+    const at = '2026-10-12T20:00:00.000Z';
+    const now = '2026-10-14T06:00:00.000Z';
+    const ago = (zone: string) => {
+      const calendar = createCalendar(zone);
+      return daysAgo(calendar.dayKey(at), calendar.dayKey(now));
+    };
+    expect(ago('Asia/Kuala_Lumpur')).toBeNull();
+    expect(ago('America/New_York')).toBe('2 days ago');
   });
 });
 

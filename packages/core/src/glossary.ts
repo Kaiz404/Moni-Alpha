@@ -130,6 +130,24 @@ export function dayLabel(day: DayKey, today: DayKey): string {
   return relativeDay(day, today) ?? dateLabel(day, today);
 }
 
+/**
+ * How long ago a past day was, beside its date: "3 days ago", "2 weeks ago", "5 months ago".
+ * Null for today and yesterday, which the date already says, and for a day still to come.
+ */
+export function daysAgo(day: DayKey, today: DayKey): string | null {
+  const days = daysBetween(day, today);
+  if (days < 2) return null;
+  const [count, unit] =
+    days < 7
+      ? [days, 'day']
+      : days < 30
+        ? [Math.floor(days / 7), 'week']
+        : days < 365
+          ? [Math.floor(days / 30), 'month']
+          : [Math.floor(days / 365), 'year'];
+  return `${count} ${unit}${count === 1 ? '' : 's'} ago`;
+}
+
 /** A day group's heading: "Today, Wed 14 Oct", or the date alone. */
 export function dayHeading(day: DayKey, today: DayKey): string {
   const relative = relativeDay(day, today);

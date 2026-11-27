@@ -71,7 +71,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 - Forward-looking numbers (left, safe to spend a day, even pace, budgets, "RM20 over") are whole ringgit, rounded down. Money that exists (balances, transactions, spent) keeps 2 decimals.
 - Expenses use U+2212, never a hyphen or en dash: `−RM45.90`. Income `+RM4,200.00` in deep mint. Transfers have no sign, in Meta.
 - Other currencies show an unambiguous symbol (`US$120.00`, owner, 21 Nov 2026) and never sum with ringgit or convert.
-- Dates day first: `Wed 14 Oct`; September is `Sep`. Times lowercase with a space: `12:41 pm`. "Today" and "Yesterday" for the last two days.
+- Dates day first: `Wed 14 Oct`; September is `Sep`. Times lowercase with a space: `12:41 pm`. "Today" and "Yesterday" for the last two days. How long ago, beside an older date: "2 days ago" up to "6 days ago", then "1 week ago", "2 weeks ago", "1 month ago", "1 year ago" (`daysAgo` in `@repo/core`); none for today and yesterday.
 - Straight apostrophe: `Touch 'n Go`.
 - No middle dot (·) between two pieces of text. Two attribute nouns take a comma ("Food & Dining, Maybank"), a day and a time take "at" ("Today at 12:41 pm"), a count goes in plain words with its noun, singular for one ("3 codes to name", "1 recent review") or on the right side, and an amount takes its merchant by type: "−RM23.40 at GRAB*FOOD", "+RM3,200.00 from ACME SDN BHD", "RM100.00 to Touch 'n Go reload", or the amount alone when there is no merchant. `lint:copy` fails on the dot in any string, as an HTML entity (`&middot;`, `&#183;`, `&#xb7;`) and in CSS `content`, phone and web.
 - Raw alert text is quoted exactly as the bank sent it.

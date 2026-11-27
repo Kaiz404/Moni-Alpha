@@ -35,6 +35,8 @@ export type ReviewCardModel = {
   type: TransactionType | null;
   sourceLabel: string;
   time: string;
+  /** "3 days ago" beside the time, for a capture older than yesterday. */
+  ago: string | null;
   status: ReviewStatus | null;
   quote: string | null;
   merchant: string;
@@ -171,7 +173,7 @@ export const ReviewCard = memo(function ReviewCard({
         className="flex-row items-center gap-2.5"
         accessible
         accessibilityLabel={[
-          `${model.merchant}, ${amountText}, from ${model.sourceLabel}, ${model.time}`,
+          `${model.merchant}, ${amountText}, from ${model.sourceLabel}, ${model.time}${model.ago ? `, ${model.ago}` : ''}`,
           ...(model.status ? [model.status.label] : []),
         ].join('. ')}
         accessibilityActions={decisions}
@@ -191,6 +193,9 @@ export const ReviewCard = memo(function ReviewCard({
             numberOfLines={1}
           >
             {model.time}
+            {model.ago ? (
+              <Text className="font-display-semibold text-ink-2">{`, ${model.ago}`}</Text>
+            ) : null}
           </Text>
         </View>
         {model.status ? (

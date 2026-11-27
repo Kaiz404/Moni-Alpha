@@ -2,6 +2,7 @@
 
 import {
   dayLabel,
+  daysAgo,
   editedProposal,
   formatMoney,
   formatSignedMoney,
@@ -91,6 +92,7 @@ export function CapturePane({
     .filter((each) => each.isActive && (each.userId === null || each.userId === userId) && (each.type === null || each.type === type))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
   const at = capture.transactionDate ?? capture.createdAt;
+  const ago = daysAgo(calendar.dayKey(capture.notificationReceivedAt ?? at), calendar.dayKey(now));
   const whenAt = (time: string) => `${dayLabel(calendar.dayKey(time), calendar.dayKey(now))} at ${clockTime(time, calendar.zone)}`;
   const pill = reviewStatus({
     hasWallet: Boolean(next.walletId),
@@ -206,7 +208,10 @@ export function CapturePane({
             <SourceBubble capture={capture} size={40} />
             <span className="inbox-text">
               <b>{captureSource(capture)}</b>
-              <span>{whenAt(capture.notificationReceivedAt ?? at)}</span>
+              <span>
+                {whenAt(capture.notificationReceivedAt ?? at)}
+                {ago && <span className="capture-ago">, {ago}</span>}
+              </span>
             </span>
             {pill && (
               <span className="tone-pill" data-tone={pill.tone}>

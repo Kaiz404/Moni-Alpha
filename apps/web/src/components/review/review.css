@@ -122,6 +122,11 @@ html[data-layout='phone'] .drawer-head .icon-round {
   text-overflow: ellipsis;
 }
 
+.capture-ago {
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
 .facts {
   display: flex;
   flex-wrap: wrap;

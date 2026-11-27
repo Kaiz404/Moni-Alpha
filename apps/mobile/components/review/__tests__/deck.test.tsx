@@ -526,6 +526,23 @@ describe('Review deck', () => {
     expect(screen.getByText('2 of 2')).toBeTruthy();
   });
 
+  describe('when it was captured', () => {
+    it('says how long ago an older capture was, beside its date and time', async () => {
+      seed('p1', { notification_received_at: new Date(Date.now() - 3 * 86_400_000).toISOString() });
+      await show(<ReviewScreen />);
+
+      expect(screen.getByText(/ at .*, 3 days ago$/)).toBeTruthy();
+      expect(screen.getByTestId('review.summary').props.accessibilityLabel).toMatch(/, 3 days ago/);
+    });
+
+    it('says nothing more for a capture from today', async () => {
+      seed('p1', { notification_received_at: new Date().toISOString() });
+      await show(<ReviewScreen />);
+
+      expect(screen.queryByText(/ago/)).toBeNull();
+    });
+  });
+
   describe('the source row pill', () => {
     const filed = (count: number, merchant = 'GRAB') =>
       Object.fromEntries(

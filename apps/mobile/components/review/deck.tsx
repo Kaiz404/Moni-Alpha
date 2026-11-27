@@ -111,6 +111,7 @@ import {
   type FinanceCategory,
   type FinanceWallet,
   dateLabel,
+  daysAgo,
   formatMoney,
   formatSignedMoney,
 } from '@repo/core';
@@ -923,11 +924,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       const walletId = walletIdOf(proposal, own, wallets);
       const destinationId =
         own.transferToWalletId !== undefined ? own.transferToWalletId : proposal.transferToWalletId;
+      const capturedAt = proposal.notificationReceivedAt ?? proposal.createdAt;
       return {
         proposal: proposal,
         type,
         sourceLabel: captureSourceLabel(proposal),
-        time: captureTime(proposal.notificationReceivedAt ?? proposal.createdAt),
+        time: captureTime(capturedAt),
+        ago: daysAgo(deviceCalendar.dayKey(capturedAt), deviceCalendar.dayKey(new Date())),
         status: reviewStatus({
           hasWallet: !!walletId,
           paired: !!proposal.pairing,
