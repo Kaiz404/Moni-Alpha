@@ -432,22 +432,53 @@ export async function verifyBudgetDebts(t) {
     const back = await until('debt-activities', (rows) => !rows.some((row) => row.debt_id === target.id && row.kind === 'write_off'));
     check('Ctrl Z takes the write-off back, on screen and in the dev project', back.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before));
 
+    /** The target's debt, its entries and their wallet rows as the dev project holds them now, as ids. */
+    const heldRows = () => {
+      const entries = query('debt-activities').filter((row) => row.debt_id === target.id).map((row) => row.id);
+      const mirrors = query('debt-mirrors').filter((row) => entries.includes(row.debt_activity_id)).map((row) => row.id);
+      return { debt: query('debts').some((row) => row.id === target.id), entries: entries.sort(), mirrors: mirrors.sort() };
+    };
+    const held = heldRows();
+    check('the debt to delete has entries and wallet rows in the dev project', held.debt && held.entries.length > 0 && held.mirrors.length > 0, held);
+    const settles = async (test) => {
+      const end = Date.now() + 20_000;
+      let rows = heldRows();
+      while (!test(rows) && Date.now() < end) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        rows = heldRows();
+      }
+      return { ok: test(rows), rows };
+    };
+    const allGone = (rows) => !rows.debt && rows.entries.length === 0 && rows.mirrors.length === 0;
+    const allBack = (rows) => JSON.stringify(rows) === JSON.stringify(held);
     const deletes = d.getByRole('alertdialog', { name: /^Delete the debt with .+\?$/ });
-    await d.locator('.side-panel-head .pane-delete').click();
-    await deletes.waitFor({ timeout: 5000 }).catch(() => {});
+    const deleted = d.getByRole('status').filter({ hasText: /^Deleted the debt with / });
+    const rowBack = d.locator(`.people-row[data-debt="${target.id}"]`);
+    const deleteTarget = async () => {
+      if (!d.url().includes(`person=${target.id}`)) await rowBack.locator('.row-name').click();
+      await d.locator('.side-panel-head .pane-delete').click();
+      await deletes.waitFor({ timeout: 5000 }).catch(() => {});
+    };
+    await deleteTarget();
     check('Delete sits top right and asks first, saying how it differs from Write off', (await deletes.isVisible()) && (await deletes.getByText('Its history and wallet entries go too, where Write off would keep them.').isVisible()));
     await shot(d, 'debts-1440-light-delete');
     await deletes.getByRole('button', { name: 'Delete' }).click();
-    const deleted = d.getByRole('status').filter({ hasText: /^Deleted the debt with / });
     await deleted.waitFor({ timeout: 5000 }).catch(() => {});
-    const goneDebt = await until('debts', (rows) => !rows.some((row) => row.id === target.id));
-    const goneEntries = await until('debt-activities', (rows) => !rows.some((row) => row.debt_id === target.id));
-    check('Delete removes the debt and every entry on it, in the dev project, and closes the pane', goneDebt.ok && goneEntries.ok && !d.url().includes(`person=${target.id}`), d.url());
+    const removed = await settles(allGone);
+    check('Delete removes the debt, every entry on it and their wallet rows, in the dev project, and closes the pane', removed.ok && !d.url().includes(`person=${target.id}`), { rows: removed.rows, url: d.url() });
     await deleted.hover().catch(() => {});
     await d.keyboard.press('Control+z');
-    const restored = await until('debts', (rows) => rows.some((row) => row.id === target.id));
-    const restoredEntries = await until('debt-activities', (rows) => rows.some((row) => row.debt_id === target.id));
-    check('Ctrl Z brings the debt and its entries back', restored.ok && restoredEntries.ok && (await d.locator(`.people-row[data-debt="${target.id}"]`).count()) === 1);
+    const restored = await settles(allBack);
+    check('Ctrl Z brings the debt, its entries and their wallet rows back', restored.ok && (await rowBack.count()) === 1, restored.rows);
+
+    await deleteTarget();
+    await deletes.getByRole('button', { name: 'Delete' }).click();
+    await deleted.waitFor({ timeout: 5000 }).catch(() => {});
+    await deleted.hover().catch(() => {});
+    const goneAgain = await settles(allGone);
+    await deleted.getByRole('button', { name: 'Undo' }).click();
+    const undone = await settles(allBack);
+    check("the toast's Undo brings the debt, its entries and their wallet rows back too", goneAgain.ok && undone.ok && (await rowBack.count()) === 1, { gone: goneAgain.rows, back: undone.rows });
   }
 
   await d.keyboard.press('d');
@@ -563,7 +594,8 @@ export async function verifyBudgetDebts(t) {
   );
   await shot(r, 'budget-820-suggest-pick');
   await r.keyboard.press('Escape');
-  check('Esc closes Moni chat without asking Moni', (await chatPane.count()) === 0);
+  await chatPane.waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  check('Esc closes Moni chat without asking Moni', (await chatPane.count()) === 0, r.url());
 
   await open(r, '/debts');
   await ready(r);

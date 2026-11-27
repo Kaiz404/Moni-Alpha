@@ -258,7 +258,7 @@ export const QUERIES = {
       `/rest/v1/proposed_transactions?user_id=eq.${userId}&deleted=eq.false&status=eq.pending&select=id,source_type,merchant,amount,currency,wallet_id,created_at&order=created_at.desc`,
     ),
   debts: (request, userId) =>
-    select(request, `/rest/v1/debts?user_id=eq.${userId}&deleted=eq.false&select=counterparty_name,direction,status,due_date&order=due_date`),
+    select(request, `/rest/v1/debts?user_id=eq.${userId}&deleted=eq.false&select=id,counterparty_name,direction,status,due_date&order=due_date`),
   budgets: (request, userId) =>
     select(request, `/rest/v1/category_budgets?user_id=eq.${userId}&deleted=eq.false&select=amount,currency,categories(name)&order=category_id`),
   proposals: (request, userId) =>
@@ -279,7 +279,9 @@ export const QUERIES = {
       `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&type=eq.expense&select=id,amount,currency,merchant,category_id,wallet_id,analysis_excluded,debt_activity_id,transaction_date,location_latitude,location_longitude,location_name&order=transaction_date.desc`,
     ),
   'debt-activities': (request, userId) =>
-    select(request, `/rest/v1/debt_activities?user_id=eq.${userId}&deleted=eq.false&select=debt_id,kind,amount,activity_date&order=activity_date`),
+    select(request, `/rest/v1/debt_activities?user_id=eq.${userId}&deleted=eq.false&select=id,debt_id,kind,amount,activity_date&order=activity_date`),
+  'debt-mirrors': (request, userId) =>
+    select(request, `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&debt_activity_id=not.is.null&select=id,debt_activity_id&order=id`),
   bills: (request, userId) =>
     select(
       request,

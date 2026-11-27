@@ -13,7 +13,7 @@ The Debts tab, or G then D. D opens Record a debt anywhere on the page.
 - Rows: `.people-row[data-debt]` with `data-state`, cells `[data-col="due|owes-you|you-owe"]`; names are `.row-name .row-text b`. The total is `[data-testid="people-total"]`, the net `[data-testid="net-amount"]` and the tiles `[data-testid="net-owed_to_me|net-i_owe"]`. The pane's balance is `[data-testid="person-balance"]`.
 - Record a repayment: `getByLabel('Amount paid back, in ringgit')`. Record a debt: `getByRole('textbox', { name: 'Who' })` (Who owes who is a radio group with a similar name) and `getByLabel('Amount, in ringgit')`.
 - Keys: J, K, R record a repayment, M remind, D record a debt, Esc closes the form, then the pane.
-- Compare with `seed.mjs --user web --query debts` and `--query debt-activities`.
+- Compare with `seed.mjs --user web --query debts`, `--query debt-activities` and `--query debt-mirrors` (each row carries its `id`, so a check can follow one debt, its entries and their wallet rows).
 
 ## Gotchas
 
