@@ -4,8 +4,8 @@ import { formatMoney } from '../glossary';
 import { merchantKey } from '../read-model/merchants';
 import { compactWalletNames } from '../read-model/transaction-row';
 import type { FinanceCategory, FinanceTransaction, FinanceWallet } from '../read-model/types';
+import { guessCategory } from './category-guess';
 import { resolveOccurredAt } from './occurred-at';
-import { matchRoutine } from './routine';
 
 export type ReadContext = {
   /** Main-currency wallets only: a live capture never lands in another currency. */
@@ -50,27 +50,11 @@ export function itemsLabel(count: number): string {
 }
 
 function categoryFor(extraction: ExtractedTransaction, kind: ReadDraft['kind'], context: ReadContext): string | null {
-  const active = context.categories.filter((category) => category.isActive && category.type === kind);
-  const routine = matchRoutine(
-    {
-      type: kind,
-      currency: context.wallets[0]?.currency ?? '',
-      amountMinor: decimalToMinor(extraction.amount),
-      merchant: extraction.merchant,
-      location: null,
-      sourceApp: null,
-    },
+  return guessCategory(
+    { type: kind, merchant: extraction.merchant, text: extraction.description, sourceApp: null, categoryHint: extraction.categoryHint },
     context.history,
-    new Set(active.map((category) => category.id)),
-  );
-  if (routine.categoryId) return routine.categoryId;
-  const hint = extraction.categoryHint?.trim().toLowerCase();
-  if (!hint) return null;
-  return (
-    active.find((category) => category.name.toLowerCase() === hint)?.id ??
-    active.find((category) => category.name.toLowerCase().includes(hint))?.id ??
-    null
-  );
+    context.categories,
+  ).prefill;
 }
 
 /** The wallet the words named, else the one that paid this shop last, else the default. */

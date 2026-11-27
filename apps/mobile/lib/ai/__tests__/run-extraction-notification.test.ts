@@ -3,6 +3,7 @@ import type { NotificationQueueItem } from '../processing-queue';
 
 const mockExtract = jest.fn(async () => ({ status: 'skipped', reason: 'stub' }));
 const mockWallets = { pulled: true };
+const mockCategories: { list: { id: string; name: string; type: string; isActive: boolean }[] } = { list: [] };
 
 jest.mock('@/lib/ai/client', () => ({
   getAiClient: () => ({ extractFromNotification: mockExtract }),
@@ -32,7 +33,7 @@ jest.mock('@/lib/supabase/wallets', () => ({
     },
   ],
 }));
-jest.mock('@/lib/supabase/categories', () => ({ getCategories: async () => [] }));
+jest.mock('@/lib/supabase/categories', () => ({ getCategories: async () => mockCategories.list }));
 jest.mock('@/lib/supabase/transactions', () => ({
   createTransaction: jest.fn(),
   getTransactions: async () => [],
@@ -70,6 +71,7 @@ function queued(notification: Record<string, unknown>): NotificationQueueItem {
 beforeEach(() => {
   mockExtract.mockClear();
   mockWallets.pulled = true;
+  mockCategories.list = [];
 });
 
 describe('an alert from an app Moni has never heard of', () => {
@@ -127,6 +129,21 @@ describe('an alert from an app Moni has never heard of', () => {
         lockedWalletId: 'w2',
       }),
     ]);
+  });
+
+  it('guesses the category a first visit to an obvious shop gives away', async () => {
+    mockCategories.list = [{ id: 'food', name: 'Food & Dining', type: 'expense', isActive: true }];
+    mockExtract.mockResolvedValueOnce({
+      status: 'ok',
+      extraction: { ...extraction('w2').extraction, merchant: 'KFC', description: 'KFC' },
+    } as never);
+
+    await runExtraction({
+      ...alert('com.example.anybank'),
+      notification: { ...alert('com.example.anybank').notification, text: "You've spent RM25.00 at KFC." },
+    });
+
+    expect(proposal().mock.calls[0]?.[0]).toMatchObject({ categoryId: 'food', status: 'pending' });
   });
 
   it('becomes a proposal on that wallet with no known bank in the table', async () => {
