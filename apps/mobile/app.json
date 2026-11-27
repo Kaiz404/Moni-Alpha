@@ -89,7 +89,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location for transaction tracking."
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location for transaction tracking.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": false
         }
       ],
       [

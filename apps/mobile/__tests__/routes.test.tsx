@@ -111,6 +111,7 @@ jest.mock('expo-location', () => ({
   PermissionStatus: { DENIED: 'denied', GRANTED: 'granted', UNDETERMINED: 'undetermined' },
   getForegroundPermissionsAsync: async () => ({ granted: true, status: 'granted' }),
   requestForegroundPermissionsAsync: async () => ({ granted: true, status: 'granted' }),
+  getBackgroundPermissionsAsync: async () => ({ granted: true, status: 'granted' }),
   getLastKnownPositionAsync: async () => null,
   getCurrentPositionAsync: async () => ({ coords: { latitude: 3.13, longitude: 101.67 } }),
   reverseGeocodeAsync: async () => [],

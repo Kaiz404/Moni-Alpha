@@ -11,9 +11,13 @@ export type LocationSnapshot = {
 export const HEADLESS_LOCATION_TIMEOUT_MS = 3000;
 const LAST_KNOWN_MAX_AGE_MS = 5 * 60_000;
 
+/** With no screen up, Android hands out a position only to an app allowed all the time. */
 async function headlessPosition(): Promise<LocationSnapshot | null> {
-  const permission = await Location.getForegroundPermissionsAsync();
-  if (permission.status !== 'granted') return null;
+  const permission = await Location.getBackgroundPermissionsAsync();
+  if (permission.status !== 'granted') {
+    console.log('[NotifCapture] location skipped: not allowed all the time');
+    return null;
+  }
   const position =
     (await Location.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS })) ??
     (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));

@@ -25,9 +25,16 @@ type Probe = {
 };
 
 const PROBES: Record<Exclude<PhoneAccessId, 'notifications'>, Probe> = {
+  // On only when allowed all the time: alerts arrive while Moni is closed (#126).
   location: {
-    read: Location.getForegroundPermissionsAsync,
-    ask: Location.requestForegroundPermissionsAsync,
+    read: async () => {
+      const foreground = await Location.getForegroundPermissionsAsync();
+      return foreground.granted ? Location.getBackgroundPermissionsAsync() : foreground;
+    },
+    ask: async () => {
+      const foreground = await Location.requestForegroundPermissionsAsync();
+      return foreground.granted ? Location.requestBackgroundPermissionsAsync() : foreground;
+    },
   },
   camera: {
     read: ImagePicker.getCameraPermissionsAsync,

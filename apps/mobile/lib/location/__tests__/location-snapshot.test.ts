@@ -8,6 +8,7 @@ import {
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
   getForegroundPermissionsAsync: jest.fn(),
+  getBackgroundPermissionsAsync: jest.fn(),
   requestForegroundPermissionsAsync: jest.fn(),
   getLastKnownPositionAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
@@ -19,8 +20,12 @@ const coords = (latitude: number, longitude: number) => ({ coords: { latitude, l
 beforeEach(() => {
   jest.useFakeTimers({ now: Date.parse('2026-11-18T08:00:00.000Z') });
   jest.clearAllMocks();
+  jest.spyOn(console, 'log').mockImplementation(() => {});
   jest
     .mocked(Location.getForegroundPermissionsAsync)
+    .mockResolvedValue({ status: 'granted' } as never);
+  jest
+    .mocked(Location.getBackgroundPermissionsAsync)
     .mockResolvedValue({ status: 'granted' } as never);
 });
 
@@ -51,9 +56,22 @@ describe('captureHeadlessLocationSnapshot', () => {
     await expect(snapshot).resolves.toBeNull();
   });
 
+  it('records nothing while Moni is allowed location only when in use', async () => {
+    jest
+      .mocked(Location.getBackgroundPermissionsAsync)
+      .mockResolvedValue({ status: 'denied' } as never);
+    jest.mocked(Location.getLastKnownPositionAsync).mockResolvedValue(coords(3.1, 101.6) as never);
+
+    await expect(captureHeadlessLocationSnapshot()).resolves.toBeNull();
+    expect(Location.getLastKnownPositionAsync).not.toHaveBeenCalled();
+  });
+
   it('records nothing when location access was never given', async () => {
     jest
       .mocked(Location.getForegroundPermissionsAsync)
+      .mockResolvedValue({ status: 'denied' } as never);
+    jest
+      .mocked(Location.getBackgroundPermissionsAsync)
       .mockResolvedValue({ status: 'denied' } as never);
 
     await expect(captureHeadlessLocationSnapshot()).resolves.toBeNull();
