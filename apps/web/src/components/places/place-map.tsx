@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent 
 import { Bubble } from '@/components/ledger/glyph';
 import type { LayoutKind } from '@/lib/layout';
 import {
+  clearOfFloats,
   DEFAULT_LIMITS,
   FIT,
   flingSpeed,
@@ -14,12 +15,14 @@ import {
   panView,
   pinchView,
   pinWidth,
+  pinClear,
   toView,
   viewForPick,
   wheelFactor,
   wheelGlides,
   zoomLimits,
   zoomView,
+  type Float,
   type MapView,
   type ZoomLimits,
 } from '@/lib/places-view';
@@ -33,7 +36,7 @@ const PIN_ROW = 44;
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_SLOP = 4;
 
-/** Room for the controls floating on the map, so no pin sits under them. */
+/** The fit's margin; `clearOfFloats` adds room for the controls floating on the map. */
 function insetsFor(layout: LayoutKind | null): Insets {
   return layout === 'phone' ? { top: 36, right: 64, bottom: 64, left: 64 } : { top: 96, right: 80, bottom: 88, left: 80 };
 }
@@ -142,10 +145,26 @@ export type MapProps = {
 export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hoverId, heat, move, onView, onPick, onHover, onHeat, satellite, onSatellite, emptyLine, locationOff }: MapProps) {
   const [ref, box] = useBox();
   const currency = ledger.currency as CurrencyCode;
-  const frame = useMemo(() => (box ? fitFrame(everywhere, box, insetsFor(layout)) : null), [box, everywhere, layout]);
+  const google = useMapsUsable();
+  const [floats, setFloats] = useState<Float[]>([]);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || !box) return;
+    const map = element.getBoundingClientRect();
+    setFloats(
+      [...element.querySelectorAll(':scope > .map-views, :scope > .map-layer, :scope > .map-zoom')].map((float) => {
+        const rect = float.getBoundingClientRect();
+        return { left: rect.left - map.left, top: rect.top - map.top, right: rect.right - map.left, bottom: rect.bottom - map.top };
+      }),
+    );
+  }, [ref, box, layout, google]);
+  const widest = pinWidth(formatMoney(everywhere.reduce((top, place) => Math.max(top, place.totalMinor), 0), currency, { whole: true }), 1);
+  const frame = useMemo(
+    () => (box ? fitFrame(everywhere, box, clearOfFloats(insetsFor(layout), box, floats, { width: widest, height: PIN_ROW })) : null),
+    [box, everywhere, layout, floats, widest],
+  );
   const fitted = frame?.project;
   const limits: ZoomLimits = frame ? zoomLimits(googleZoom(frame.pxPerLngDegree)) : DEFAULT_LIMITS;
-  const google = useMapsUsable();
   const [dragging, setDragging] = useState(false);
   const [hint, setHint] = useState(false);
   const target = move.view;
@@ -357,8 +376,12 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
           const members = cluster?.members ?? [place];
           const on = members.some((member) => member.id === selectedId);
           const hot = members.some((member) => member.id === hoverId);
-          const shown = lead && (!heat || on || hot);
           const { x, y } = at(lead ? place : (cluster?.lead ?? place));
+          // A pin cut by the map's edge or a control hides, judged where the camera is going so it hides once per move.
+          const goal = fitted ? toView(fitted(place), target, box) : { x, y };
+          const width = widthOf(cluster?.totalMinor ?? place.totalMinor, members.length, Math.max(1, Math.min((cluster?.categories ?? place.categories).length, 3)));
+          const covered = !on && !pinClear(goal, { width, height: PIN_ROW }, box, floats);
+          const shown = lead && !covered && (!heat || on || hot);
           const names = members.map((member) => member.name).join(' and ');
           return (
             <button
@@ -367,6 +390,7 @@ export function PlaceMap({ ledger, layout, everywhere, places, selectedId, hover
               className="map-pin-big"
               data-place={place.id}
               data-shown={shown || undefined}
+              data-clipped={(lead && covered) || undefined}
               data-on={(shown && on) || undefined}
               data-hot={(shown && hot && !on) || undefined}
               data-dim={(shown && selectedId !== null && !on && !hot) || undefined}

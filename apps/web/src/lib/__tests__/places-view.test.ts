@@ -3,6 +3,8 @@ import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 import {
   centreOn,
+  clearOfFloats,
+  pinClear,
   FIT,
   flingSpeed,
   heatSize,
@@ -204,5 +206,46 @@ describe('visitColumns', () => {
 
   it('labels every other day over a week', () => {
     expect(visitColumns(placeDays({ from: '2026-10-08', to: '2026-10-14' }), {}).map((column) => column.tick)).toEqual(['8 Oct', null, '10', null, '12', null, 'Today']);
+  });
+});
+
+describe('clearOfFloats', () => {
+  const base = { top: 36, right: 64, bottom: 64, left: 64 };
+  const pin = { width: 100, height: 44 };
+
+  it("lifts the fit above the phone's row of zoom controls along the foot", () => {
+    const row = { left: 214, top: 240, right: 374, bottom: 284 };
+    expect(clearOfFloats(base, { width: 390, height: 300 }, [row], pin)).toEqual({ ...base, bottom: 82 });
+  });
+
+  it('pushes the fit in from a tall column of controls at the right edge', () => {
+    const column = { left: 1000, top: 400, right: 1084, bottom: 584 };
+    expect(clearOfFloats(base, { width: 1100, height: 600 }, [column], pin)).toEqual({ ...base, right: 150 });
+  });
+
+  it('clears a button in the top corner from the top and leaves a hidden control out', () => {
+    const layer = { left: 330, top: 16, right: 374, bottom: 60 };
+    const hidden = { left: 0, top: 0, right: 0, bottom: 0 };
+    expect(clearOfFloats(base, { width: 390, height: 300 }, [layer, hidden], pin)).toEqual({ ...base, top: 82 });
+  });
+});
+
+describe('pinClear', () => {
+  const box = { width: 390, height: 300 };
+  const row = { left: 214, top: 240, right: 374, bottom: 284 };
+  const pin = { width: 140, height: 44 };
+
+  it('hides a capsule whose edge reaches under a control', () => {
+    expect(pinClear({ x: 250, y: 222 }, pin, box, [row])).toBe(false);
+  });
+
+  it("hides a capsule the map's edge cuts", () => {
+    expect(pinClear({ x: 250, y: 7 }, pin, box, [])).toBe(false);
+    expect(pinClear({ x: 380, y: 150 }, pin, box, [])).toBe(false);
+  });
+
+  it('shows a capsule clear of every edge and control, a hidden control left out', () => {
+    expect(pinClear({ x: 250, y: 210 }, pin, box, [row])).toBe(true);
+    expect(pinClear({ x: 150, y: 150 }, pin, box, [{ left: 0, top: 0, right: 0, bottom: 0 }])).toBe(true);
   });
 });

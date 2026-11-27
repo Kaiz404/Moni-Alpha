@@ -1,5 +1,5 @@
 import { addMinor, type MinorAmount } from '@repo/types';
-import { monthOf, monthShort, placesTotal, sharePercent, shortDate, type Box, type Place, type PlaceDay, type PlaceDayTotal, type PlaceRangeKey, type Point } from '@repo/core';
+import { monthOf, monthShort, placesTotal, sharePercent, shortDate, type Box, type Insets, type Place, type PlaceDay, type PlaceDayTotal, type PlaceRangeKey, type Point } from '@repo/core';
 
 /** Where you spend's state in the URL, so a reload or the 700 crossing keeps it. */
 export type PlacesQuery = {
@@ -138,6 +138,46 @@ export function wheelGlides(deltaY: number, deltaMode: number): boolean {
 /** The view at `zoom` with a fitted point in the middle of the box. */
 export function centreOn(point: Point, zoom: number, box: Box): MapView {
   return clampPan({ zoom, x: -(point.x - box.width / 2) * zoom, y: -(point.y - box.height / 2) * zoom }, box);
+}
+
+/** A control floating on the map, in the map's own pixels. */
+export type Float = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * The fit's insets grown so no pin centre lands where its capsule (`pin` wide and tall) would sit under a
+ * floating control. Each control is cleared along the side that costs the map the smaller share: a wide
+ * row along the foot pushes the pins up, a tall column at the edge pushes them in.
+ */
+export function clearOfFloats(base: Insets, box: Box, floats: readonly Float[], pin: Box): Insets {
+  const insets = { ...base };
+  for (const float of floats) {
+    if (float.right <= float.left || float.bottom <= float.top) continue;
+    const atFoot = float.top + float.bottom > box.height;
+    const atRight = float.left + float.right > box.width;
+    const down = (atFoot ? box.height - float.top : float.bottom) + pin.height / 2;
+    const across = (atRight ? box.width - float.left : float.right) + pin.width / 2;
+    if (down / box.height <= across / box.width) {
+      const side = atFoot ? 'bottom' : 'top';
+      insets[side] = Math.max(insets[side], down);
+    } else {
+      const side = atRight ? 'right' : 'left';
+      insets[side] = Math.max(insets[side], across);
+    }
+  }
+  return insets;
+}
+
+/**
+ * Whether a capsule `pin` wide and tall, centred on `point`, shows whole: inside the map's `box` and
+ * under no floating control, so a finger can take all of it.
+ */
+export function pinClear(point: Point, pin: Box, box: Box, floats: readonly Float[]): boolean {
+  const left = point.x - pin.width / 2;
+  const right = point.x + pin.width / 2;
+  const top = point.y - pin.height / 2;
+  const bottom = point.y + pin.height / 2;
+  if (left < 0 || top < 0 || right > box.width || bottom > box.height) return false;
+  return !floats.some((float) => float.right > float.left && right > float.left && left < float.right && bottom > float.top && top < float.bottom);
 }
 
 /** Whether a screen point sits inside the box less `inset` on every side, where a picked pin can stay put. */

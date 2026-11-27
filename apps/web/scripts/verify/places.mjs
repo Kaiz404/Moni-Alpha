@@ -259,7 +259,8 @@ export async function verifyPlaces(t) {
   await p.keyboard.press('h');
   await p.waitForURL((url) => !url.search.includes('view='));
 
-  const shownAt = () => p.locator('.map-pin-big[data-shown]').count();
+  // A pin the map's edge or a control would cut hides but is still its group's pin.
+  const shownAt = () => p.locator('.map-pin-big[data-shown], .map-pin-big[data-clipped]').count();
   const scale = () => p.locator('.places-map').getAttribute('data-zoom');
   // A picked place may have zoomed the map to part its pin; the map stays there after Esc, as Google's does.
   await p.keyboard.press('f');
