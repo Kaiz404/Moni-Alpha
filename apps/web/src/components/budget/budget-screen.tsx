@@ -22,7 +22,7 @@ import type { MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
 import { MonthField } from '@/components/controls/date-picker';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { Page } from '@/components/shell/page';
 import { useShellApi } from '@/components/shell/shell-context';
 import { showToast } from '@/components/shell/shell-store';
@@ -97,7 +97,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const startEdit = (line: BudgetLine, at: BudgetEdit['at']) => {
     if (!editable) return;
     setTotalDraft(null);
-    // The open slide-over covers the table, and the phone has none, so there the pane edits instead.
+    // The open category edits in its side panel, and the phone has no table cells, so there the pane edits instead.
     const where = phone || selectedId === line.categoryId ? 'pane' : at;
     setEdit({ categoryId: line.categoryId, at: where, draft: wholeText(line.budgetMinor) });
     if (where === 'pane' && selectedId !== line.categoryId) select(line.categoryId);
@@ -326,9 +326,10 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SlideOver
+        <SidePanel
           label="Category"
           name="category"
+          item={selected?.categoryId}
           back="Budget"
           steps={{ noun: 'category', position: `${index + 1} of ${lines.length}`, onMove: move, first: index === 0, last: index === lines.length - 1 }}
           open={Boolean(selected)}
@@ -355,7 +356,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
               onClose={close}
             />
           )}
-        </SlideOver>
+        </SidePanel>
       </div>
     </Page>
   );

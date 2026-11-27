@@ -37,13 +37,14 @@
   padding: 18px 18px 18px 26px;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
 }
 
+/* Beside a side panel the bar drops under the amount rather than run into it. */
 .net-words {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -64,7 +65,8 @@
 }
 
 .net-split {
-  flex: 0 1 520px;
+  flex: 1 1 280px;
+  max-width: 520px;
   min-width: 0;
   display: flex;
   flex-direction: column;

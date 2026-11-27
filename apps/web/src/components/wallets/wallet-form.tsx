@@ -31,7 +31,7 @@ export function typeIcon(type: string): string {
 }
 
 /**
- * V2H-WalletForm in the slide-over: name, type, currency (locked once made), starting balance on a new
+ * V2H-WalletForm in the side panel: name, type, currency (locked once made), starting balance on a new
  * wallet, and colour. Edit wallet shows which banking app's alerts land here; linking one happens on the phone.
  */
 export function WalletForm({

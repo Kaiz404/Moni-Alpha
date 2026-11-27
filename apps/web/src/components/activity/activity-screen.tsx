@@ -44,7 +44,7 @@ import { useLedger } from '@/lib/ledger/use-ledger';
 import { reviewHref } from '@/lib/review-view';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { ResizeHandle } from '@/components/ledger/resize-handle';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { useStepBack } from '@/components/ledger/use-query-param';
 import { FromTo } from '@/components/ledger/from-to';
 import { COLUMN_SPANS, parseColumnWidths, type ColumnWidths, type ResizableColumn } from '@/lib/sizes';
@@ -116,7 +116,7 @@ function writeViews(views: SavedView[]) {
 /**
  * W2-Activity: the running chart, saved views, filters, the table (or the grouped list) with sortable
  * columns, ticks and the Ink bulk bar, a category edited in its cell, menus on right-click and ⋯, 25 rows
- * a page and the transaction in the slide-over. The view lives in the URL; the open row is the path (/activity/<id>).
+ * a page and the transaction in the side panel. The view lives in the URL; the open row is the path (/activity/<id>).
  */
 export function ActivityScreen() {
   const ledger = useLedger();
@@ -783,14 +783,15 @@ export function ActivityScreen() {
           </div>
         )}
       </div>
-      <SlideOver
+      <SidePanel
         label="Transaction"
         name="transaction"
+        item={open?.id}
         back="Activity"
         steps={{ noun: 'transaction', position: openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`, onMove: move, first: openIndex === 0, last: openIndex === all.length - 1 }}
         actions={
           open && open.debtActivityId === null ? (
-            <button type="button" className="icon-round icon-round-line icon-round-key slide-over-step press" aria-label="Delete transaction (Del)" onClick={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}>
+            <button type="button" className="icon-round icon-round-line icon-round-key side-panel-step press" aria-label="Delete transaction (Del)" onClick={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}>
               <Icon name="delete-outline" size={20} />
               <span className="kbd kbd-inline">Del</span>
             </button>
@@ -807,7 +808,7 @@ export function ActivityScreen() {
             onDelete={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}
           />
         )}
-      </SlideOver>
+      </SidePanel>
       {confirming && (
         <ConfirmDelete
           items={confirming.ids.map((id) => items.find((item) => item.id === id)).filter((item): item is Shown => Boolean(item))}

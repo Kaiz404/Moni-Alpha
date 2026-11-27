@@ -319,6 +319,12 @@ html:not([data-layout='phone']) .shell-main:has([data-screen='budget']) .page-he
   .budget-row [data-col='avg'] {
     display: none;
   }
+
+  .budgets-card > .card-head {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding-block: 6px;
+  }
 }
 
 .grid-section {

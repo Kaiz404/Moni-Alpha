@@ -19,6 +19,11 @@ html[data-layout='rail'] .shell[data-pane='chat'] .shell-main {
   padding-right: calc(var(--pane-width) + 24px + 12px);
 }
 
+/* The right slot's other filler: a side panel (side-panel.tsx, #150) narrows the page the same way. */
+html:is([data-layout='sidebar'], [data-layout='rail']) .shell:not([data-pane='chat']):has(.side-panel[data-open]) .shell-main {
+  padding-right: calc(var(--side-panel-shown) + 24px + 12px);
+}
+
 .shell {
   --pane-width: min(var(--chat-pane-width, 420px), max(50vw, 420px));
 }
@@ -312,10 +317,27 @@ html[data-nav-swap] .shell-main {
 /* ---------- page head and body (desktop) ---------- */
 
 .page-head {
+  container: page-head / inline-size;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px 24px;
+}
+
+/* A page narrowed by Moni chat or a side panel keeps only the command field's cat and key cap. */
+@container page-head (max-width: 640px) {
+  html[data-layout] .page-head .cmd-field {
+    width: auto;
+  }
+
+  .cmd-field-text {
+    display: none;
+  }
+
+  .page-actions {
+    flex-wrap: wrap;
+  }
 }
 
 .page-title {

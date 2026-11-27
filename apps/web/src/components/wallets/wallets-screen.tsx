@@ -5,7 +5,7 @@ import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
 import { commit, planContext } from '@/lib/ledger/commit';
@@ -200,9 +200,9 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
             <Glyph name="chevron-right" size={20} />
           </button>
         </div>
-        <SlideOver name="wallet" label="New wallet" back="Wallets" open={adding} onClose={close}>
+        <SidePanel name="wallet" label="New wallet" back="Wallets" open={adding} onClose={close}>
           {adding && <WalletForm editing={false} draft={draft} onDraft={setDraft} onSave={save} onClose={close} />}
-        </SlideOver>
+        </SidePanel>
       </div>
     </Frame>
   );

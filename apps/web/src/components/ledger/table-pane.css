@@ -1,5 +1,5 @@
 /* Budget and Debts (W2-Budget, W2-Debts): the tables and the detail pane's forms, on top of ledger.css's
-   cards and rows. The pane itself is slide-over.tsx. */
+   cards and rows. The pane itself is side-panel.tsx. */
 
 .ledger {
   flex: 1 1 auto;
@@ -276,7 +276,7 @@ html[data-layout='phone'] .ledger-main {
   text-overflow: ellipsis;
 }
 
-/* ---------- the detail pane's parts (slide-over.tsx is the pane) ---------- */
+/* ---------- the detail pane's parts (side-panel.tsx is the pane) ---------- */
 
 .detail-body {
   display: flex;

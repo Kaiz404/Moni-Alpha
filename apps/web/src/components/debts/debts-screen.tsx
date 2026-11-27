@@ -27,7 +27,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Check, FilterChip } from '@/components/activity/filters';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
 import {
@@ -307,9 +307,10 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SlideOver
+        <SidePanel
           label={recording ? 'Record a debt' : 'Debt'}
           name="person"
+          item={recording ? 'new' : selected?.debt.id}
           back="Debts"
           steps={selected ? { noun: 'debt', position: index >= 0 ? `${index + 1} of ${order.length}` : '', onMove: move, first: index <= 0, last: index === order.length - 1 } : undefined}
           actions={
@@ -362,7 +363,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onClose={close}
             />
           ) : null}
-        </SlideOver>
+        </SidePanel>
       </div>
       {writingOff && (
         <ConfirmDialog

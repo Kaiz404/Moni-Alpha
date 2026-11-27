@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-The running chart (this month against last month dashed, the budget line, Money in), saved views (All, To check, Auto-added, and views saved from the current filters), filters (Dates, Type, Wallets, Category, Source, Amount, a search chip, Clear filters), Table with sortable columns or List grouped by day, checkboxes and the Ink bulk bar (Category, Wallet, Export CSV, Delete), a category edited in its cell (Enter saves, Tab moves to the next row, Esc cancels), right-click and ⋯ row menus, 25 rows a page, and the transaction in the slide-over with chip popovers, in-place merchant, amount and note, and Delete. The rail with one column shows the grouped list and slides the pane over a scrim; the phone layout has the To review pill, a search field, the type chips, and the detail as a pushed page.
+The running chart (this month against last month dashed, the budget line, Money in), saved views (All, To check, Auto-added, and views saved from the current filters), filters (Dates, Type, Wallets, Category, Source, Amount, a search chip, Clear filters), Table with sortable columns or List grouped by day, checkboxes and the Ink bulk bar (Category, Wallet, Export CSV, Delete), a category edited in its cell (Enter saves, Tab moves to the next row, Esc cancels), right-click and ⋯ row menus, 25 rows a page, and the transaction in the side panel beside the table (another row swaps it in place) with chip popovers, in-place merchant, amount and note, and Delete. The rail with one column shows the grouped list and slides the pane over a scrim; the phone layout has the To review pill, a search field, the type chips, and the detail as a pushed page.
 
 ## How to get to it (user POV)
 

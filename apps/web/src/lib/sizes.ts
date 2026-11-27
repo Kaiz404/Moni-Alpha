@@ -1,18 +1,18 @@
 /**
  * The seams a viewer can drag (#95): each pane's width and the Activity table's columns. A size is
- * kept per browser, clamped to its span, and the default comes back on a double click. A slide-over
+ * kept per browser, clamped to its span, and the default comes back on a double click. A side-panel
  * opens at about two thirds of a 1440 window (#106); its CSS keeps 240 of the page in view on narrower ones.
  */
 export type Span = { initial: number; min: number; max: number };
 
-const DETAIL: Span = { initial: 960, min: 560, max: 1600 };
+const DETAIL: Span = { initial: 560, min: 400, max: 1200 };
 
 export const PANE_SPANS = {
   transaction: DETAIL,
   category: DETAIL,
   person: DETAIL,
-  review: DETAIL,
-  wallet: { initial: 560, min: 440, max: 1600 },
+  review: { initial: 640, min: 440, max: 1200 },
+  wallet: { initial: 480, min: 400, max: 1200 },
   chat: { initial: 420, min: 360, max: 720 },
 } as const satisfies Record<string, Span>;
 

@@ -28,7 +28,7 @@ export function useQueryParams(): [URLSearchParams, (patch: Record<string, strin
 }
 
 /**
- * How a slide-over closes (#106). Opening one from the page pushes the address, so Back closes it; closing
+ * How a side panel closes (#106). Opening one from the page pushes the address, so Back closes it; closing
  * one this tab opened steps back the same way, so Back after it leaves the page. One a link opened closes in place.
  */
 export function useStepBack(open: boolean, close: () => void): () => void {

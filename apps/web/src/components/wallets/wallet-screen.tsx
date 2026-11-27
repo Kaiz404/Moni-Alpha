@@ -22,7 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { FromTo } from '@/components/ledger/from-to';
 import { TxnRow } from '@/components/ledger/txn-row';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
@@ -280,9 +280,9 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
             )}
           </section>
         </div>
-        <SlideOver name="wallet" label="Edit wallet" back={wallet.name} open={editing} onClose={close}>
+        <SidePanel name="wallet" label="Edit wallet" back={wallet.name} open={editing} onClose={close}>
           {editing && <WalletForm editing draft={draft} onDraft={setDraft} onSave={saveEdit} onClose={close} alertsFrom={alertsFrom} />}
-        </SlideOver>
+        </SidePanel>
       </div>
       {confirming && <ConfirmDeleteWallet name={wallet.name} count={deleteCount} onCancel={() => setConfirming(false)} onDelete={remove} />}
     </Frame>

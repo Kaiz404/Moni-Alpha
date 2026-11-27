@@ -52,6 +52,15 @@ export const CONTENT_LEFT: Record<LayoutKind, number> = {
 
 export const LAYOUT_KINDS = Object.keys(LAYOUT_QUERIES) as LayoutKind[];
 
+/**
+ * Whether the shell's right slot (Moni chat, or a side panel) sits beside the page, which narrows to make
+ * room (#150). On the one-column rail it covers the page with a scrim, and on the phone it is the pushed
+ * page. `side-panel.css` and `shell.css` select the same layouts.
+ */
+export function panelBesidePage(kind: LayoutKind): boolean {
+  return kind === 'sidebar' || kind === 'rail';
+}
+
 function shows(kind: LayoutKind, root: string): string {
   return (
     `${root}{--layout:${kind};--content-left:${CONTENT_LEFT[kind]}px}` +

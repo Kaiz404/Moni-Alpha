@@ -17,7 +17,7 @@ import {
 } from '@repo/core';
 import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
-import { SlideOver } from '@/components/ledger/slide-over';
+import { SidePanel } from '@/components/ledger/side-panel';
 import { useQueryParams, useStepBack } from '@/components/ledger/use-query-param';
 import { showToast } from '@/components/shell/shell-store';
 import { applyPlan, commit, reviewContext, reviewView } from '@/lib/ledger/commit';
@@ -46,7 +46,7 @@ function isLive(id: string): boolean {
 }
 
 /**
- * Review on the web (W2-Review on W2-Home, #104): Home's review card opens it in the slide-over (#106). `?review=` says what it shows, so the palette, G R, chat and
+ * Review on the web (W2-Review on W2-Home, #104): Home's review card opens it in the side panel (#106). `?review=` says what it shows, so the palette, G R, chat and
  * Budget's rows land on it. On the phone layout it is the pushed Review page, one capture at a time.
  */
 export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
@@ -57,7 +57,7 @@ export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
   const [similar, setSimilar] = useState<Record<string, boolean>>({});
   const close = useStepBack(view !== null, () => setParams({ review: null, capture: null }));
   return (
-    <SlideOver
+    <SidePanel
       label="Review"
       name="review"
       back={view === 'recent' ? 'Review' : 'Home'}
@@ -78,7 +78,7 @@ export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
           setSimilar={setSimilar}
         />
       )}
-    </SlideOver>
+    </SidePanel>
   );
 }
 

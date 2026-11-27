@@ -409,6 +409,9 @@
 }
 
 .td-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 14px;
   color: var(--color-ink-2);
   white-space: nowrap;
@@ -559,20 +562,37 @@ html[data-layout='rail'] .shell[data-pane='chat'] .activity-days {
   display: block !important;
 }
 
-/* Moni chat, docked, leaves the rail too narrow for the table and the sidebar
-   without room for Source. */
+/* Moni chat, docked, leaves the rail too narrow for the table. */
 html[data-layout='rail'] .shell[data-pane='chat'] .activity-table,
 html[data-layout='rail'] .shell[data-pane='chat'] .toggle-lg {
   display: none !important;
 }
 
-html[data-layout='sidebar'] .shell[data-pane='chat'] .activity-table {
-  --cols: 40px min(var(--col-date, 84px), 14%) minmax(0, 1fr) min(var(--col-category, 140px), 24%) min(var(--col-wallet, 108px), 20%)
-    min(var(--col-amount, 96px), 16%) 34px;
+/* The table fits the width its card has beside Moni chat or a side panel (#150): Source goes first, then
+   Wallet, both of which the open transaction's panel shows. */
+.activity-list-card {
+  container: transactions / inline-size;
 }
 
-html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
-  display: none;
+@container transactions (max-width: 860px) {
+  .activity-table {
+    --cols: 40px min(var(--col-date, 84px), 14%) minmax(0, 1fr) min(var(--col-category, 140px), 24%) min(var(--col-wallet, 108px), 20%)
+      min(var(--col-amount, 96px), 16%) 34px;
+  }
+
+  .activity-table .tr > :nth-child(6) {
+    display: none;
+  }
+}
+
+@container transactions (max-width: 640px) {
+  .activity-table {
+    --cols: 40px min(var(--col-date, 84px), 16%) minmax(0, 1fr) min(var(--col-category, 140px), 28%) min(var(--col-amount, 96px), 20%) 34px;
+  }
+
+  .activity-table .tr > :nth-child(5) {
+    display: none;
+  }
 }
 
 .activity-days {

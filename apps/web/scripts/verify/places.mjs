@@ -133,11 +133,11 @@ export async function verifyPlaces(t) {
       const pane = await p.locator('.places-side .side-detail .place-pane h2').textContent();
       const opened = {
         back: await p.getByRole('button', { name: 'Back to all places (Esc)' }).isVisible(),
-        slideOver: await p.locator('aside.slide-over').count(),
+        sidePanel: await p.locator('aside.side-panel').count(),
         mapShown: await p.locator('.places-map').isVisible(),
         list: await p.locator('.places-side .side-places').evaluate((el) => getComputedStyle(el).visibility),
       };
-      check(`${where}: a picked row swaps the side card for its place with ‹ All places, no slide-over, the map still showing`, pane === name && opened.back && opened.slideOver === 0 && opened.mapShown && opened.list === 'hidden', { pane, name, ...opened });
+      check(`${where}: a picked row swaps the side card for its place with ‹ All places, no side panel, the map still showing`, pane === name && opened.back && opened.sidePanel === 0 && opened.mapShown && opened.list === 'hidden', { pane, name, ...opened });
       await shot(p, `places-${size.width}-${theme}-pane`);
       if (!phone) {
         await p.locator('section[aria-label="Day by day"]').scrollIntoViewIfNeeded();

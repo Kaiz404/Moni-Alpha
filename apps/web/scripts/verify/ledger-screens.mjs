@@ -227,7 +227,7 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('j');
   await a.waitForURL(/\/activity\/[0-9a-f-]{36}/).catch(() => {});
   const firstOpen = a.url();
-  check('J opens the first row in the slide-over, and the row is the path', /\/activity\/[0-9a-f-]{36}/.test(firstOpen) && (await a.getByRole('complementary', { name: 'Transaction' }).isVisible()), firstOpen);
+  check('J opens the first row in the side panel, and the row is the path', /\/activity\/[0-9a-f-]{36}/.test(firstOpen) && (await a.getByRole('complementary', { name: 'Transaction' }).isVisible()), firstOpen);
   await a.keyboard.press('j');
   await a.waitForTimeout(300);
   check('J moves to the next row', a.url() !== firstOpen, a.url());
@@ -240,6 +240,29 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.waitForTimeout(300);
   check('K moves back', a.url() === firstOpen, a.url());
   const paneBox = async () => (await a.getByRole('complementary', { name: 'Transaction' }).boundingBox()) ?? { x: 0, width: 0 };
+  // Row A, then row B with the panel open: the same panel swaps in place beside the table, which stays live.
+  await a.locator('aside.side-panel').evaluate((el) => (el.dataset.verifyMark = 'first'));
+  const tableRows = a.locator('.activity [role="row"][data-row-id]').filter({ visible: true });
+  const pageBefore = await a.locator('.activity').boundingBox();
+  await tableRows.nth(3).click({ position: { x: 100, y: 12 } });
+  await a.waitForURL((url) => url.href !== firstOpen).catch(() => {});
+  await a.waitForTimeout(500);
+  const swapped = {
+    sameAside: (await a.locator('aside.side-panel[data-verify-mark="first"]').count()) === 1,
+    picked: (await tableRows.nth(3).getAttribute('aria-selected')) === 'true',
+    pathIsRow: new URL(a.url()).pathname === `/activity/${await tableRows.nth(3).getAttribute('data-row-id')}`,
+    pageSteady: JSON.stringify(pageBefore) === JSON.stringify(await a.locator('.activity').boundingBox()),
+    besidePane: ((await a.locator('.activity').boundingBox())?.x ?? 0) + ((await a.locator('.activity').boundingBox())?.width ?? 0) <= (await paneBox()).x,
+    scrim: await a.locator('.side-panel-scrim[data-open]').isVisible(),
+    inert: await a.evaluate(() => document.querySelectorAll('[inert]').length),
+  };
+  check(
+    'with the panel open a click on another row swaps it in place: the same panel, the table beside it, live and unmoved, no scrim',
+    swapped.sameAside && swapped.picked && swapped.pathIsRow && swapped.pageSteady && swapped.besidePane && !swapped.scrim && swapped.inert === 0,
+    swapped,
+  );
+  await a.locator(`.activity [data-row-id="${new URL(firstOpen).pathname.split('/').pop()}"]`).filter({ visible: true }).click({ position: { x: 100, y: 12 } });
+  await a.waitForURL(firstOpen).catch(() => {});
   const paneSeam = a.getByRole('separator', { name: 'Resize the transaction pane' });
   const paneBefore = await paneBox();
   await paneSeam.focus();
@@ -248,14 +271,14 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.waitForTimeout(500);
   const paneWider = await paneBox();
   check(
-    'the slide-over opens 960 wide over the page with a scrim, and its left edge takes the arrows: two presses make it 32 wider',
-    Math.round(paneBefore.width) === 960 && Math.round(paneWider.width - paneBefore.width) === 32 && (await a.locator('.slide-over-scrim[data-open]').isVisible()),
+    'the side panel opens 560 wide beside the page with no scrim, and its left edge takes the arrows: two presses make it 32 wider',
+    Math.round(paneBefore.width) === 560 && Math.round(paneWider.width - paneBefore.width) === 32 && !(await a.locator('.side-panel-scrim[data-open]').isVisible()),
     { paneBefore, paneWider },
   );
   check('its top left says ‹ Activity', await a.getByRole('button', { name: 'Back to Activity (Esc)' }).isVisible());
   await paneSeam.press('Enter');
   await a.waitForTimeout(500);
-  check('Enter on the edge puts the slide-over back to 960', Math.round((await paneBox()).width) === 960, await paneBox());
+  check('Enter on the edge puts the side panel back to 560', Math.round((await paneBox()).width) === 560, await paneBox());
   // Stored wider than the window allows: the edge reads and drags from the width that shows.
   await paneSeam.press('End');
   await a.setViewportSize({ width: 1380, height: 900 });
@@ -269,7 +292,7 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.mouse.up();
   await a.waitForTimeout(500);
   const narrower = Math.round((await paneBox()).width);
-  check('a slide-over stored past 240 short of the window reads the width that shows and the first 20 px of drag narrow it', capped === 1140 && now === 1140 && narrower === 1120, { capped, now, narrower });
+  check('a side panel stored wider than leaves 520 of the page reads the width that shows and the first 20 px of drag narrow it', capped === 540 && now === 540 && narrower === 520, { capped, now, narrower });
   await paneSeam.press('Enter');
   await a.setViewportSize({ width: 1440, height: 900 });
   await a.waitForTimeout(500);
@@ -309,13 +332,14 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
     const box = bar.getBoundingClientRect();
     return !bar.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
   });
-  check('X ticks the open row and J moves on, two counted, with the Ink bulk bar waiting under the scrim', /^2 selected/.test((await a.locator('.bulk-slot .bulk-count').textContent()) ?? '') && bulkUnder === true, bulkUnder);
+  check('X ticks the open row and J moves on, two counted, with the Ink bulk bar on the page beside the panel', /^2 selected/.test((await a.locator('.bulk-slot .bulk-count').textContent()) ?? '') && bulkUnder === false, bulkUnder);
   await a.keyboard.press('Escape');
   check('Esc clears the ticks first', (await a.locator('.bulk-slot .bulk-count').count()) === 0);
   await a.keyboard.press('Escape');
   await a.waitForURL((url) => url.pathname === '/activity').catch(() => {});
-  check('then Esc closes the slide-over, back on the page as it was', new URL(a.url()).pathname === '/activity', a.url());
-  await a.locator('aside.slide-over').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  check('then Esc closes the side panel, back on the page as it was', new URL(a.url()).pathname === '/activity', a.url());
+  await a.locator('aside.side-panel').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  await settle(a);
 
   const placed = (menu) =>
     menu.evaluate((el) => {

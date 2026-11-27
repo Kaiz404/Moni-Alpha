@@ -20,7 +20,7 @@ import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/l
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
 /**
- * A transaction in the slide-over (W2-Activity, #106): J and K move, each value is a chip with its popover, merchant
+ * A transaction in the side panel (W2-Activity, #106): J and K move, each value is a chip with its popover, merchant
  * and amount edit in place, Delete is the trash at the top right. In the phone layout it is the pushed Transaction page.
  */
 export function DetailPane({
