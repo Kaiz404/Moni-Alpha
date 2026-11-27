@@ -26,6 +26,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | safe to spend a day | What's left ÷ days left in the month ("RM443 left for 18 days, RM24 a day"). |
 | even pace | The month's budget ÷ days in the month ("Even pace RM58"). "a day" may follow only "even pace". |
 | bills | Recurring bills still due this month. Debts are not bills. |
+| Make it a bill | A transaction's action that opens New bill filled from that payment (#136). |
 | bills and RM40 to Mei | The label when a total includes money owed to a person as well as bills. |
 | Net worth | The sum of wallets in the main currency only. |
 | Compact wallet name | Rows, transfer meta, chips and picker fields drop a trailing account word: "Maybank Savings" reads "Maybank". Wallet lists, wallet pages, the choices in a picker, sentences a board writes in full, and check-in keep the full name. So does any wallet whose compact name another of the user's wallets shares. |

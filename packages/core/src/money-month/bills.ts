@@ -5,6 +5,8 @@ import {
   type Calendar,
   dayFromNumber,
   dayNumber,
+  dayOfMonth,
+  type DayKey,
   firstDayOf,
   monthOf,
   shiftMonth,
@@ -146,4 +148,53 @@ export function selectBillsAhead(
     ...selectUpcomingBills(now, transactions, overrides, calendar),
     ...selectUpcomingBills(nextMonth, transactions, overrides, calendar),
   ];
+}
+
+/** What a payment's page says about bills (#136): it is one, or it can become one. */
+export type PaymentBill =
+  | { kind: 'bill'; seriesKey: string; once: boolean }
+  /** `likely` when it looks like a bill, so the page shows the offer and not only its menus. */
+  | { kind: 'offer'; seriesKey: string; likely: boolean };
+
+const BILL_CATEGORY = /\b(bills?|utilit|subscri|internet|phone|mobile|insurance|rent|electric|water)/i;
+/** A payment to the same merchant this many days before or after reads as a monthly charge. */
+const MONTH_APART = { min: 27, max: 34 };
+
+/**
+ * Whether `payment` is already one of this month's bills, or could become one. Only an expense with
+ * a merchant can, since a bill is a series of one merchant's charges.
+ */
+export function paymentBill(
+  payment: FactsTransaction,
+  transactions: readonly FactsTransaction[],
+  overrides: readonly RecurringOverride[],
+  now: Date,
+  calendar: Calendar,
+  categoryName: string | null,
+): PaymentBill | null {
+  if (payment.type !== 'expense' || !countsAsCashFlow(payment)) return null;
+  const key = seriesKey(payment);
+  if (!key) return null;
+  if (selectUpcomingBills(now, transactions, overrides, calendar).some((bill) => bill.seriesKey === key)) {
+    const override = overrides.find((each) => each.seriesKey === key);
+    return { kind: 'bill', seriesKey: key, once: !!override?.dueOnce };
+  }
+  const day = calendar.dayNumber(payment.transactionDate);
+  const monthApart = transactions.some((tx) => {
+    if (!countsAsCashFlow(tx) || seriesKey(tx) !== key) return false;
+    const gap = Math.abs(calendar.dayNumber(tx.transactionDate) - day);
+    return gap >= MONTH_APART.min && gap <= MONTH_APART.max;
+  });
+  return {
+    kind: 'offer',
+    seriesKey: key,
+    likely: monthApart || (!!categoryName && BILL_CATEGORY.test(categoryName)),
+  };
+}
+
+/** A bill made from a payment is due on the payment's day of the month, next after it and today. */
+export function billDueFrom(payment: DayKey, today: DayKey): DayKey {
+  const day = dayOfMonth(payment);
+  const thisMonth = addMonths(today, 0, day);
+  return thisMonth <= payment || thisMonth < today ? addMonths(today, 1, day) : thisMonth;
 }

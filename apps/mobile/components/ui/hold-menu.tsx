@@ -155,7 +155,7 @@ export function useHold(
   };
 }
 
-export type HoldAction = 'editCategory' | 'changeWallet' | 'delete';
+export type HoldAction = 'editCategory' | 'changeWallet' | 'makeBill' | 'delete';
 
 const ITEMS: {
   action: HoldAction;
@@ -172,11 +172,14 @@ const ITEMS: {
     label: 'Change wallet',
     icon: 'wallet-outline',
   },
+  { action: 'makeBill', label: 'Make it a bill', icon: 'repeat' },
   { action: 'delete', label: 'Delete', icon: 'trash-can-outline' },
 ];
 
 const MENU_WIDTH = 220;
-const MENU_HEIGHT = ITEMS.length * 44;
+const ROW_HEIGHT = 44;
+/** Every row but Make it a bill, which shows only on a payment that can become one. */
+const DEFAULT_ACTIONS: readonly HoldAction[] = ['editCategory', 'changeWallet', 'delete'];
 /** V2A-ActivityMenu: the menu keeps the screen's 20 sides and tucks 10 under the lifted row. */
 const EDGE = 20;
 const OVERLAP = 10;
@@ -194,6 +197,7 @@ type HoldMenuProps = {
   anchor: HoldAnchor | null;
   liftedRow: ReactNode;
   rowTitle: string;
+  actions?: readonly HoldAction[];
   onAction: (action: HoldAction) => void;
   onClose: () => void;
 };
@@ -258,9 +262,12 @@ function HoldMenuLayer({
   anchor,
   liftedRow,
   rowTitle,
+  actions = DEFAULT_ACTIONS,
   onAction,
   onClose,
 }: HoldMenuProps & { anchor: HoldAnchor }) {
+  const items = ITEMS.filter((item) => actions.includes(item.action));
+  const menuHeight = items.length * ROW_HEIGHT;
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
@@ -283,10 +290,10 @@ function HoldMenuLayer({
   );
   const below = frame.y + frame.height - OVERLAP;
   const fitsBelow =
-    below + MENU_HEIGHT <= window.height - insets.bottom - EDGE;
+    below + menuHeight <= window.height - insets.bottom - EDGE;
   const top = fitsBelow
     ? below
-    : Math.max(frame.y + OVERLAP - MENU_HEIGHT, insets.top + EDGE);
+    : Math.max(frame.y + OVERLAP - menuHeight, insets.top + EDGE);
 
   const scrimStyle = useAnimatedStyle(() => ({
     opacity: Math.min(shown.get(), 1),
@@ -339,7 +346,7 @@ function HoldMenuLayer({
             left,
             top,
             width: MENU_WIDTH,
-            transformOrigin: `${anchor.x - left}px ${fitsBelow ? 0 : MENU_HEIGHT}px`,
+            transformOrigin: `${anchor.x - left}px ${fitsBelow ? 0 : menuHeight}px`,
           },
           LIFT_SHADOW,
           menuStyle,
@@ -347,7 +354,7 @@ function HoldMenuLayer({
       >
         <View className="overflow-hidden rounded-tile">
           <PressRows>
-            {ITEMS.map((item) => {
+            {items.map((item) => {
               const destructive = item.action === 'delete';
               return (
                 <Press

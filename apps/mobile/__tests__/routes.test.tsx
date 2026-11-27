@@ -146,6 +146,10 @@ jest.mock('react-native-background-actions', () => ({
 }));
 // The scanner is a full-screen native activity: while it is open the page below just waits.
 jest.mock('moni-document-scanner', () => ({ scanDocument: () => new Promise(() => {}) }));
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual<object>('expo-crypto'),
+  randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID(),
+}));
 jest.mock('../modules/moni-android-apps', () => ({
   __esModule: true,
   default: { getInstalledAppsAsync: async () => [] },
@@ -623,6 +627,37 @@ describe('a Budget row opens its payments under Budget', () => {
     expect(screen.getByText('1 code to name')).toBeTruthy();
     expect(screen.getByText(/^\d+ codes? named$/)).toBeTruthy();
     expect(screen.queryByTestId('merchants.month.label')).toBeNull();
+  });
+
+  it('a subscription payment offers Make it a bill, opening the bill form filled from it', async () => {
+    await mount(`/transaction/${id('transaction', 'sample-15')}`, { profile: 'full', theme: 'light' });
+    expect(screen.getByTestId('txn.more')).toBeTruthy();
+    expect(screen.queryByTestId('txn.delete')).toBeNull();
+    expect(text('txn.link.make-bill')).toContain('Make it a bill');
+    await open('txn.more');
+    await open('txn.menu.make-bill');
+    expect(screen.getPathname()).toBe('/bill/new');
+    expect(screen.getByDisplayValue('YouTube Premium')).toBeTruthy();
+    expect(screen.getByText('RM17.90 every month, on the due date')).toBeTruthy();
+    expect(screen.getByText(/7 Nov/)).toBeTruthy();
+
+    await open('budget.submit');
+    expect(screen.getPathname()).toBe(`/transaction/${id('transaction', 'sample-15')}`);
+    expect(text('txn.link.bill')).toContain('Monthly bill');
+    expect(screen.queryByTestId('txn.more')).toBeNull();
+  });
+
+  it("a bill's payment links to its bill and offers no second one", async () => {
+    await mount(`/transaction/${id('transaction', 'bill-netflix-2026-09')}`, { profile: 'full', theme: 'light' });
+    expect(text('txn.link.bill')).toContain('Monthly bill');
+    expect(screen.queryByTestId('txn.link.make-bill')).toBeNull();
+    expect(screen.getByTestId('txn.delete')).toBeTruthy();
+  });
+
+  it('an income payment has no bill offer', async () => {
+    await mount(`/transaction/${SALARY}`, { profile: 'full', theme: 'light' });
+    expect(screen.queryByTestId('txn.link.make-bill')).toBeNull();
+    expect(screen.queryByTestId('txn.more')).toBeNull();
   });
 
   it("a Calendar day's All link lists that day", async () => {

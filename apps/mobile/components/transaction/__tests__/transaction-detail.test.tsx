@@ -70,6 +70,7 @@ jest.mock('@/lib/supabase/merchant-aliases', () => ({
   nameMerchant: jest.fn(),
 }));
 jest.mock('@/lib/supabase/profile', () => ({ ensureFinanceTimezone: () => new Promise(() => {}) }));
+jest.mock('@/lib/supabase/recurring-overrides', () => ({ listRecurringOverrides: () => [] }));
 jest.mock('@/lib/supabase/transactions', () => ({
   updateTransaction: jest.fn(async () => {}),
   deleteTransaction: jest.fn(),

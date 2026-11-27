@@ -41,20 +41,41 @@ tags:
 - assertVisible: With Mei
 - takeScreenshot: a2-note
 
-# Delete is the header's trash button.
+# Delete sits at the header's right: the ⋯ menu when the payment can become a bill, else the trash.
 - scrollUntilVisible:
     element:
-      id: txn.delete
+      id: txn\.(more|delete)
     direction: UP
-- tapOn:
-    id: txn.delete
-- assertVisible: Delete this transaction?
-- tapOn:
-    id: sheet.cancel
-- assertVisible:
-    id: txn.delete
-- tapOn:
-    id: txn.delete
+- runFlow:
+    when:
+      visible:
+        id: txn.more
+    commands:
+      - tapOn:
+          id: txn.more
+      - assertVisible: Make it a bill
+      - takeScreenshot: a2-menu
+      - tapOn:
+          id: txn.menu.delete
+      - assertVisible: Delete this transaction?
+      - tapOn:
+          id: sheet.cancel
+      - tapOn:
+          id: txn.more
+      - tapOn:
+          id: txn.menu.delete
+- runFlow:
+    when:
+      visible:
+        id: txn.delete
+    commands:
+      - tapOn:
+          id: txn.delete
+      - assertVisible: Delete this transaction?
+      - tapOn:
+          id: sheet.cancel
+      - tapOn:
+          id: txn.delete
 - tapOn:
     id: sheet.confirm
 - assertVisible:

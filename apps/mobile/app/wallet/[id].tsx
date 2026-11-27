@@ -13,7 +13,7 @@ import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { WalletBalanceChart } from '@/components/wallets/wallet-balance-chart';
 import { WalletHero } from '@/components/wallets/wallet-hero';
-import { WalletMenu } from '@/components/wallets/wallet-menu';
+import { HeaderMenu } from '@/components/ui/header-menu';
 import { ReviewStrip } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
@@ -25,6 +25,11 @@ import type { RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
+
+const WALLET_MENU = [
+  { action: 'edit', label: 'Edit wallet', icon: 'cog-outline' },
+  { action: 'delete', label: 'Delete wallet', icon: 'trash-can-outline', destructive: true },
+] as const;
 
 /**
  * V2H-WalletDetail at `/wallet/<id>`, for looking: the balance, the month chart, and the wallet's
@@ -124,15 +129,18 @@ export default function WalletScreen() {
       kind="pushed"
       title="Wallet"
       trailing={
-        <WalletMenu
-          walletName={wallet.name}
-          onEdit={() =>
-            router.push({
-              pathname: '/wallet/edit',
-              params: { id: wallet.id },
-            })
+        <HeaderMenu
+          screen="wallet"
+          accessibilityLabel={`More actions for ${wallet.name}`}
+          items={WALLET_MENU}
+          onAction={(action) =>
+            action === 'edit'
+              ? router.push({
+                  pathname: '/wallet/edit',
+                  params: { id: wallet.id },
+                })
+              : void confirmDeleteWallet(wallet, ownRows)
           }
-          onDelete={() => void confirmDeleteWallet(wallet, ownRows)}
         />
       }
     >

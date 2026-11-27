@@ -28,6 +28,7 @@ import {
   type Tile,
 } from '@/components/transaction/detail-tiles';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { HeaderMenu } from '@/components/ui/header-menu';
 import { NotFound } from '@/components/ui/empty-tile';
 import {
   InPlaceField,
@@ -47,6 +48,7 @@ import {
   nameMerchant,
 } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 import {
   deleteTransaction,
   updateTransaction,
@@ -69,6 +71,7 @@ import {
   formatMoney,
   formatSignedMoney,
   moneySign,
+  paymentBill,
 } from '@repo/core';
 import { BALANCE_CORRECTION_TITLE, guessCategory } from '@repo/core';
 import { pickNewCategory } from '@/lib/categories/new-category';
@@ -136,6 +139,11 @@ export default function TransactionDetailScreen() {
   );
 }
 
+const BILL_MENU = [
+  { action: 'makeBill', label: 'Make it a bill', icon: 'repeat' },
+  { action: 'delete', label: 'Delete', icon: 'trash-can-outline', destructive: true },
+] as const;
+
 function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   const { user } = useAuth();
   const tokens = useThemeTokens();
@@ -149,6 +157,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   const raw = useValue(
     () => transactionTable$[tx.id].get() as RawRow | undefined,
   );
+  const overrides = useValue(() => (userId ? listRecurringOverrides(userId) : []));
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
 
@@ -241,6 +250,11 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     [all, tx.id, tx.currency, tx.locationLatitude],
   );
   const label = place ?? placeLabel(tx.locationName);
+  const bill = useMemo(
+    () => paymentBill(tx, all, overrides, new Date(), deviceCalendar, category?.name ?? null),
+    [tx, all, overrides, category?.name],
+  );
+  const makeBill = () => router.push({ pathname: '/bill/new', params: { from: tx.id } });
   const receipt = useReceiptLink(
     tx.id,
     userId,
@@ -454,6 +468,28 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         ]
       : []),
     receipt,
+    ...(bill?.kind === 'bill'
+      ? [
+          {
+            name: 'bill',
+            title: bill.once ? 'One-time bill' : 'Monthly bill',
+            icon: 'repeat',
+            trailing: 'chevron-right',
+            onPress: () =>
+              router.push({ pathname: '/bill/[seriesKey]', params: { seriesKey: bill.seriesKey } }),
+          } satisfies DetailLink,
+        ]
+      : bill?.likely
+        ? [
+            {
+              name: 'make-bill',
+              title: 'Make it a bill',
+              icon: 'repeat',
+              trailing: 'chevron-right',
+              onPress: makeBill,
+            } satisfies DetailLink,
+          ]
+        : []),
     ...(sameMerchant.length >= 2
       ? [
           {
@@ -521,12 +557,21 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       kind="pushed"
       title="Transaction"
       trailing={
-        <HeaderIconButton
-          testID={tid('txn', 'delete')}
-          icon="trash-can-outline"
-          accessibilityLabel="Delete transaction"
-          onPress={() => void remove()}
-        />
+        bill?.kind === 'offer' ? (
+          <HeaderMenu
+            screen="txn"
+            accessibilityLabel="More actions for this transaction"
+            items={BILL_MENU}
+            onAction={(action) => (action === 'makeBill' ? makeBill() : void remove())}
+          />
+        ) : (
+          <HeaderIconButton
+            testID={tid('txn', 'delete')}
+            icon="trash-can-outline"
+            accessibilityLabel="Delete transaction"
+            onPress={() => void remove()}
+          />
+        )
       }
     >
       <InPlaceGroup>

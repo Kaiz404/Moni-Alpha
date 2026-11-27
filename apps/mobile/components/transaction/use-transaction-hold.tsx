@@ -1,24 +1,27 @@
 import { useValue } from '@legendapp/state/react';
+import { router } from 'expo-router';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert } from 'react-native';
 
 import { HoldMenu, type HoldAction, type HoldAnchor } from '@/components/ui/hold-menu';
 import { rowAmount, rowMeta, TransactionRowBody } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
-import { budgetProgress$, categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
+import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 import { deleteTransaction, updateTransaction } from '@/lib/supabase/transactions';
 import type { Screen } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
-import { type FinanceTransaction, dateLabel, formatMoney } from '@repo/core';
+import { type FinanceTransaction, dateLabel, formatMoney, paymentBill } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Held = {
   transaction: FinanceTransaction;
   row: TransactionRowData;
   anchor: HoldAnchor;
+  actions: readonly HoldAction[];
 };
 
 function holdable(transaction: FinanceTransaction) {
@@ -40,6 +43,8 @@ export function useTransactionHold(screen: Screen): {
   const userId = user?.id ?? null;
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
+  const transactions = useValue(transactions$({ userId }));
+  const overrides = useValue(() => (userId ? listRecurringOverrides(userId) : []));
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
   const [held, setHeld] = useState<Held | null>(null);
@@ -115,17 +120,37 @@ export function useTransactionHold(screen: Screen): {
     setHeld(null);
     if (action === 'delete') void remove(transaction, row);
     else if (action === 'editCategory') void editCategory(transaction);
+    else if (action === 'makeBill')
+      router.push({ pathname: '/bill/new', params: { from: transaction.id } });
     else void changeWallet(transaction);
+  };
+
+  const actionsFor = (transaction: FinanceTransaction): readonly HoldAction[] => {
+    const category = categories.find((each) => each.id === transaction.categoryId);
+    const bill = paymentBill(
+      transaction,
+      transactions,
+      overrides,
+      new Date(),
+      deviceCalendar,
+      category?.name ?? null,
+    );
+    return bill?.kind === 'offer'
+      ? ['editCategory', 'changeWallet', 'makeBill', 'delete']
+      : ['editCategory', 'changeWallet', 'delete'];
   };
 
   return {
     holdFor: (transaction, row) =>
-      holdable(transaction) ? (anchor) => setHeld({ transaction, row, anchor }) : undefined,
+      holdable(transaction)
+        ? (anchor) => setHeld({ transaction, row, anchor, actions: actionsFor(transaction) })
+        : undefined,
     menu: (
       <HoldMenu
         screen={screen}
         anchor={held?.anchor ?? null}
         rowTitle={held?.row.title ?? ''}
+        actions={held?.actions}
         liftedRow={
           held ? (
             <TransactionRowBody

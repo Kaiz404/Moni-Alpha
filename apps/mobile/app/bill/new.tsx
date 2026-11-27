@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { useValue } from '@legendapp/state/react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -9,7 +10,10 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
+import { transactionById$ } from '@/lib/finance/selectors';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { readAmount } from '@/lib/amount/amount-input';
 import {
   addBill,
@@ -18,11 +22,16 @@ import {
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import {
+  billDueFrom,
   currencySymbol,
   dateLabel,
   formatMoney,
+  merchantName,
   parseDayKey,
+  seriesKey,
+  type FinanceTransaction,
 } from '@repo/core';
+import { minorToDecimal, type CurrencyCode } from '@repo/types';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Often = 'monthly' | 'once';
@@ -34,14 +43,53 @@ const OFTEN = [
 
 const CHIPS = ['10', '50', '100'];
 
-/** "Add a bill" on the amount page (`V2P-AmountPage`, New bill): new money gets the keypad. */
+type Prefill = {
+  name: string;
+  typed: string;
+  currency: CurrencyCode;
+  due: string;
+  from: { seriesKey: string; walletId: string; categoryId: string | null };
+};
+
+/** A transaction's Make it a bill (#136): its merchant, amount, wallet and category, due on its day. */
+function prefillFrom(tx: FinanceTransaction, name: string): Prefill | null {
+  const key = seriesKey(tx);
+  if (!key || tx.type !== 'expense') return null;
+  return {
+    name: name.slice(0, 30),
+    typed: minorToDecimal(tx.amountMinor),
+    currency: tx.currency,
+    due: billDueFrom(deviceCalendar.dayKey(tx.transactionDate), deviceCalendar.dayKey(new Date())),
+    from: { seriesKey: key, walletId: tx.walletId, categoryId: tx.categoryId },
+  };
+}
+
+/**
+ * "Add a bill" on the amount page (`V2P-AmountPage`, New bill): new money gets the keypad. With
+ * `from`, a transaction's id, the form opens filled from that payment.
+ */
 export default function NewBillScreen() {
-  const currency = useMainCurrency();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { user } = useAuth();
+  const tx = useValue(transactionById$(from ?? ''));
+  const aliases = useValue(() => (user?.id ? listMerchantAliases(user.id) : []));
+  const prefill = tx ? prefillFrom(tx, merchantName(tx.merchant, aliases) ?? tx.merchant ?? '') : null;
+  return (
+    <BillForm
+      key={prefill ? tx?.id : 'new'}
+      prefill={prefill}
+    />
+  );
+}
+
+function BillForm({ prefill }: { prefill: Prefill | null }) {
+  const mainCurrency = useMainCurrency();
+  const currency = prefill?.currency ?? mainCurrency;
   const [often, setOften] = useState<Often>('monthly');
-  const [typed, setTyped] = useState('');
-  const [chipped, setChipped] = useState(false);
-  const [name, setName] = useState('');
-  const [due, setDue] = useState<string | null>(null);
+  const [typed, setTyped] = useState(prefill?.typed ?? '');
+  const [chipped, setChipped] = useState(!!prefill);
+  const [name, setName] = useState(prefill?.name ?? '');
+  const [due, setDue] = useState<string | null>(prefill?.due ?? null);
   const [saving, setSaving] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
 
@@ -67,6 +115,7 @@ export default function NewBillScreen() {
         currency,
         dueDate: due,
         once: often === 'once',
+        from: prefill?.from,
       });
       showToast({ text: `${name.trim()} added to bills` });
       router.back();

@@ -138,7 +138,10 @@ export function billSeriesKey(name: string, currency: CurrencyCode): string | nu
   return merchant ? `${currency}|expense|${merchant}` : null;
 }
 
-/** "Add a bill": a confirmed bill with no payment history yet, due monthly or once. */
+/**
+ * "Add a bill": a confirmed bill, due monthly or once. Made from a payment (#136), it joins that
+ * payment's series, so the payment and later ones from the merchant count against it.
+ */
 export async function addBill(input: {
   name: string;
   amountMinor: MinorAmount;
@@ -146,9 +149,10 @@ export async function addBill(input: {
   /** Local `YYYY-MM-DD`. */
   dueDate: string;
   once: boolean;
+  from?: { seriesKey: string; walletId: string; categoryId: string | null };
 }): Promise<string> {
   const name = billNameSchema.parse(input.name);
-  const seriesKey = billSeriesKey(name, input.currency);
+  const seriesKey = input.from?.seriesKey ?? billSeriesKey(name, input.currency);
   if (!seriesKey) throw new Error('A bill name needs a letter in it.');
   await setRecurringOverride({
     seriesKey,
@@ -160,6 +164,7 @@ export async function addBill(input: {
     name,
     dueOnce: input.once ? input.dueDate : null,
     skipPeriod: null,
+    ...(input.from ? { walletId: input.from.walletId, categoryId: input.from.categoryId } : {}),
   });
   return seriesKey;
 }

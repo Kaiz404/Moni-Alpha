@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MinorAmount, RecurringOverride } from '@repo/types';
 
 import { createCalendar } from '../../calendar';
-import { selectBillsAhead, selectUpcomingBills } from '../bills';
+import { billDueFrom, paymentBill, selectBillsAhead, selectUpcomingBills } from '../bills';
 import { BANK, on, tx } from './facts-rows';
 
 const KL = createCalendar('Asia/Kuala_Lumpur');
@@ -153,5 +153,63 @@ describe('selectBillsAhead', () => {
         ['2026-11-15', 'due'],
       ]);
     }
+  });
+});
+
+describe('paymentBill', () => {
+  const unifi = tx(on(10, 3), 'expense', '129.00', 'Unifi');
+
+  it('offers a lone payment quietly, and loudly when its category reads as a bill', () => {
+    for (const zone of ['Asia/Kuala_Lumpur', 'Europe/London']) {
+      const calendar = createCalendar(zone);
+      expect(paymentBill(unifi, [unifi], [], WED_14_OCT, calendar, 'Shopping')).toEqual({
+        kind: 'offer',
+        seriesKey: 'MYR|expense|unifi',
+        likely: false,
+      });
+      expect(paymentBill(unifi, [unifi], [], WED_14_OCT, calendar, 'Utilities')).toEqual({
+        kind: 'offer',
+        seriesKey: 'MYR|expense|unifi',
+        likely: true,
+      });
+    }
+  });
+
+  it('reads a payment to the same merchant about a month before as a bill', () => {
+    const september = tx(on(9, 4), 'expense', '129.00', 'Unifi');
+    expect(paymentBill(unifi, [september, unifi], [], WED_14_OCT, KL, null)).toMatchObject({ likely: true });
+    const lastWeek = tx(on(9, 26), 'expense', '129.00', 'Unifi');
+    expect(paymentBill(unifi, [lastWeek, unifi], [], WED_14_OCT, KL, null)).toMatchObject({ likely: false });
+  });
+
+  it('says a payment is already a bill once one of this month holds its merchant', () => {
+    expect(paymentBill(unifi, [unifi], [override({})], WED_14_OCT, KL, null)).toEqual({
+      kind: 'bill',
+      seriesKey: 'MYR|expense|unifi',
+      once: false,
+    });
+    const charges = netflix([7, 8, 9, 10]);
+    expect(paymentBill(charges[3]!, charges, [], WED_14_OCT, KL, null)).toEqual({
+      kind: 'bill',
+      seriesKey: 'MYR|expense|netflix',
+      once: false,
+    });
+  });
+
+  it('offers nothing for income, a transfer or a payment with no merchant', () => {
+    expect(paymentBill(tx(on(10, 1), 'income', '4200', 'Acme'), [], [], WED_14_OCT, KL, null)).toBeNull();
+    expect(paymentBill(tx(on(10, 1), 'transfer', '50', 'Wise'), [], [], WED_14_OCT, KL, null)).toBeNull();
+    expect(paymentBill(tx(on(10, 1), 'expense', '12', null), [], [], WED_14_OCT, KL, null)).toBeNull();
+  });
+});
+
+describe('billDueFrom', () => {
+  it("is next month's day for a payment this month, and this month's when the day is still ahead", () => {
+    expect(billDueFrom('2026-10-03', '2026-10-14')).toBe('2026-11-03');
+    expect(billDueFrom('2026-10-14', '2026-10-14')).toBe('2026-11-14');
+    expect(billDueFrom('2026-09-20', '2026-10-14')).toBe('2026-10-20');
+    expect(billDueFrom('2026-09-14', '2026-10-14')).toBe('2026-10-14');
+    expect(billDueFrom('2026-08-31', '2026-10-14')).toBe('2026-10-31');
+    expect(billDueFrom('2026-10-31', '2026-11-02')).toBe('2026-11-30');
   });
 });
