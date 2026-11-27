@@ -37,6 +37,8 @@ export type ReviewCardModel = {
   time: string;
   /** "3 days ago" beside the time, for a capture older than yesterday. */
   ago: string | null;
+  /** Where the capture happened, on its own line under the time. Null when no place was saved. */
+  place: string | null;
   status: ReviewStatus | null;
   quote: string | null;
   merchant: string;
@@ -140,6 +142,7 @@ export const ReviewCard = memo(function ReviewCard({
   const transfer = model.type === 'transfer';
   const fit = cardFit(
     {
+      place: !!model.place,
       quote: !!model.quote,
       evidence: !!model.evidence,
       pair: !!model.pair,
@@ -174,6 +177,7 @@ export const ReviewCard = memo(function ReviewCard({
         accessible
         accessibilityLabel={[
           `${model.merchant}, ${amountText}, from ${model.sourceLabel}, ${model.time}${model.ago ? `, ${model.ago}` : ''}`,
+          ...(model.place ? [`At ${model.place}`] : []),
           ...(model.status ? [model.status.label] : []),
         ].join('. ')}
         accessibilityActions={decisions}
@@ -197,6 +201,23 @@ export const ReviewCard = memo(function ReviewCard({
               <Text className="font-display-semibold text-ink-2">{`, ${model.ago}`}</Text>
             ) : null}
           </Text>
+          {model.place ? (
+            <View className="flex-row items-center gap-1">
+              <IconSymbol
+                name="map-marker-outline"
+                size={14}
+                color={tokens.muted}
+              />
+              <Text
+                testID={tid('review', 'place')}
+                variant="meta"
+                className="min-w-0 flex-1 text-muted"
+                numberOfLines={1}
+              >
+                {model.place}
+              </Text>
+            </View>
+          ) : null}
         </View>
         {model.status ? (
           <StatusText

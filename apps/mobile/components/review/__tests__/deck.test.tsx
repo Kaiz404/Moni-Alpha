@@ -19,6 +19,7 @@ import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { clearProposalLocationSnapshot, saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 
 let mockNextId = 0;
 let mockParams: { id?: string } = {};
@@ -40,6 +41,7 @@ jest.mock('@/lib/auth/auth-context', () => ({ useAuth: () => ({ user: { id: 'use
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/supabase/profile', () => ({ ensureFinanceTimezone: async () => 'Asia/Kuala_Lumpur' }));
 jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
+jest.mock('expo-location', () => ({ reverseGeocodeAsync: jest.fn(async () => []) }));
 const mockInstalledApps = new Map<string, { label: string; iconUri?: string }>();
 const mockGetInstalledAppInfo = jest.fn(async (_packageName: string) => null as { iconUri: string } | null);
 jest.mock('@/lib/notifications/app-icon-cache', () => ({
@@ -540,6 +542,49 @@ describe('Review deck', () => {
       await show(<ReviewScreen />);
 
       expect(screen.queryByText(/ago/)).toBeNull();
+    });
+  });
+
+  describe('where it was captured', () => {
+    const { reverseGeocodeAsync } = jest.requireMock('expo-location') as { reverseGeocodeAsync: jest.Mock };
+    const spot = (name: string | null) => ({ latitude: 3.1579, longitude: 101.7123, name, capturedAt: '2026-10-14T04:41:00.000Z' });
+    afterEach(() => {
+      clearProposalLocationSnapshot('p1');
+      reverseGeocodeAsync.mockReset().mockResolvedValue([]);
+    });
+
+    it('shows the place saved with the capture', async () => {
+      saveProposalLocationSnapshot('p1', spot('Jaya Grocer, Jalan Ampang, Kuala Lumpur, Wilayah Persekutuan'));
+      seed('p1');
+      await show(<ReviewScreen />);
+
+      expect(screen.getByTestId('review.place')).toHaveTextContent('Jaya Grocer, Kuala Lumpur');
+      expect(screen.getByTestId('review.summary').props.accessibilityLabel).toMatch(/At Jaya Grocer, Kuala Lumpur/);
+      expect(reverseGeocodeAsync).not.toHaveBeenCalled();
+    });
+
+    it('names a spot saved with coordinates only through the device geocoder', async () => {
+      reverseGeocodeAsync.mockResolvedValue([{ name: 'Suria KLCC', street: 'Jalan Ampang', city: 'Kuala Lumpur', region: 'Wilayah Persekutuan' }]);
+      saveProposalLocationSnapshot('p1', spot(null));
+      seed('p1');
+      await show(<ReviewScreen />);
+
+      expect(screen.getByTestId('review.place')).toHaveTextContent('Suria KLCC, Kuala Lumpur');
+    });
+
+    it('says Pinned place when the geocoder finds no name', async () => {
+      saveProposalLocationSnapshot('p1', spot(null));
+      seed('p1');
+      await show(<ReviewScreen />);
+
+      expect(screen.getByTestId('review.place')).toHaveTextContent('Pinned place');
+    });
+
+    it('has no place line for a capture without a place', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+
+      expect(screen.queryByTestId('review.place')).toBeNull();
     });
   });
 

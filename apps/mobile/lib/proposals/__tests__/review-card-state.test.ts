@@ -272,14 +272,17 @@ describe('decisions and results', () => {
 });
 
 describe('cardFit', () => {
-  const FULLEST = { quote: true, evidence: true, pair: true, similar: true };
-  const ALERT = { quote: true, evidence: false, pair: false, similar: true };
-  const DUPLICATE = { quote: true, evidence: true, pair: true, similar: false };
+  const FULLEST = { place: false, quote: true, evidence: true, pair: true, similar: true };
+  const ALERT = { place: false, quote: true, evidence: false, pair: false, similar: true };
+  const DUPLICATE = { place: false, quote: true, evidence: true, pair: true, similar: false };
+  const PLACED = { ...FULLEST, place: true };
 
   it.each([
     ['the 560 card', FULLEST, 560, 1, { quoteLines: 2, evidenceLines: 2, similar: true }],
     ['the 560 card', ALERT, 560, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
     ['the 560 card', DUPLICATE, 560, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
+    ['the 560 card', PLACED, 560, 1, { quoteLines: 1, evidenceLines: 2, similar: true }],
+    ['the 560 card', { ...ALERT, place: true }, 560, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
     ['a 360x800 deck', FULLEST, 534, 1, { quoteLines: 0, evidenceLines: 2, similar: true }],
     ['a 360x800 deck', ALERT, 534, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
     ['a 360x640 deck', FULLEST, 422, 1, { quoteLines: 0, evidenceLines: 0, similar: false }],

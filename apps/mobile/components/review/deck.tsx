@@ -100,6 +100,7 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { useCapturePlaces } from '@/lib/proposals/capture-place';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
@@ -591,6 +592,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     if (under) checkDuplicate(under);
   }, [under, checkDuplicate]);
 
+  const placeOf = useCapturePlaces([top, under]);
+
   const topEdits = top ? (edits[top.id] ?? {}) : {};
   const topWalletId = top ? walletIdOf(top, topEdits, wallets) : null;
   const canApprove = !!topWalletId;
@@ -931,6 +934,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         sourceLabel: captureSourceLabel(proposal),
         time: captureTime(capturedAt),
         ago: daysAgo(deviceCalendar.dayKey(capturedAt), deviceCalendar.dayKey(new Date())),
+        place: placeOf(proposal),
         status: reviewStatus({
           hasWallet: !!walletId,
           paired: !!proposal.pairing,
@@ -959,7 +963,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         similar: proposal.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
       };
     },
-    [edits, categories, duplicates, wallets, lookups, ledger],
+    [edits, categories, duplicates, wallets, lookups, ledger, placeOf],
   );
   const model = useMemo(() => (top ? modelOf(top) : null), [top, modelOf]);
   const underModel = useMemo(() => (under ? modelOf(under) : null), [under, modelOf]);

@@ -150,7 +150,13 @@ export function releasedSelection(selection: SwipeSelection, intent: SwipeIntent
 export const CARD_HEIGHT = 560;
 
 /** The parts a card may have that its height can't always hold. */
-export type CardParts = { quote: boolean; evidence: boolean; pair: boolean; similar: boolean };
+export type CardParts = {
+  place: boolean;
+  quote: boolean;
+  evidence: boolean;
+  pair: boolean;
+  similar: boolean;
+};
 
 /** How much of those parts the card shows. The pair control always shows. */
 export type CardFit = { quoteLines: number; evidenceLines: number; similar: boolean };
@@ -167,14 +173,15 @@ const CARD_FITS: CardFit[] = [
 ];
 
 /**
- * The card's column in px, with text at the phone's font scale: padding, source row, the merchant
+ * The card's column in px, with text at the phone's font scale: padding, source row (with its place
+ * line), the merchant
  * field open over the amount (the tallest the middle gets), three 48 rows and their hairlines.
  */
 function heightNeeded(parts: CardParts, fit: CardFit, fontScale: number): number {
   const gap = 12;
   const footerGap = 6;
   const padding = 36;
-  const source = 38 * fontScale;
+  const source = (parts.place ? 56 : 38) * fontScale;
   const middle = 52 + 50 * fontScale;
   const rows = 3 * 48 + 2;
   const quote =
