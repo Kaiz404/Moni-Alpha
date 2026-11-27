@@ -82,7 +82,7 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 **9. Destructive actions sit top right and ask in a sheet.**
 - Do: use a 44 round trash (or ⋯) icon button at the header's right that opens the confirm sheet.
 - Don't: use a red button in the content or at the page bottom.
-- Example: Edit category, Edit wallet, the bill page and the debt write-off (#8, #17, #82, #86).
+- Example: Edit category, Edit wallet, the bill page and the debt page's Delete (#8, #17, #82, #133).
 - Owner: "turn it to the delete icon and put it at the top right corner"
 
 **10. Primary actions in thumb reach.**

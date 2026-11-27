@@ -210,11 +210,32 @@ export function planDebt(
   return planned({ insert: [{ table: 'debts', row }, ...written.insert] }, { debt: { ...debt, status: written.status } });
 }
 
+/**
+ * The live ledger rows that mirror these activities' cash: by the activity's own link, and by the row's
+ * link back, so a mirror one side forgot still goes. A mirror already gone (its wallet was deleted) is
+ * left alone, since a soft delete needs a live row.
+ */
+function liveMirrors(
+  activities: readonly FinanceDebtActivity[],
+  view: Pick<LedgerView, 'transactionsById'>,
+): string[] {
+  const ids = new Set(activities.map((activity) => activity.id));
+  const mirrors = new Set(
+    activities.flatMap((activity) =>
+      activity.cashTransactionId && view.transactionsById[activity.cashTransactionId] ? [activity.cashTransactionId] : [],
+    ),
+  );
+  for (const transaction of Object.values(view.transactionsById)) {
+    if (transaction.debtActivityId && ids.has(transaction.debtActivityId)) mirrors.add(transaction.id);
+  }
+  return [...mirrors];
+}
+
 /** Removing an activity removes its cash mirror and works the debt's status out again. */
 export function planDebtActivityDelete(
   debt: FinanceDebt,
   activityId: string,
-  view: Pick<LedgerView, 'debtActivitiesById'>,
+  view: Pick<LedgerView, 'debtActivitiesById' | 'transactionsById'>,
   ctx: Pick<PlanContext, 'now'>,
 ): Planned<null> {
   const activities = activitiesOfDebt(view, debt.id);
@@ -225,9 +246,7 @@ export function planDebtActivityDelete(
     {
       softDelete: [
         { table: 'debt_activities', id: activity.id, at: ctx.now },
-        ...(activity.cashTransactionId
-          ? [{ table: 'transactions' as const, id: activity.cashTransactionId, at: ctx.now }]
-          : []),
+        ...liveMirrors([activity], view).map((id) => ({ table: 'transactions' as const, id, at: ctx.now })),
       ],
       patch: [{ table: 'debts', id: debt.id, patch: { status: debtStatus(remaining), updated_at: ctx.now } }],
     },
@@ -253,22 +272,21 @@ export function planDebtEdit(
   return planned({ patch: [{ table: 'debts', id: debt.id, patch: { ...patch, updated_at: ctx.now } }] }, null);
 }
 
-/** Removes a whole debt: the debt, every activity on it and the cash each one moved, all softly. */
+/**
+ * Removes a whole debt in one write: the debt, every activity on it and the cash each one moved, all
+ * softly, so wallet balances and spending read as if it never was and a sync never leaves an orphan.
+ */
 export function planDebtDelete(
   debt: FinanceDebt,
-  view: Pick<LedgerView, 'debtActivitiesById'>,
+  view: Pick<LedgerView, 'debtActivitiesById' | 'transactionsById'>,
   ctx: Pick<PlanContext, 'now'>,
 ): Planned<null> {
   const activities = activitiesOfDebt(view, debt.id);
   return planned(
     {
       softDelete: [
-        ...activities.flatMap((activity) => [
-          ...(activity.cashTransactionId
-            ? [{ table: 'transactions' as const, id: activity.cashTransactionId, at: ctx.now }]
-            : []),
-          { table: 'debt_activities' as const, id: activity.id, at: ctx.now },
-        ]),
+        ...liveMirrors(activities, view).map((id) => ({ table: 'transactions' as const, id, at: ctx.now })),
+        ...activities.map((activity) => ({ table: 'debt_activities' as const, id: activity.id, at: ctx.now })),
         { table: 'debts', id: debt.id, at: ctx.now },
       ],
     },

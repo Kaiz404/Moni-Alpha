@@ -13,7 +13,8 @@ import {
   planDebtStatus,
 } from '../debts';
 import { planImportRows } from '../import';
-import { applyToTables } from '../memory';
+import { applyToTables, type MemoryTables } from '../memory';
+import { undoWrites } from '../undo';
 import { createCalendar } from '../../calendar';
 import { groupPlaces } from '../../read-model/places';
 import {
@@ -505,6 +506,7 @@ describe('debt plans', () => {
     const settled = view({
       debtsById: { 'debt-1': { ...DEBT, status: 'settled' } },
       debtActivitiesById: { a1: activity('a1', 'principal', 10000), a2: activity('a2', 'repayment', 10000) },
+      transactionsById: { 'cash-a2': transaction('cash-a2', 'maybank', { debtActivityId: 'a2' }) },
     });
     expect(planDebtActivityDelete(DEBT, 'a2', settled, context())).toEqual({
       kind: 'writes',
@@ -542,6 +544,10 @@ describe('debt plans', () => {
         a2: activity('a2', 'write_off', 10000, { cashTransactionId: null, activityDate: '2026-10-02T00:00:00.000Z' }),
         b1: activity('b1', 'principal', 500, { debtId: 'debt-2' }),
       },
+      transactionsById: {
+        'cash-a1': transaction('cash-a1', 'maybank', { debtActivityId: 'a1' }),
+        'cash-b1': transaction('cash-b1', 'maybank', { debtActivityId: 'b1' }),
+      },
     });
     expect(planDebtDelete(DEBT, ledger, context())).toEqual({
       kind: 'writes',
@@ -549,14 +555,71 @@ describe('debt plans', () => {
         insert: [],
         patch: [],
         softDelete: [
-          { table: 'debt_activities', id: 'a2', at: NOW },
           { table: 'transactions', id: 'cash-a1', at: NOW },
+          { table: 'debt_activities', id: 'a2', at: NOW },
           { table: 'debt_activities', id: 'a1', at: NOW },
           { table: 'debts', id: 'debt-1', at: NOW },
         ],
       },
       result: null,
     });
+  });
+
+  it('finds a mirror by its link back, and skips one already gone with its wallet', () => {
+    const ledger = view({
+      debtActivitiesById: {
+        a1: activity('a1', 'principal', 10000, { cashTransactionId: 'gone' }),
+        a2: activity('a2', 'repayment', 2500, { cashTransactionId: null }),
+      },
+      transactionsById: { stray: transaction('stray', 'maybank', { debtActivityId: 'a2' }) },
+    });
+    const plan = planDebtDelete(DEBT, ledger, context());
+    expect(plan.kind === 'writes' && plan.writes.softDelete.map(({ table, id }) => `${table}/${id}`)).toEqual([
+      'transactions/stray',
+      'debt_activities/a1',
+      'debt_activities/a2',
+      'debts/debt-1',
+    ]);
+  });
+
+  it('deletes a debt so wallets read as before, and its Undo brings every row back live', () => {
+    const tables: MemoryTables = {
+      debts: { 'debt-1': { id: 'debt-1', deleted: false, updated_at: 'then' } },
+      debt_activities: {
+        a1: { id: 'a1', debt_id: 'debt-1', deleted: false, updated_at: 'then' },
+        a2: { id: 'a2', debt_id: 'debt-1', deleted: false, updated_at: 'then' },
+      },
+      transactions: {
+        'cash-a1': { id: 'cash-a1', debt_activity_id: 'a1', deleted: false, updated_at: 'then' },
+        'cash-a2': { id: 'cash-a2', debt_activity_id: 'a2', deleted: false, updated_at: 'then' },
+        lunch: { id: 'lunch', debt_activity_id: null, deleted: false, updated_at: 'then' },
+      },
+    };
+    const ledger = view({
+      debtActivitiesById: { a1: activity('a1', 'principal', 10000), a2: activity('a2', 'repayment', 2500) },
+      transactionsById: {
+        'cash-a1': transaction('cash-a1', 'maybank', { debtActivityId: 'a1' }),
+        'cash-a2': transaction('cash-a2', 'maybank', { debtActivityId: 'a2' }),
+        lunch: transaction('lunch', 'maybank'),
+      },
+    });
+    const plan = planDebtDelete(DEBT, ledger, context());
+    if (plan.kind !== 'writes') throw new Error(plan.kind);
+    const after = applyToTables(tables, plan.writes);
+    const live = (state: MemoryTables, table: 'debts' | 'debt_activities' | 'transactions') =>
+      Object.values(state[table] ?? {})
+        .filter((row) => !row.deleted)
+        .map((row) => row.id);
+    expect([live(after, 'debts'), live(after, 'debt_activities'), live(after, 'transactions')]).toEqual([[], [], ['lunch']]);
+
+    const before = (table: string, id: string) => (tables as Record<string, Record<string, Record<string, unknown>>>)[table]?.[id];
+    const back = applyToTables(after, undoWrites(plan.writes, before, 'later'));
+    expect([live(back, 'debts'), live(back, 'debt_activities'), live(back, 'transactions')]).toEqual([
+      ['debt-1'],
+      ['a1', 'a2'],
+      ['cash-a1', 'cash-a2', 'lunch'],
+    ]);
+    expect(back.debts!['debt-1']!.updated_at).toBe('later');
   });
 
   it('rebuilds only the cash mirrors the ledger lacks', () => {

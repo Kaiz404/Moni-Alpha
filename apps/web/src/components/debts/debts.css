@@ -631,7 +631,7 @@ html[data-layout='phone'] .grid-total.people-row {
   }
 }
 
-html[data-layout='phone'] .pane-write-off {
+html[data-layout='phone'] .pane-delete {
   width: 44px;
   height: 44px;
 }

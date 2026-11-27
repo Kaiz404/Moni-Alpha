@@ -3,6 +3,7 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 import {
   comingUpWords,
+  deleteWords,
   netLabel,
   NO_WALLET,
   openLabel,
@@ -74,6 +75,14 @@ describe('debt words', () => {
     expect(personMeta(debtLine({ direction: 'i_owe', note: null }), '2026-10-14', '2026-09-25')).toBe('Borrowed Fri 25 Sep');
     expect(personMeta(debtLine({ note: 'Lunch' }, { state: 'settled' }), '2026-10-14', '2026-09-01')).toBe('Settled, Lunch');
     expect(personMeta(debtLine({ note: null }, { state: 'written_off' }), '2026-10-14', '2026-09-01')).toBe('Written off');
+  });
+
+  it('asks before a delete, saying how Write off differs while the debt is open', () => {
+    expect(deleteWords(debtLine({}))).toEqual({
+      title: 'Delete the debt with Aiman?',
+      line: 'Its history and wallet entries go too, where Write off would keep them.',
+    });
+    expect(deleteWords(debtLine({}, { state: 'settled' })).line).toBe('Its history and wallet entries go too.');
   });
 
   it('counts debts, two with one person as two', () => {

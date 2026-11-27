@@ -73,6 +73,14 @@ export function writeOffWords(line: DebtLine): { title: string; line: string } {
   };
 }
 
+/** The confirm before deleting a debt: what goes, and on an open debt how Write off differs. */
+export function deleteWords(line: DebtLine): { title: string; line: string } {
+  return {
+    title: `Delete the debt with ${line.debt.counterpartyName}?`,
+    line: line.state === 'open' ? 'Its history and wallet entries go too, where Write off would keep them.' : 'Its history and wallet entries go too.',
+  };
+}
+
 export type TimelineItem = {
   id: string;
   kind: FinanceDebtActivity['kind'];

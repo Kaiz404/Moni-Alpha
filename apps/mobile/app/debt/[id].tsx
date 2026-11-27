@@ -34,6 +34,7 @@ import { Text } from '@/components/ui/text';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
+  deleteDebt,
   deleteDebtActivity,
   getDebtById,
   repayDebt,
@@ -178,6 +179,29 @@ function DebtPage({
     }
   };
 
+  const remove = async () => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: `Delete the debt with ${name}?`,
+      message: open
+        ? 'Its history and wallet entries go too, where Write off would keep them.'
+        : 'Its history and wallet entries go too.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      const stored = await getDebtById(id);
+      if (!stored) throw new Error('This debt is gone');
+      const undo = deleteDebt(stored);
+      router.back();
+      showToast({ text: `Deleted the debt with ${name}`, tone: 'removed', undo });
+    } catch (error) {
+      failed(error);
+    }
+  };
+
   const days = debt.dueDate
     ? daysUntil(debt.dueDate, new Date(), deviceCalendar)
     : null;
@@ -199,14 +223,12 @@ function DebtPage({
         kind="pushed"
         title="Debt"
         trailing={
-          open ? (
-            <HeaderIconButton
-              testID={tid('debts', 'write-off')}
-              icon="text-box-remove-outline"
-              accessibilityLabel={`Write off ${money(balanceMinor)}`}
-              onPress={() => void writeOff()}
-            />
-          ) : undefined
+          <HeaderIconButton
+            testID={tid('debts', 'delete')}
+            icon="trash-can-outline"
+            accessibilityLabel={`Delete the debt with ${name}`}
+            onPress={() => void remove()}
+          />
         }
       >
         <InPlaceGroup>
@@ -317,6 +339,13 @@ function DebtPage({
                   onPress={() => void sendReminder(line)}
                 />
               ) : null}
+              <NavRow
+                testID={tid('debts', 'write-off')}
+                icon="text-box-remove-outline"
+                title="Write off"
+                action={words.writeOffBody(name)}
+                onPress={() => void writeOff()}
+              />
             </ListCard>
           ) : null}
 

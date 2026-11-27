@@ -14,6 +14,7 @@ import {
   planDebt,
   planDebtActivity,
   planDebtActivityDelete,
+  planDebtDelete,
   planDebtMirrorRepair,
   toFinanceDebt,
   toFinanceDebtActivity,
@@ -22,7 +23,7 @@ import {
 } from '@repo/core';
 import { debtActivities$, debts$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
-import { commit, ledgerView, planContext } from '@/lib/store/writes';
+import { commit, commitUndoable, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
 
 type DebtRow = StoredRow<'debts'>;
@@ -136,6 +137,14 @@ export async function writeOffDebt(debt: Debt, note?: string | null) {
 
 export function deleteDebtActivity(debt: Debt, activityId: string): void {
   commit(planDebtActivityDelete(debt, activityId, ledgerView(), { now: new Date().toISOString() }));
+}
+
+/**
+ * Deletes the debt with every entry on it and the wallet rows they moved, in one write. Hands back the
+ * Undo that brings all of them back.
+ */
+export function deleteDebt(debt: Debt): () => void {
+  return commitUndoable(planDebtDelete(debt, ledgerView(), { now: new Date().toISOString() })).undo;
 }
 
 /** Idempotently reconstruct a missing local cash mirror after an interrupted offline write. */

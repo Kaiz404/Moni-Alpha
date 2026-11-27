@@ -3,6 +3,7 @@
  * the one applier that carries the writes out on the store.
  */
 import {
+  undoWrites,
   toFinanceDebt,
   toFinanceDebtActivity,
   toFinanceTransaction,
@@ -10,6 +11,7 @@ import {
   type LedgerView,
   type PlanContext,
   type Planned,
+  type SyncedTable,
 } from '@repo/core';
 import { applyWrites } from '@repo/data';
 import { randomUUID } from 'expo-crypto';
@@ -58,30 +60,50 @@ export async function planContext(): Promise<PlanContext> {
   return { userId, now: new Date().toISOString(), newId: randomUUID, isMigrated };
 }
 
-/** Writes what the plan says, or throws the reason it could not. */
-export function commit<Result>(plan: Planned<Result>): Result {
+const TABLES = {
+  tables: {
+    wallets: wallets$,
+    transactions: transactions$,
+    categories: categories$,
+    tags: tags$,
+    transaction_tags: transactionTags$,
+    category_budgets: categoryBudgets$,
+    debts: debts$,
+    debt_activities: debtActivities$,
+    proposed_transactions: proposedTransactions$,
+    recurring_overrides: recurringOverrides$,
+    auto_add_rules: autoAddRules$,
+    merchant_aliases: merchantAliases$,
+  },
+};
+
+function written<Result>(plan: Planned<Result>): Extract<Planned<Result>, { kind: 'writes' }> {
   if (plan.kind === 'error') throw new Error(plan.message);
   if (plan.kind === 'needsInput') {
     throw new Error(plan.field === 'wallet' ? 'Select a wallet' : 'Select the wallet it went to');
   }
-  applyWrites(
-    {
-      tables: {
-        wallets: wallets$,
-        transactions: transactions$,
-        categories: categories$,
-        tags: tags$,
-        transaction_tags: transactionTags$,
-        category_budgets: categoryBudgets$,
-        debts: debts$,
-        debt_activities: debtActivities$,
-        proposed_transactions: proposedTransactions$,
-        recurring_overrides: recurringOverrides$,
-        auto_add_rules: autoAddRules$,
-        merchant_aliases: merchantAliases$,
-      },
-    },
-    plan.writes,
-  );
-  return plan.result;
+  return plan;
+}
+
+/** Writes what the plan says, or throws the reason it could not. */
+export function commit<Result>(plan: Planned<Result>): Result {
+  const { writes, result } = written(plan);
+  applyWrites(TABLES, writes);
+  return result;
+}
+
+/** Writes the plan as `commit` does, and hands back an Undo that puts every row it touched back as it was. */
+export function commitUndoable<Result>(plan: Planned<Result>): { result: Result; undo: () => void } {
+  const { writes, result } = written(plan);
+  const rows = new Map<string, Record<string, unknown> | undefined>();
+  for (const { table, id } of [...writes.patch, ...writes.softDelete]) {
+    const row = (TABLES.tables[table].peek() as Record<string, Record<string, unknown>> | undefined)?.[id];
+    rows.set(`${table}/${id}`, row ? { ...row } : undefined);
+  }
+  applyWrites(TABLES, writes);
+  const before = (table: SyncedTable, id: string) => rows.get(`${table}/${id}`);
+  return {
+    result,
+    undo: () => applyWrites(TABLES, undoWrites(writes, before, new Date().toISOString())),
+  };
 }

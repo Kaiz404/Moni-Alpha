@@ -32,6 +32,7 @@ import { showToast } from '@/components/shell/shell-store';
 import {
   comingUpWords,
   debtMoney,
+  deleteWords,
   netLabel,
   NO_WALLET,
   openLabel,
@@ -100,6 +101,8 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const [reminded, setReminded] = useState<Set<string>>(() => new Set());
   const [writingOffId, setWritingOffId] = useState<string | null>(null);
   const writingOff = data.allLines.find((line) => line.debt.id === writingOffId && line.state === 'open') ?? null;
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const deleting = data.allLines.find((line) => line.debt.id === deletingId) ?? null;
   const empty = summary.open.length === 0 && summary.closed.length === 0;
 
   const select = (debtId: string | null) => {
@@ -170,6 +173,12 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
       `Wrote off ${formatMoney(line.balanceMinor, line.debt.currency)} with ${line.debt.counterpartyName}`,
       ({ activity }) => applyPlan(planDebtActivityDelete(line.debt, activity.id, ledgerViewNow(), { now: new Date().toISOString() })),
     );
+  };
+
+  /** The debt, every entry on it and their wallet rows go in one write; the toast's Undo brings them all back. */
+  const removeDebt = (line: DebtLine) => {
+    const removed = commit(planDebtDelete(line.debt, ledgerViewNow(), { now: new Date().toISOString() }), `Deleted the debt with ${line.debt.counterpartyName}`);
+    if (removed && selectedId === line.debt.id) setParams({ person: null });
   };
 
   /** As on the phone: every debt recorded is its own, even with someone who already owes the same way. */
@@ -303,9 +312,9 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
           back="Debts"
           steps={selected ? { noun: 'debt', position: index >= 0 ? `${index + 1} of ${order.length}` : '', onMove: move, first: index <= 0, last: index === order.length - 1 } : undefined}
           actions={
-            selected && !recording && selected.state === 'open' ? (
-              <button type="button" className="round-btn small pane-write-off" onClick={() => setWritingOffId(selected.debt.id)} aria-label={`Write off ${formatMoney(selected.balanceMinor, selected.debt.currency)}`}>
-                <Glyph name="text-box-remove-outline" />
+            selected && !recording ? (
+              <button type="button" className="round-btn small pane-delete" onClick={() => setDeletingId(selected.debt.id)} aria-label={`Delete the debt with ${selected.debt.counterpartyName}`}>
+                <Glyph name="trash-can-outline" />
               </button>
             ) : undefined
           }
@@ -334,6 +343,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onSaveRepay={saveRepay}
               onRemind={() => void remind(selected)}
               onWriteOff={() => setWritingOffId(selected.debt.id)}
+              onDelete={() => setDeletingId(selected.debt.id)}
               onRecordAgain={() => startRecord(selected.debt.counterpartyName, selected.debt.direction)}
               onClose={close}
             />
@@ -349,6 +359,18 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
           onConfirm={() => {
             setWritingOffId(null);
             writeOff(writingOff);
+          }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          {...deleteWords(deleting)}
+          action="Delete"
+          icon="trash-can-outline"
+          onCancel={() => setDeletingId(null)}
+          onConfirm={() => {
+            setDeletingId(null);
+            removeDebt(deleting);
           }}
         />
       )}

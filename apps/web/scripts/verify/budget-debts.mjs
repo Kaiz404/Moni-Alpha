@@ -376,7 +376,7 @@ export async function verifyBudgetDebts(t) {
     const gone = await until('debt-activities', (rows) => rows.length === activities);
     check('Ctrl Z removes the repayment, on screen and in the dev project', gone.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before), gone.rows.length);
 
-    const writeOffButton = d.locator('.slide-over-head .pane-write-off');
+    const writeOffButton = d.locator('aside.slide-over .pane-foot-actions button', { hasText: /^Write off$/ });
     const asks = d.getByRole('alertdialog', { name: /^Write off RM[\d,.]+\?$/ });
     await writeOffButton.click();
     await asks.waitFor({ timeout: 5000 }).catch(() => {});
@@ -406,7 +406,23 @@ export async function verifyBudgetDebts(t) {
     await d.keyboard.press('Control+z');
     const back = await until('debt-activities', (rows) => !rows.some((row) => row.debt_id === target.id && row.kind === 'write_off'));
     check('Ctrl Z takes the write-off back, on screen and in the dev project', back.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before));
-    await d.keyboard.press('Escape');
+
+    const deletes = d.getByRole('alertdialog', { name: /^Delete the debt with .+\?$/ });
+    await d.locator('.slide-over-head .pane-delete').click();
+    await deletes.waitFor({ timeout: 5000 }).catch(() => {});
+    check('Delete sits top right and asks first, saying how it differs from Write off', (await deletes.isVisible()) && (await deletes.getByText('Its history and wallet entries go too, where Write off would keep them.').isVisible()));
+    await shot(d, 'debts-1440-light-delete');
+    await deletes.getByRole('button', { name: 'Delete' }).click();
+    const deleted = d.getByRole('status').filter({ hasText: /^Deleted the debt with / });
+    await deleted.waitFor({ timeout: 5000 }).catch(() => {});
+    const goneDebt = await until('debts', (rows) => !rows.some((row) => row.id === target.id));
+    const goneEntries = await until('debt-activities', (rows) => !rows.some((row) => row.debt_id === target.id));
+    check('Delete removes the debt and every entry on it, in the dev project, and closes the pane', goneDebt.ok && goneEntries.ok && !d.url().includes(`person=${target.id}`), d.url());
+    await deleted.hover().catch(() => {});
+    await d.keyboard.press('Control+z');
+    const restored = await until('debts', (rows) => rows.some((row) => row.id === target.id));
+    const restoredEntries = await until('debt-activities', (rows) => rows.some((row) => row.debt_id === target.id));
+    check('Ctrl Z brings the debt and its entries back', restored.ok && restoredEntries.ok && (await d.locator(`.people-row[data-debt="${target.id}"]`).count()) === 1);
   }
 
   await d.keyboard.press('d');

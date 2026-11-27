@@ -38,6 +38,7 @@ export function PersonPane({
   onSaveRepay,
   onRemind,
   onWriteOff,
+  onDelete,
   onRecordAgain,
   onClose,
 }: {
@@ -51,6 +52,7 @@ export function PersonPane({
   onSaveRepay: (line: DebtLine, amountMinor: MinorAmount, walletId: string | null, activityDate: string) => void;
   onRemind: () => void;
   onWriteOff: () => void;
+  onDelete: () => void;
   onRecordAgain: () => void;
   onClose: () => void;
 }) {
@@ -89,11 +91,9 @@ export function PersonPane({
           <Glyph name="chevron-left" />
         </button>
         <span className="count" />
-        {open && (
-          <button type="button" className="round-btn small pane-write-off" onClick={onWriteOff} aria-label={`Write off ${money(line.balanceMinor)}`}>
-            <Glyph name="text-box-remove-outline" />
-          </button>
-        )}
+        <button type="button" className="round-btn small pane-delete" onClick={onDelete} aria-label={`Delete the debt with ${debt.counterpartyName}`}>
+          <Glyph name="trash-can-outline" />
+        </button>
       </div>
       <div className="detail-head">
         <PersonTile name={debt.counterpartyName} owedToMe={mine} size={52} />
@@ -262,6 +262,9 @@ export function PersonPane({
                     <span className="kbd">M</span>
                   </button>
                 ))}
+              <button type="button" className="btn btn-sand press" onClick={onWriteOff}>
+                Write off
+              </button>
             </>
           ) : (
             <button type="button" className="btn btn-sand press" onClick={onRecordAgain}>
