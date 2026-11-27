@@ -1,6 +1,6 @@
 import type { FinanceTransaction, MerchantEntry } from '@repo/core';
 import { describe, expect, it } from 'vitest';
-import { merchantPage, merchantTable, paymentsOf } from '../merchant-names-view';
+import { merchantPage, merchantTable } from '../merchant-names-view';
 
 const pay = (merchant: string | null, day: number, source = 'notification', walletId = 'maybank') =>
   ({
@@ -63,11 +63,5 @@ describe('merchantPage', () => {
     const many = { toName: Array.from({ length: 30 }, (_, index) => entry(`code ${String.fromCharCode(97 + (index % 26))}${index}`, 40 - index)), named: [] };
     const second = merchantPage(many, { filter: 'all', query: '', sort: 'payments', page: 9 });
     expect([second.page, second.pages, second.first, second.last, second.rows.length]).toEqual([2, 2, 26, 30, 5]);
-  });
-});
-
-describe('paymentsOf', () => {
-  it('adds up the ticked codes’ payments', () => {
-    expect(paymentsOf([entry('grab food', 14), entry('grab', 7), entry('shell', 3)], new Set(['grab food', 'grab']))).toBe(21);
   });
 });

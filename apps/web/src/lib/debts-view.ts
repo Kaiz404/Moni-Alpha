@@ -210,10 +210,3 @@ export function repayWallet(
   const used = activities.find((activity) => activity.walletId !== null && walletIds.includes(activity.walletId))?.walletId;
   return used ?? (line.noted ? null : usual);
 }
-
-/** The repayment's button: what is still missing, or what it records. */
-export function repayAction(amount: string | null, choice: string | null): string {
-  if (amount === null) return 'Add an amount';
-  if (choice === null) return 'Choose where it went';
-  return `Record ${amount}`;
-}

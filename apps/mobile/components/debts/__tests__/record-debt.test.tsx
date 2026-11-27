@@ -168,7 +168,7 @@ describe('Record a debt', () => {
     expect(screen.getByText('RM50')).toBeTruthy();
 
     fireEvent.changeText(screen.getByTestId('debts.new.note'), ' Lunch ');
-    expect(screen.getByText('Record: Hana owes you RM50.00')).toBeTruthy();
+    expect(screen.getByText('Record')).toBeTruthy();
     await record();
 
     expect(jest.mocked(createDebt).mock.calls).toEqual([
@@ -191,7 +191,7 @@ describe('Record a debt', () => {
     expect(jest.mocked(router.push).mock.calls).toEqual([]);
   });
 
-  it('keeps the name in its field and on the button, on both sides', () => {
+  it('keeps the name in its field, and the button a fixed Record on both sides', () => {
     render(<NewDebtScreen />);
     fireEvent.changeText(screen.getByTestId('debts.new.person'), 'Hana');
     keys('5');
@@ -199,16 +199,16 @@ describe('Record a debt', () => {
     expect(screen.getByText('They owe me')).toBeTruthy();
     expect(screen.getByText('I owe them')).toBeTruthy();
     expect(screen.getByText('Not used')).toBeTruthy();
-    expect(screen.getByText('Record: Hana owes you RM5.00')).toBeTruthy();
+    expect(screen.getByText('Record')).toBeTruthy();
     expect(screen.queryByTestId('debts.sentence')).toBeNull();
-    expect(screen.queryAllByText(/Hana/)).toHaveLength(1);
+    expect(screen.queryAllByText(/Hana/)).toEqual([]);
 
     press('debts.direction.i-owe');
     expect(screen.getByText('They owe me')).toBeTruthy();
     expect(screen.getByText('I owe them')).toBeTruthy();
     expect(screen.getByText('Not used')).toBeTruthy();
-    expect(screen.getByText('Record: you owe Hana RM5.00')).toBeTruthy();
-    expect(screen.queryAllByText(/Hana/)).toHaveLength(1);
+    expect(screen.getByText('Record')).toBeTruthy();
+    expect(screen.queryAllByText(/Hana/)).toEqual([]);
   });
 
   it('does nothing until who and an amount are both there', async () => {

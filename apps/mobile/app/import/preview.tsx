@@ -214,7 +214,7 @@ export default function ImportPreviewScreen() {
         </View>
         <Button
           testID={tid('import', 'write')}
-          label={fresh ? `${verb} ${nouns(fresh)}` : 'Done'}
+          label={fresh ? verb : 'Done'}
           loading={progress !== null}
           loadingLabel={progress ? `${progress.done} of ${progress.total}` : undefined}
           onPress={fresh ? () => void write() : () => leave('/profile')}

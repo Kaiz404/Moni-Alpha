@@ -70,7 +70,7 @@ tags:
 - assertVisible: RM50
 - assertNotVisible: Hana will owe you RM50.00
 - assertVisible: They owe me
-- assertVisible: 'Record: Hana owes you RM50.00'
+- assertVisible: Record
 - tapOn:
     id: debts.new.note
 - inputText: Lunch

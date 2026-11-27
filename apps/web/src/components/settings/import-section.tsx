@@ -462,7 +462,7 @@ export function ImportSection() {
                 Back
               </button>
               <button type="button" className="btn btn-ink press" disabled={!counts?.fresh || flow.writing !== null} aria-busy={flow.writing !== null} onClick={() => void add()}>
-                {counts?.fresh ? `${session?.kind === 'restore' ? 'Restore' : 'Add'} ${plural(counts.fresh, session?.kind === 'restore' ? 'row' : 'transaction')}` : 'Nothing to add'}
+                {counts?.fresh ? (session?.kind === 'restore' ? 'Restore' : 'Add') : 'Nothing to add'}
                 <span className="kbd kbd-on-ink">Enter</span>
               </button>
             </div>

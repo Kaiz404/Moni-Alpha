@@ -640,7 +640,7 @@ export default function BillScreen() {
                 <Button
                   testID={tid('budget', 'bill', 'skip')}
                   variant="secondary"
-                  label={`Skip ${monthName(period)}`}
+                  label="Skip"
                   pinned
                   className="flex-1"
                   onPress={skip}

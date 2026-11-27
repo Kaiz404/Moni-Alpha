@@ -4,7 +4,7 @@ import { addDays, dateLabel, formatMoney, type DebtLine } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { useState } from 'react';
 import { parseAmountDraft } from '@/lib/budget-view';
-import { NO_WALLET, repayAction, repaidWords, timeline, WALLET_WORDS, walletField } from '@/lib/debts-view';
+import { NO_WALLET, repaidWords, timeline, WALLET_WORDS, walletField } from '@/lib/debts-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
@@ -277,7 +277,7 @@ export function PersonPane({
               <span className="kbd">Esc</span>
             </button>
             <button type="button" className="btn btn-ink press" disabled={capped === undefined || !repay.walletId} onClick={save}>
-              {repayAction(capped !== undefined ? money(capped) : null, repay.walletId)}
+              {capped === undefined ? 'Add an amount' : !repay.walletId ? 'Choose where it went' : 'Record'}
               <span className="kbd kbd-on-ink">Enter</span>
             </button>
           </div>
@@ -311,7 +311,7 @@ export function PersonPane({
           ) : (
             <button type="button" className="btn btn-sand press" onClick={onRecordAgain}>
               <Glyph name="plus" />
-              Record a new debt with {debt.counterpartyName}
+              Record a new debt
             </button>
           )}
         </div>

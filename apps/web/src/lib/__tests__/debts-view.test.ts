@@ -11,7 +11,6 @@ import {
   personMeta,
   readChoices,
   repaidWords,
-  repayAction,
   repayWallet,
   sideOptions,
   statusOptions,
@@ -156,12 +155,6 @@ describe('debts that moved no money', () => {
     expect(repayWallet({ noted: true }, [{ walletId: null }, { walletId: 'w2' }], ['w1', 'w2'], 'w1')).toBe('w2');
     expect(repayWallet({ noted: true }, [{ walletId: null }], ['w1'], 'w1')).toBeNull();
     expect(repayWallet({ noted: false }, [{ walletId: 'gone' }], ['w1'], 'w1')).toBe('w1');
-  });
-
-  it('asks where the money went before it records', () => {
-    expect(repayAction(null, 'w1')).toBe('Add an amount');
-    expect(repayAction('RM50.00', null)).toBe('Choose where it went');
-    expect(repayAction('RM50.00', NO_WALLET)).toBe('Record RM50.00');
   });
 });
 

@@ -274,7 +274,7 @@ export async function verifyBudgetDebts(t) {
   await p.keyboard.press('Escape');
   check('Esc in the cell cancels the edit, with no slide-over opened', (await cell.count()) === 0 && !p.url().includes('category=') && (await first.locator('[data-col="budget"]').textContent()) === whole(old));
 
-  const copy = p.getByRole('button', { name: /^Copy [A-Z][a-z]+'s spending$/ });
+  const copy = p.getByRole('button', { name: /^Copy last month's spending$/ });
   if (await copy.isVisible()) {
     await copy.click();
     const copied = p.getByRole('status').filter({ hasText: /Budgets set from|Nothing was spent/ });
@@ -429,7 +429,7 @@ export async function verifyBudgetDebts(t) {
   await d.waitForURL(/record=debt/);
   await d.getByRole('textbox', { name: 'Who' }).fill('E2E Verify');
   await d.getByLabel('Amount, in ringgit').fill('12.34');
-  check('Record a debt names the person and the amount on its button', await d.getByRole('button', { name: /^Record: E2E Verify owes you RM12\.34/ }).isVisible());
+  check('Record a debt says Record on its button, never the form\'s values', await d.locator('.record-debt .record-save').evaluate((el) => el.firstChild?.textContent === 'Record'));
   check(
     "Record a debt starts on Money didn't leave my wallet, shown as Wallet: Not used",
     (await d.locator(`.record-debt [aria-label="Wallet: Money didn't leave my wallet"]`).isVisible()) &&

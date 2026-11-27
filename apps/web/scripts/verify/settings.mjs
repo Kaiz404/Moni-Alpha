@@ -269,7 +269,7 @@ export async function verifySettings(t) {
   check('two ticks bring the Ink bulk bar', (await bulk.isVisible()) && (await bulk.textContent())?.includes('2 selected'));
   await bulk.getByRole('button', { name: 'Rename' }).click();
   const pop = p.getByRole('dialog', { name: 'Name 2 codes' });
-  check('Rename opens "Name 2 codes" with Apply to the payments they reach', (await pop.isVisible()) && (await pop.textContent())?.includes(`Apply to ${shown[0][1] + shown[1][1]} payments`));
+  check('Rename opens "Name 2 codes" with a plain Apply', (await pop.isVisible()) && (await pop.getByRole('button', { name: /^Apply/ }).isVisible()));
   await settle(p);
   await p.waitForTimeout(400);
   await shot(p, 'settings-merchants-1440-rename');
@@ -369,7 +369,7 @@ export async function verifySettings(t) {
   const nothingYet = await rest(`transactions?merchant=like.VERIFY*${run}&select=id`);
   check('nothing is written before Add', nothingYet.length === 0, nothingYet);
   await shot(p, 'settings-import-1440-check');
-  await p.getByRole('button', { name: 'Add 2 transactions' }).click();
+  await p.getByRole('button', { name: /^Add\s*Enter$/ }).click();
   const added = p.getByRole('status').filter({ hasText: 'Added 2 transactions' });
   await added.waitFor({ timeout: 30_000 }).catch(() => {});
   await added.hover().catch(() => {});

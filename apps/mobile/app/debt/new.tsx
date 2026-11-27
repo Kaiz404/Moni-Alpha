@@ -125,7 +125,7 @@ export default function NewDebtScreen() {
         }
         action={{
           label: ready
-            ? words.record(who, amount)
+            ? 'Record'
             : who
                 ? 'Add an amount'
                 : 'Add who and an amount',

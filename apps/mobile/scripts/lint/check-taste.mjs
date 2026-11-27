@@ -59,7 +59,74 @@ const jsxAttr = (node, name) => {
   return null;
 };
 
+/** The `const name = …` this file declares, so a label held in a variable is read through it. */
+const declared = (node, name) => {
+  let found = null;
+  const visit = (n) => {
+    if (found) return;
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name && n.initializer)
+      found = n.initializer;
+    else ts.forEachChild(n, visit);
+  };
+  visit(node.getSourceFile());
+  return found;
+};
+
+/** A label built from the form's values: a template with a value in it, a call given one, or a variable holding either. */
+const carriesValue = (node, depth = 0) => {
+  if (!node || depth > 4) return false;
+  if (ts.isParenthesizedExpression(node)) return carriesValue(node.expression, depth);
+  if (ts.isTemplateExpression(node)) return true;
+  if (ts.isCallExpression(node)) return node.arguments.length > 0;
+  if (ts.isConditionalExpression(node))
+    return carriesValue(node.whenTrue, depth) || carriesValue(node.whenFalse, depth);
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)
+    return !isString(node.left) || !isString(node.right);
+  if (ts.isIdentifier(node)) return carriesValue(declared(node, node.text), depth + 1);
+  return false;
+};
+
+const attrExpression = (node, name) => {
+  const attr = node.attributes.properties.find(
+    (p) => ts.isJsxAttribute(p) && p.name.getText() === name,
+  );
+  const init = attr?.initializer;
+  return init && ts.isJsxExpression(init) ? init.expression : null;
+};
+
+/** The phone's primary buttons: `<Button label>` and a page's pinned `action={{ label }}`. */
+const phoneButtonLabel = (node) => {
+  const tag = jsxTag(node);
+  if (!tag) return null;
+  if (tag === 'Button') return attrExpression(node, 'label');
+  const action = attrExpression(node, 'action');
+  if (!action || !ts.isObjectLiteralExpression(action)) return null;
+  const label = action.properties.find(
+    (p) => ts.isPropertyAssignment(p) && p.name.getText() === 'label',
+  );
+  return label?.initializer ?? null;
+};
+
+/** The web's buttons: a `<button className="btn …">` and the words inside it. */
+const webButtonLabels = (node) => {
+  if (!ts.isJsxElement(node) || node.openingElement.tagName.getText() !== 'button') return [];
+  if (!/(^|\s)btn(\s|$)/.test(jsxAttr(node.openingElement, 'className') ?? '')) return [];
+  return node.children.flatMap((child) =>
+    ts.isJsxExpression(child) && child.expression ? [child.expression] : [],
+  );
+};
+
 export const RULES = [
+  {
+    rule: 'value in button',
+    apps: ['mobile', 'web'],
+    reason:
+      "a button says a short fixed verb, never the form's values (a name, an amount, a date): the page shows them, and a long one truncates the button (#137)",
+    test: (node, app) =>
+      app === 'web'
+        ? webButtonLabels(node).some((label) => carriesValue(label))
+        : carriesValue(phoneButtonLabel(node)),
+  },
   {
     rule: 'sparkle icon',
     apps: ['mobile', 'web'],
@@ -113,7 +180,7 @@ export function tasteHits(file, source, app) {
   const hits = [];
   const visit = (node) => {
     for (const { rule, reason, test } of rules) {
-      if (!test(node)) continue;
+      if (!test(node, app)) continue;
       const { line } = sourceFile.getLineAndCharacterOfPosition(
         node.getStart(sourceFile),
       );

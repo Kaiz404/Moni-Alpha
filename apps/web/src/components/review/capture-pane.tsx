@@ -405,7 +405,7 @@ export function CapturePane({
         <span className="capture-note">{rule && !picked ? 'Saves the rule too' : ''}</span>
         <button type="button" className="btn btn-mint approve-btn press" disabled={needsWallet && !picked} onClick={onApprove}>
           <Glyph name="check" size={22} />
-          {picked ? `Approve ${picked}` : needsWallet ? 'Pick a wallet' : 'Approve'}
+          {needsWallet && !picked ? 'Pick a wallet' : 'Approve'}
           <span className="kbd" data-only="sidebar rail rail-one-column">
             A
           </span>

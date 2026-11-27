@@ -15,7 +15,7 @@ import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble } from '@/components/ledger/glyph';
 import { commit, planContext } from '@/lib/ledger/commit';
-import { merchantPage, paymentsOf, type MerchantFilter, type MerchantSort } from '@/lib/merchant-names-view';
+import { merchantPage, type MerchantFilter, type MerchantSort } from '@/lib/merchant-names-view';
 import { moniStore } from '@/lib/moni-store';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { Mdi, SETTINGS_ICONS } from './mdi';
@@ -355,7 +355,7 @@ export function MerchantsSection() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-ink press" disabled={!renaming.trim()}>
-                  Apply to {plural(paymentsOf(all, selected), 'payment')}
+                  Apply
                   <span className="kbd kbd-on-ink">Enter</span>
                 </button>
               </div>

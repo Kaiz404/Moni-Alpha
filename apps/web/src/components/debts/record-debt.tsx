@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney, lastDueDate, type NewDebt } from '@repo/core';
+import { lastDueDate, type NewDebt } from '@repo/core';
 import { parseAmountDraft } from '@/lib/budget-view';
 import { NO_WALLET, WALLET_WORDS, walletField } from '@/lib/debts-view';
 import { DateField } from '@/components/controls/date-picker';
@@ -44,14 +44,11 @@ export function RecordDebt({
   const words = WALLET_WORDS[draft.direction];
   const field = walletField(words.principal, choice, (id) => data.walletNames[id]);
   const ready = Boolean(who && amountMinor);
-  const money = (minor: number) => formatMoney(minor, wallet?.currency ?? currency);
   const label = !ready
     ? who
       ? 'Add an amount'
       : 'Add who and an amount'
-    : owed
-      ? `Record: ${who} owes you ${money(amountMinor!)}`
-      : `Record: you owe ${who} ${money(amountMinor!)}`;
+    : 'Record';
   const save = () => {
     if (!ready || !amountMinor) return;
     onSave({

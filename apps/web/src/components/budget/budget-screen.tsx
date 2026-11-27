@@ -293,7 +293,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                       {editable && (
                         <button type="button" className="btn btn-out press copy-btn" onClick={copyLastMonth}>
                           <Glyph name="content-copy" size={18} />
-                          Copy {monthName(lastMonth)}&apos;s spending
+                          Copy last month&apos;s spending
                         </button>
                       )}
                     </>

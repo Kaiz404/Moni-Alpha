@@ -34,7 +34,6 @@ export const SIDE_WORDS = {
       `${name} paid back all ${amount}. Moni moved this to Settled.`,
     writeOffBody: (name: string) =>
       `${name} won't owe you anything. No money moves, and this history stays.`,
-    record: (name: string, amount: string) => `Record: ${name} owes you ${amount}`,
     saved: (name: string, amount: string) => `Saved. ${name} owes you ${amount}`,
     segment: 'They owe me',
     pastPeople: 'People who owed you',
@@ -67,7 +66,6 @@ export const SIDE_WORDS = {
       `You paid back all ${amount}. Moni moved this to Settled.`,
     writeOffBody: (name: string) =>
       `You won't owe ${name} anything. No money moves, and this history stays.`,
-    record: (name: string, amount: string) => `Record: you owe ${name} ${amount}`,
     saved: (name: string, amount: string) => `Saved. You owe ${name} ${amount}`,
     segment: 'I owe them',
     pastPeople: 'People you owed',

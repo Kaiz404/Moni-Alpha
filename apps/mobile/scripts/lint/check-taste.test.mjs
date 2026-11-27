@@ -41,6 +41,22 @@ test('native selects and date inputs fail on the web only', () => {
   assert.deepEqual(rules(source, 'mobile'), []);
 });
 
+test('the Record a debt button #137 built from the form fails, and a fixed verb passes', () => {
+  const before = `const words = { record: (name, amount) => \`Record: \${name} owes you \${amount}\` };
+const A = () => (
+  <AmountPage action={{ label: ready ? words.record(who, amount) : 'Add an amount', onPress }} />
+);
+const B = () => <Button label={\`Skip \${monthName(period)}\`} />;
+const C = () => <Button label={ready ? 'Record' : 'Add an amount'} />;`;
+  assert.deepEqual(rules(before), ['3 value in button', '5 value in button']);
+
+  const web = `const label = ready ? \`Record: \${who} owes you \${money}\` : 'Add who and an amount';
+const A = () => <button type="button" className="btn btn-ink press">{label}<span className="kbd">Enter</span></button>;
+const B = () => <button type="button" className="chip press">{name}</button>;
+const C = () => <button type="button" className="btn btn-sand press">{open ? 'Record' : 'Done'}</button>;`;
+  assert.deepEqual(rules(web, 'web'), ['2 value in button']);
+});
+
 test('an allow entry names the file and rule, not the line', () => {
   assert.equal(allowKey({ file: 'a.tsx', line: 9, rule: 'text arrow' }), 'a.tsx: text arrow');
 });

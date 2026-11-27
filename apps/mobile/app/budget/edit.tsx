@@ -450,11 +450,7 @@ export default function EditBudgetsScreen() {
         <Button
           testID={tid('budget', 'edit', 'save')}
           className="flex-1"
-          label={
-            counted === 1
-              ? 'Save 1 budget'
-              : `Save ${counted} budgets`
-          }
+          label="Save"
           pinned
           loading={saving}
           loadingLabel="Saving"

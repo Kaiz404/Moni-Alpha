@@ -19,7 +19,7 @@ When the owner gives new design feedback, add or sharpen a rule here in the same
 
 | Check | Rules it enforces | Run |
 | --- | --- | --- |
-| `apps/mobile/scripts/lint/check-taste.mjs` | sparkle icon, confirm dialog, text arrow (phone and web), native control (web) | `pnpm --filter moni lint:taste` (in `scripts/verify/gate.sh`) |
+| `apps/mobile/scripts/lint/check-taste.mjs` | sparkle icon, confirm dialog, text arrow, value in button (phone and web), native control (web) | `pnpm --filter moni lint:taste` (in `scripts/verify/gate.sh`) |
 | `apps/mobile/scripts/lint/copy-rules.mjs` | glossary words, Archive, gesture hints, money and date format, middle dot (phone, shared packages and web) | `pnpm --filter moni lint:copy` and `pnpm --filter web lint:copy` (both in the gate) |
 | `~/.local/share/moni-canvas/tools/lint_terms.py` | the same words on canvas boards | before publishing boards |
 | Screenshot review | everything else below | `moni-verify` step 5 |

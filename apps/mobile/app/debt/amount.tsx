@@ -270,7 +270,7 @@ function DebtMoneyForm({
           amountMinor <= 0 || over
             ? 'Add an amount'
             : choice
-              ? `${verb} ${money(amountMinor)}`
+              ? verb
               : 'Choose where it went',
         disabled: saving || !choice || amountMinor <= 0 || over,
         onPress: () => void save(),

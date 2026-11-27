@@ -72,8 +72,3 @@ export function merchantPage(
     last: start + rows.length,
   };
 }
-
-/** How many payments a rename reaches: the ticked codes' payments together. */
-export function paymentsOf(entries: readonly MerchantEntry[], keys: ReadonlySet<string>): number {
-  return entries.filter((entry) => keys.has(entry.key)).reduce((sum, entry) => sum + entry.count, 0);
-}
