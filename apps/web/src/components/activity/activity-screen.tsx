@@ -4,9 +4,11 @@ import {
   dayHeading,
   firstDayOf,
   formatMoney,
+  paymentBill,
   planTransactionEdit,
   planTransactionsDelete,
   planTransactionsEdit,
+  type FinanceTransaction,
 } from '@repo/core';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -48,6 +50,7 @@ import { SidePanel } from '@/components/ledger/side-panel';
 import { useStepBack } from '@/components/ledger/use-query-param';
 import { FromTo } from '@/components/ledger/from-to';
 import { COLUMN_SPANS, parseColumnWidths, type ColumnWidths, type ResizableColumn } from '@/lib/sizes';
+import { BillForm } from './bill-form';
 import { ConfirmDelete } from './confirm-delete';
 import { DetailPane } from './detail-pane';
 import { FilterBar } from './filters';
@@ -173,6 +176,25 @@ export function ActivityScreen() {
     if (path !== pathname) router[id && !openId ? 'push' : 'replace'](`${path}${activityQueryString(query, new URLSearchParams(params.toString()))}`, { scroll: false });
   };
   const close = useStepBack(Boolean(openId), () => openRow(null));
+  // Make it a bill (#153) is a step inside the open transaction's panel; moving to another row leaves it.
+  const [billFor, setBillFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (billFor && billFor !== openId) setBillFor(null);
+  }, [openId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const makingBill = Boolean(open) && billFor === open?.id;
+  const billOf = (transaction: FinanceTransaction) =>
+    paymentBill(
+      transaction,
+      ledger.transactions,
+      ledger.moneyRows.overrides,
+      ledger.now,
+      ledger.calendar,
+      (transaction.categoryId && ledger.projection.categoriesById[transaction.categoryId]?.name) || null,
+    );
+  const makeBill = (id: string) => {
+    openRow(id);
+    setBillFor(id);
+  };
   const move = (step: 1 | -1) => {
     const index = openIndex === -1 ? (step === 1 ? 0 : all.length - 1) : openIndex + step;
     const next = all[Math.max(0, Math.min(all.length - 1, index))];
@@ -233,6 +255,7 @@ export function ActivityScreen() {
           setCell(null);
           setNaming(null);
         } else if (selected.size) setSelected(new Set());
+        else if (makingBill) setBillFor(null);
         else if (openId) close();
         else return false;
         return true;
@@ -404,6 +427,8 @@ export function ActivityScreen() {
   };
 
   const menuItem = menu && items.find((item) => item.id === menu.id);
+  const menuTransaction = menuItem ? ledger.projection.transactionsById[menuItem.id] : undefined;
+  const menuBill = menuTransaction && menuTransaction.debtActivityId === null ? billOf(menuTransaction) : null;
   const days = useMemo(() => {
     const groups: { day: string; rows: Shown[]; out: number; in: number }[] = [];
     for (const item of page.rows) {
@@ -707,6 +732,12 @@ export function ActivityScreen() {
                   <Glyph name="wallet-outline" size={18} />
                   Change wallet
                 </button>
+                {menuBill?.kind === 'offer' && (
+                  <button type="button" role="menuitem" className="popover-row" onClick={() => makeBill(menuItem.id)}>
+                    <Glyph name="repeat" size={18} />
+                    Make it a bill
+                  </button>
+                )}
                 <button type="button" role="menuitem" className="popover-row" onClick={() => (setMenu(null), setFilters({ q: menuItem.title }))}>
                   <Glyph name="magnify" size={18} />
                   <span className="popover-row-text">Show all from {menuItem.title}</span>
@@ -784,13 +815,14 @@ export function ActivityScreen() {
         )}
       </div>
       <SidePanel
-        label="Transaction"
+        label={makingBill ? 'New bill' : 'Transaction'}
         name="transaction"
-        item={open?.id}
-        back="Activity"
-        steps={{ noun: 'transaction', position: openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`, onMove: move, first: openIndex === 0, last: openIndex === all.length - 1 }}
+        item={makingBill ? `${open?.id}/bill` : open?.id}
+        back={makingBill ? 'Transaction' : 'Activity'}
+        onBack={makingBill ? () => setBillFor(null) : undefined}
+        steps={makingBill ? undefined : { noun: 'transaction', position: openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`, onMove: move, first: openIndex === 0, last: openIndex === all.length - 1 }}
         actions={
-          open && open.debtActivityId === null ? (
+          open && open.debtActivityId === null && !makingBill ? (
             <button type="button" className="icon-round icon-round-line icon-round-key side-panel-step press" aria-label="Delete transaction (Del)" onClick={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}>
               <Icon name="delete-outline" size={20} />
               <span className="kbd kbd-inline">Del</span>
@@ -800,14 +832,18 @@ export function ActivityScreen() {
         open={Boolean(open) && !pane}
         onClose={close}
       >
-        {open && (
+        {open && makingBill ? (
+          <BillForm key={open.id} ledger={ledger} transaction={open} onClose={() => setBillFor(null)} />
+        ) : open ? (
           <DetailPane
             ledger={ledger}
             transaction={open}
+            bill={billOf(open)}
             onClose={close}
             onDelete={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}
+            onMakeBill={() => setBillFor(open.id)}
           />
-        )}
+        ) : null}
       </SidePanel>
       {confirming && (
         <ConfirmDelete

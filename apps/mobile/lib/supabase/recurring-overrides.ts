@@ -1,20 +1,21 @@
-import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
-  billNameSchema,
   minorToDecimal,
   setRecurringOverrideInputSchema,
-  type CurrencyCode,
   type MinorAmount,
   type RecurringOverride,
   type SetRecurringOverrideInput,
 } from '@repo/types';
-import { merchantKey, recurringOverridesFromRows } from '@repo/core';
+import {
+  planAddBill,
+  recurringOverridesFromRows,
+  type NewBill,
+  type RecurringOverrideRow,
+} from '@repo/core';
 import { assertMigrated, recurringOverrides$ } from '@/lib/store';
 import { patchRow } from '@/lib/store/helpers';
+import { commit, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
-
-export type RecurringOverrideRow = StoredRow<'recurring_overrides'>;
 
 /** The user's live verdicts; the recurring detector reads these. */
 export function listRecurringOverrides(userId: string): RecurringOverride[] {
@@ -132,41 +133,12 @@ export async function skipBill(
   await updateBill(bill, { skipPeriod: period });
 }
 
-/** The series key a new bill groups its payments under, or null for a name with no letters. */
-export function billSeriesKey(name: string, currency: CurrencyCode): string | null {
-  const merchant = merchantKey(name);
-  return merchant ? `${currency}|expense|${merchant}` : null;
-}
-
-/**
- * "Add a bill": a confirmed bill, due monthly or once. Made from a payment (#136), it joins that
- * payment's series, so the payment and later ones from the merchant count against it.
- */
-export async function addBill(input: {
-  name: string;
-  amountMinor: MinorAmount;
-  currency: CurrencyCode;
-  /** Local `YYYY-MM-DD`. */
-  dueDate: string;
-  once: boolean;
-  from?: { seriesKey: string; walletId: string; categoryId: string | null };
-}): Promise<string> {
-  const name = billNameSchema.parse(input.name);
-  const seriesKey = input.from?.seriesKey ?? billSeriesKey(name, input.currency);
-  if (!seriesKey) throw new Error('A bill name needs a letter in it.');
-  await setRecurringOverride({
-    seriesKey,
-    status: 'confirmed',
-    kind: 'bill',
-    currency: input.currency,
-    expectedAmountMinor: input.amountMinor,
-    expectedDay: Number(input.dueDate.slice(8, 10)),
-    name,
-    dueOnce: input.once ? input.dueDate : null,
-    skipPeriod: null,
-    ...(input.from ? { walletId: input.from.walletId, categoryId: input.from.categoryId } : {}),
-  });
-  return seriesKey;
+/** "Add a bill", shared with the web: see `planAddBill`. */
+export async function addBill(bill: NewBill): Promise<string> {
+  const rows = Object.values(
+    (recurringOverrides$.peek() ?? {}) as Record<string, RecurringOverrideRow | undefined>,
+  ).filter((row): row is RecurringOverrideRow => Boolean(row));
+  return commit(planAddBill(rows, bill, await planContext())).seriesKey;
 }
 
 /** Forget the verdict, so the detector decides on its own again. */

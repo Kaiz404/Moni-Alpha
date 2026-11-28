@@ -1,4 +1,5 @@
 export * from './balance-correction';
+export * from './bills';
 export * from './budgets';
 export * from './debts';
 export * from './import';

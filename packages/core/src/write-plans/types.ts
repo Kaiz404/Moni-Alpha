@@ -59,7 +59,7 @@ export type Planned<Result = null> =
   | { kind: 'error'; message: string };
 
 /** Migrations whose columns a plan leaves out until the server has them. */
-export type GatedColumns = 'transaction_place_ids' | 'merchant_aliases_and_wallet_location';
+export type GatedColumns = 'transaction_place_ids' | 'merchant_aliases_and_wallet_location' | 'recurring_override_bills';
 
 /** What a plan needs beyond the ledger: who writes, when, fresh ids, and which columns exist. */
 export type PlanContext = {

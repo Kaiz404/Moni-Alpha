@@ -1051,3 +1051,75 @@ html[data-layout='phone'] :is(.kind-chip, .pencil, .field-chip)::before {
   background: var(--color-sand-light);
   animation: fade-in 180ms ease 300ms both;
 }
+
+/* ---------- Make it a bill (#153) ---------- */
+
+.pane-bill {
+  color: var(--color-foreground);
+}
+
+.pane-bill > :last-child {
+  margin-left: auto;
+  color: var(--color-muted);
+}
+
+.bill-form {
+  gap: 14px;
+}
+
+.bill-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  transition: box-shadow 120ms ease;
+}
+
+.bill-input:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.bill-input .label-text {
+  width: 64px;
+  flex: none;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.bill-input input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  color: var(--color-foreground);
+}
+
+.bill-amount {
+  min-height: 64px;
+}
+
+.bill-amount b,
+.bill-amount input {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.bill-amount b {
+  color: var(--color-ink-2);
+}
+
+.bill-often {
+  display: flex;
+}
+
+.bill-often button {
+  flex: 1 1 0;
+  height: 38px;
+}

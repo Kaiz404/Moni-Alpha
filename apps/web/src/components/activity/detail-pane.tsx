@@ -6,8 +6,10 @@ import {
   planTransactionEdit,
   transactionRow,
   type FinanceTransaction,
+  type PaymentBill,
 } from '@repo/core';
 import { decimalToMinor, type UpdateTransaction } from '@repo/types';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
@@ -26,14 +28,19 @@ import type { Ledger } from '@/lib/ledger/use-ledger';
 export function DetailPane({
   ledger,
   transaction,
+  bill,
   onClose,
   onDelete,
+  onMakeBill,
 }: {
   ledger: Ledger;
   transaction: FinanceTransaction;
+  /** Whether it is one of the bills, or could become one (#153). */
+  bill: PaymentBill | null;
   onClose: () => void;
   /** Asks to confirm, then deletes (W2-Parts). */
   onDelete: () => void;
+  onMakeBill: () => void;
 }) {
   const { projection, walletNames, aliases, calendar, now, userId, wallets } = ledger;
   const [editing, setEditing] = useState<'merchant' | 'amount' | 'note' | null>(null);
@@ -254,6 +261,19 @@ export function DetailPane({
           </figure>
         )}
         <ReceiptRow stored={transaction.receiptImageUrl} name={row.title} />
+        {bill?.kind === 'bill' ? (
+          <Link href="/budget" className="pane-note pane-bill press">
+            <Glyph name="repeat" size={20} />
+            {bill.once ? 'One-time bill' : 'Monthly bill'}
+            <Glyph name="chevron-right" size={18} />
+          </Link>
+        ) : bill && !linked ? (
+          <button type="button" className="pane-note pane-bill press" onClick={onMakeBill}>
+            <Glyph name="repeat" size={20} />
+            Make it a bill
+            <Glyph name="chevron-right" size={18} />
+          </button>
+        ) : null}
         {editing === 'note' ? (
           editor('Note', 'in-place-note')
         ) : (

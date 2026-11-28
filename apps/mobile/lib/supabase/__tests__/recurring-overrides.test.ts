@@ -1,11 +1,7 @@
 import type { Observable } from '@legendapp/state';
+import type { RecurringOverrideRow } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
-import {
-  addBill,
-  skipBill,
-  updateBill,
-  type RecurringOverrideRow,
-} from '../recurring-overrides';
+import { addBill, skipBill, updateBill } from '../recurring-overrides';
 
 let mockNextId = 0;
 const mockMigrated = { bills: true };
@@ -18,6 +14,7 @@ jest.mock('@/lib/store', () => {
     assertMigrated: () => {
       if (!mockMigrated.bills) throw new Error('Moni needs a server update');
     },
+    isMigrated: () => mockMigrated.bills,
   };
 });
 

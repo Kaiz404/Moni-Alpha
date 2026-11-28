@@ -15,14 +15,12 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import { transactionById$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { readAmount } from '@/lib/amount/amount-input';
-import {
-  addBill,
-  billSeriesKey,
-} from '@/lib/supabase/recurring-overrides';
+import { addBill } from '@/lib/supabase/recurring-overrides';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import {
   billDueFrom,
+  billSeriesKey,
   currencySymbol,
   dateLabel,
   formatMoney,

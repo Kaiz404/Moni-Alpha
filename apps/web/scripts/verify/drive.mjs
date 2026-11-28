@@ -12,6 +12,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { verifyMakeBill } from './bills.mjs';
 import { verifyBudgetDebts, verifyDebtFlows } from './budget-debts.mjs';
 import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
@@ -510,6 +511,8 @@ try {
   // ---------- Home and Activity against the seed ----------
   await keepSignedIn();
   if (runs('ledger')) await driveLedgerScreens({ browser, storage, base, check, shot, settle, pair, boardBand, OUT, seed });
+  await keepSignedIn();
+  if (runs('ledger') || runs('bills')) await verifyMakeBill({ browser, base, storage, check, shot, settle, open, seed, rest });
 
   // ---------- Delete your account: the public page, the flow in Settings, done ----------
   await keepSignedIn();
