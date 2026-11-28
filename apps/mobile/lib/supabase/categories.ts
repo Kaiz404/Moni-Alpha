@@ -1,6 +1,6 @@
-import { toFinanceCategory } from '@repo/core';
+import { hideShadowedPresets, planCategoryCreate, toFinanceCategory } from '@repo/core';
 import type { StoredRow } from '@repo/core';
-import { randomUUID } from 'expo-crypto';
+import { commit, planContext } from '@/lib/store/writes';
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -8,7 +8,6 @@ import {
   type UpdateCategory,
 } from '@repo/types';
 import { categories$ } from '@/lib/store';
-import { hideShadowedPresets } from '@repo/core';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
@@ -50,37 +49,8 @@ export async function getCategories(type?: 'income' | 'expense') {
 export async function createCategory(input: CreateCategory) {
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
-  const category = createCategorySchema.parse(input);
-  const current = getAllCategoryRows(userId, true);
-  const duplicate = current.some(
-    (row) =>
-      isActive(row.is_active) &&
-      row.type === category.type &&
-      row.name?.trim().toLocaleLowerCase() === category.name.toLocaleLowerCase() &&
-      (row.user_id === null || row.user_id === userId),
-  );
-  if (duplicate) throw new Error('An active category with this name already exists.');
-
-  const displayOrder =
-    Math.max(
-      100,
-      ...current
-        .filter((row) => row.user_id === userId && row.type === category.type)
-        .map((row) => row.display_order ?? 0),
-    ) + 1;
-  const id = randomUUID();
-  categories$[id].set({
-    id,
-    user_id: userId,
-    name: category.name,
-    icon: category.icon,
-    color: category.color,
-    type: category.type,
-    is_active: true,
-    display_order: displayOrder,
-    deleted: false,
-  });
-  return id;
+  const current = getAllCategoryRows(userId, true).flatMap((row) => toFinanceCategory(row) ?? []);
+  return commit(planCategoryCreate(createCategorySchema.parse(input), current, await planContext()));
 }
 
 export async function updateCategory(categoryId: string, input: UpdateCategory): Promise<void> {

@@ -3,6 +3,8 @@
 import {
   Select as Root,
   SelectContent,
+  SelectGroup,
+  SelectGroupLabel,
   SelectItem,
   SelectItemIndicator,
   SelectTrigger,
@@ -19,6 +21,13 @@ export type SelectOption<T extends string> = {
   /** Shown at the row's end, as an amount or a budget left. */
   side?: ReactNode;
 };
+
+/** A pick a screen offers beside its options, as New category: it runs instead of choosing. */
+export type SelectAction = { label: string; lead: ReactNode; run: () => void };
+
+/** Option values in the list itself: a suggested option repeats its value, and the action is none. */
+const SUGGESTED = 'suggested:';
+const ACTION = 'action:';
 
 /** A letter on the closed trigger stays a screen key (J, K, E), as on the button this was, and never picks an option. */
 function letter(event: KeyboardEvent) {
@@ -45,6 +54,8 @@ export function Select<T extends string>({
   triggerLabel,
   text,
   invalid,
+  suggested,
+  action,
   children,
 }: {
   label: string;
@@ -64,16 +75,45 @@ export function Select<T extends string>({
   /** The trigger's words when they say more than the chosen option's label; a node needs a `triggerLabel`. */
   text?: ReactNode;
   invalid?: boolean;
+  /**
+   * Offered first, best first, under Suggested while nothing is chosen (the phone's category sheet); the full
+   * list follows under `allLabel`.
+   */
+  suggested?: { values: readonly T[]; allLabel: string };
+  action?: SelectAction;
   children?: ReactNode;
 }) {
   const chosen = options.find((option) => option.value === value);
   const shown = text ?? chosen?.label ?? placeholder;
+  const first = value === null && suggested ? suggested.values.flatMap((each) => options.find((option) => option.value === each) ?? []) : [];
+  const row = (option: SelectOption<T>, listed: string) => (
+    <SelectItem
+      key={listed}
+      value={listed}
+      label={option.label}
+      className="popover-row"
+    >
+      {option.lead}
+      <span className="popover-row-text">{option.label}</span>
+      {option.side}
+      <SelectItemIndicator className="popover-tick">
+        <Icon
+          name="check"
+          size={18}
+        />
+      </SelectItemIndicator>
+    </SelectItem>
+  );
+  const rows = options.map((option) => row(option, option.value));
   return (
-    <Root<T>
+    <Root<string>
       value={value}
       disabled={disabled}
       onValueChange={(next) => {
-        if (next !== null && next !== value) onChange(next as T);
+        if (next === null) return;
+        if (next.startsWith(ACTION)) return action?.run();
+        const picked = (next.startsWith(SUGGESTED) ? next.slice(SUGGESTED.length) : next) as T;
+        if (picked !== value) onChange(picked);
       }}
     >
       <SelectTrigger
@@ -115,24 +155,30 @@ export function Select<T extends string>({
         className={`popover popover-select${listClassName ? ` ${listClassName}` : ''}`}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        {options.map((option) => (
+        {first.length > 0 && suggested ? (
+          <>
+            <SelectGroup className="popover-group">
+              <SelectGroupLabel className="caps popover-group-label">Suggested</SelectGroupLabel>
+              {first.map((option) => row(option, `${SUGGESTED}${option.value}`))}
+            </SelectGroup>
+            <SelectGroup className="popover-group">
+              <SelectGroupLabel className="caps popover-group-label">{suggested.allLabel}</SelectGroupLabel>
+              {rows}
+            </SelectGroup>
+          </>
+        ) : (
+          rows
+        )}
+        {action && (
           <SelectItem
-            key={option.value}
-            value={option.value}
-            label={option.label}
-            className="popover-row"
+            value={`${ACTION}${action.label}`}
+            label={action.label}
+            className="popover-row popover-action"
           >
-            {option.lead}
-            <span className="popover-row-text">{option.label}</span>
-            {option.side}
-            <SelectItemIndicator className="popover-tick">
-              <Icon
-                name="check"
-                size={18}
-              />
-            </SelectItemIndicator>
+            {action.lead}
+            <span className="popover-row-text">{action.label}</span>
           </SelectItem>
-        ))}
+        )}
       </SelectContent>
     </Root>
   );

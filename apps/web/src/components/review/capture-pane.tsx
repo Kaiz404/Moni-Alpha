@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  captureClues,
   dayLabel,
   daysAgo,
   editedProposal,
@@ -18,10 +19,12 @@ import {
 } from '@repo/core';
 import { decimalToMinor, type MinorAmount, type TransactionType } from '@repo/types';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Select, type SelectOption } from '@/components/controls/select';
+import { NewCategoryDialog, newCategoryAction } from '@/components/categories/new-category';
+import { Select, type SelectAction, type SelectOption } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { ReceiptPhotoButton } from '@/components/receipt/receipt-row';
+import { categoryChoices, suggestedCategories } from '@/lib/category-pick';
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import { useReceiptPhoto } from '@/lib/receipt-photo';
@@ -74,12 +77,14 @@ export function CapturePane({
   onApprove: () => void;
   onNotMine: () => void;
 }) {
-  const { projection, calendar, now, wallets, userId } = ledger;
+  const { projection, calendar, now, wallets } = ledger;
   const [editing, setEditing] = useState<'merchant' | 'amount' | null>(null);
   const [draft, setDraft] = useState('');
+  const [creating, setCreating] = useState(false);
   const photo = useReceiptPhoto(capture.sourceType === 'image' ? capture.sourceImageUri : null);
   useEffect(() => {
     setEditing(null);
+    setCreating(false);
   }, [capture.id]);
 
   const next = editedProposal(capture, edits);
@@ -88,9 +93,9 @@ export function CapturePane({
   const wallet = next.walletId ? projection.walletsById[next.walletId] : undefined;
   const to = next.transferToWalletId ? projection.walletsById[next.transferToWalletId] : undefined;
   const sameCurrency = wallets.filter((each) => each.currency === capture.currency);
-  const categories = Object.values(projection.categoriesById)
-    .filter((each) => each.isActive && (each.userId === null || each.userId === userId) && (each.type === null || each.type === type))
-    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
+  const kind = type === 'income' ? 'income' : 'expense';
+  const categories = categoryChoices(ledger, kind);
+  const suggested = next.categoryId || type === 'transfer' ? [] : suggestedCategories(ledger, captureClues({ ...next, type }));
   const at = capture.transactionDate ?? capture.createdAt;
   const ago = daysAgo(calendar.dayKey(capture.notificationReceivedAt ?? at), calendar.dayKey(now));
   const whenAt = (time: string) => `${dayLabel(calendar.dayKey(time), calendar.dayKey(now))} at ${clockTime(time, calendar.zone)}`;
@@ -174,9 +179,28 @@ export function CapturePane({
       </button>
     </form>
   );
-  const row = <T extends string>(label: string, lead: ReactNode, value: string, chosen: T | null, options: SelectOption<T>[], pick: (value: T) => void, tone?: 'lemon') => (
-    <div className="capture-field" data-tone={tone}>
-      <Select label={label} text={value} className="capture-field-btn press" listClassName="capture-pop" align="end" value={chosen} options={options} onChange={pick}>
+  const row = <T extends string>(
+    label: string,
+    lead: ReactNode,
+    value: string,
+    chosen: T | null,
+    options: SelectOption<T>[],
+    pick: (value: T) => void,
+    extra: { tone?: 'lemon'; suggested?: readonly T[]; action?: SelectAction } = {},
+  ) => (
+    <div className="capture-field" data-tone={extra.tone}>
+      <Select
+        label={label}
+        text={value}
+        className="capture-field-btn press"
+        listClassName="capture-pop"
+        align="end"
+        value={chosen}
+        options={options}
+        suggested={extra.suggested && { values: extra.suggested, allLabel: 'All categories' }}
+        action={extra.action}
+        onChange={pick}
+      >
         <span className="capture-field-label">{label}</span>
         {lead}
         <span className="capture-field-value">{value}</span>
@@ -281,7 +305,18 @@ export function CapturePane({
                 next.categoryId,
                 categories.map((each) => ({ value: each.id, label: each.name, lead: <Bubble icon={each.icon} color={each.color} size={28} glyph={15} /> })),
                 (id) => set({ categoryId: id }),
+                { suggested, action: newCategoryAction(() => setCreating(true)) },
               )}
+            {creating && (
+              <NewCategoryDialog
+                ledger={ledger}
+                type={kind}
+                onClose={(made) => {
+                  setCreating(false);
+                  if (made) set({ categoryId: made.id });
+                }}
+              />
+            )}
             {row(
               type === 'transfer' ? 'From' : 'Wallet',
               wallet ? <Bubble icon={wallet.icon} color={wallet.color} size={28} glyph={15} /> : <Glyph name="wallet-outline" size={18} />,
@@ -289,7 +324,7 @@ export function CapturePane({
               next.walletId,
               walletOptions(),
               (id) => set({ walletId: id }),
-              needsWallet ? 'lemon' : undefined,
+              { tone: needsWallet ? 'lemon' : undefined },
             )}
             {type === 'transfer' &&
               row(
@@ -299,7 +334,7 @@ export function CapturePane({
                 next.transferToWalletId,
                 walletOptions(next.walletId),
                 (id) => set({ transferToWalletId: id }),
-                to ? undefined : 'lemon',
+                { tone: to ? undefined : 'lemon' },
               )}
           </div>
           {needsWallet && capture.walletHint && (

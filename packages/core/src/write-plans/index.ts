@@ -1,6 +1,7 @@
 export * from './balance-correction';
 export * from './bills';
 export * from './budgets';
+export * from './categories';
 export * from './debts';
 export * from './import';
 export * from './memory';

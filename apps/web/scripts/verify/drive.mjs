@@ -919,7 +919,7 @@ try {
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   else if (runs('debt-flows')) await verifyDebtFlows({ browser, base, storage, shot, open, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
-  if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, rest, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();
   if (runs('receipts')) await verifyReceipts({ browser, base, storage, check, shot, settle, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   await keepSignedIn();

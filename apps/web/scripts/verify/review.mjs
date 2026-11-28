@@ -12,7 +12,7 @@ const cents = (minor) => `RM${(Math.abs(minor) / 100).toLocaleString('en-US', { 
 const minorOf = (amount) => Math.round(Number(amount) * 100);
 
 export async function verifyReview(t) {
-  const { browser, storage, check, shot, pair, settle, widths, background, navFor, query, seed, base } = t;
+  const { browser, storage, check, shot, pair, settle, widths, background, navFor, query, rest, seed, base } = t;
   const pinned = async (options) => {
     const ctx = await browser.newContext({ storageState: storage, timezoneId: seed.zone, ...options });
     await ctx.clock.setFixedTime(seed.pin);
@@ -250,6 +250,39 @@ export async function verifyReview(t) {
   await p.locator(`.inbox-row[data-capture="${chat.id}"]`).click();
   await p.waitForURL(new RegExp(`capture=${chat.id}`));
   check('the wallet picked before the drawer closed is still picked when it opens again', await pane.getByRole('button', { name: /^Approve/ }).isEnabled());
+
+  // #152: a capture with no category offers Suggested first, then All categories and New category, which makes one and picks it here.
+  // Every seeded capture has a category, so Income clears this one's.
+  await drawer(p).getByRole('combobox', { name: /^Type: / }).click();
+  await drawer(p).getByRole('listbox', { name: 'Type' }).getByRole('option', { name: 'Income' }).click();
+  const categoryField = drawer(p).getByRole('combobox', { name: 'Category: Pick a category' });
+  await categoryField.click();
+  const categoryList = drawer(p).getByRole('listbox', { name: 'Category' });
+  await categoryList.waitFor({ timeout: 3000 });
+  const groups = await categoryList.getByRole('group').evaluateAll((els) => els.map((el) => el.querySelector('[data-slot$="group-label"]')?.textContent));
+  check('a capture with no category lists Suggested, then All categories', groups.length === 2 && groups[0] === 'Suggested' && groups[1] === 'All categories', groups);
+  await settle(p);
+  await shot(p, 'review-1440-category-suggested');
+  await categoryList.getByRole('option', { name: 'New category' }).click();
+  const made = p.getByRole('dialog', { name: 'New category' });
+  await made.waitFor({ timeout: 3000 });
+  await made.getByLabel('Name').fill('Web verify pets');
+  await made.getByRole('radio', { name: 'Icon gift outline' }).click();
+  await settle(p);
+  await shot(p, 'review-1440-new-category');
+  await made.getByRole('button', { name: /^Create category/ }).click();
+  await made.waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  const picked = drawer(p).getByRole('combobox', { name: 'Category: Web verify pets' });
+  check('Create category closes the dialog and the capture takes the new category, the drawer still open', (await visible(picked)) && !(await visible(made)) && p.url().includes(`capture=${chat.id}`));
+  let created = [];
+  for (let tries = 0; tries < 20 && !created.length; tries += 1) {
+    created = await rest('categories?name=eq.Web%20verify%20pets&deleted=eq.false&select=id,type,icon,user_id');
+    if (!created.length) await p.waitForTimeout(1000);
+  }
+  check('the new category reaches the server as an income category, the capture’s new type, with the icon picked', created.length === 1 && created[0].type === 'income' && created[0].icon === 'gift-outline' && Boolean(created[0].user_id), created);
+  for (const row of created) await rest(`categories?id=eq.${row.id}`, { method: 'PATCH', body: { deleted: true, is_active: false } });
+  await p.reload();
+  await ready(p);
 
   // Not mine for everything: All caught up, then Recently reviewed with Move back, then undo.
   await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();

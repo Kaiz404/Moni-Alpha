@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Cat } from '@/components/brand';
+import { NewCategoryDialog } from '@/components/categories/new-category';
 import { Floating } from '@/components/controls/floating';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -40,6 +41,7 @@ import {
   type SavedView,
   type SortKey,
 } from '@/lib/activity-query';
+import { categoryChoices, suggestedCategories } from '@/lib/category-pick';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
@@ -139,6 +141,7 @@ export function ActivityScreen() {
   const [menu, setMenu] = useState<Menu | null>(null);
   const [cell, setCell] = useState<CellEdit | null>(null);
   const [bulkOpen, setBulkOpen] = useState<'category' | 'wallet' | null>(null);
+  const [creating, setCreating] = useState<{ item: Shown; name: string } | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
   const [columns, setColumns] = useState<ColumnWidths>({});
   const listCard = useRef<HTMLElement>(null);
@@ -231,8 +234,7 @@ export function ActivityScreen() {
     setBulkOpen(null);
     commit(planTransactionsEdit(ids, data, ledger.projection, planContext(ledger.userId)), label);
   };
-  const saveCell = (item: Shown, categoryId: string) => {
-    const name = ledger.projection.categoriesById[categoryId]?.name ?? 'category';
+  const saveCell = (item: Shown, categoryId: string, name = ledger.projection.categoriesById[categoryId]?.name ?? 'category') => {
     setCell(null);
     commit(planTransactionEdit(item.id, { categoryId }, ledger.projection, planContext(ledger.userId)), `${item.title} moved to ${name}`);
   };
@@ -362,7 +364,29 @@ export function ActivityScreen() {
         </span>
       );
     if (cell?.id === item.id) {
-      const matches = categories.filter((category) => category.name.toLowerCase().includes(cell.text.trim().toLowerCase())).slice(0, 6);
+      const kind = item.kind === 'income' ? 'income' : 'expense';
+      const typed = cell.text.trim().toLowerCase();
+      const choices = categoryChoices(ledger, kind);
+      const matches = choices.filter((category) => category.name.toLowerCase().includes(typed)).slice(0, 6);
+      const suggested =
+        typed || item.categoryId
+          ? []
+          : suggestedCategories(ledger, { type: item.kind, merchant: item.row.title, text: item.notes, sourceApp: null, categoryHint: null }).flatMap(
+              (id) => choices.find((category) => category.id === id) ?? [],
+            );
+      const first = suggested[0] ?? matches[0];
+      const firstRow = suggested[0] ? `suggested-${suggested[0].id}` : matches[0] ? `all-${matches[0].id}` : 'new';
+      const option = (category: (typeof choices)[number], group: 'suggested' | 'all') => (
+        <button type="button" role="option" aria-selected={firstRow === `${group}-${category.id}`} key={`${group}-${category.id}`} className="popover-row" onClick={() => saveCell(item, category.id)}>
+          <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
+          <span className="popover-row-text">{category.name}</span>
+          <span className="popover-side num">{leftFor(category.id)}</span>
+        </button>
+      );
+      const newCategory = () => {
+        setCell(null);
+        setCreating({ item, name: cell.text.trim() });
+      };
       return (
         <span className="cell-edit-anchor" onClick={(event) => event.stopPropagation()}>
           <label ref={cellField} className="cell-edit">
@@ -376,12 +400,15 @@ export function ActivityScreen() {
               value={cell.text}
               onChange={(event) => setCell({ id: item.id, text: event.target.value })}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && matches[0]) {
+                if (event.key === 'Enter' && first) {
                   event.preventDefault();
-                  saveCell(item, matches[0].id);
+                  saveCell(item, first.id);
+                } else if (event.key === 'Enter') {
+                  event.preventDefault();
+                  newCategory();
                 } else if (event.key === 'Tab') {
                   event.preventDefault();
-                  if (matches[0] && cell.text.trim()) saveCell(item, matches[0].id);
+                  if (matches[0] && typed) saveCell(item, matches[0].id);
                   const next = page.rows[page.rows.indexOf(item) + 1];
                   setCell(next && next.kind !== 'transfer' ? { id: next.id, text: '' } : null);
                 } else if (event.key === 'Escape') {
@@ -392,13 +419,24 @@ export function ActivityScreen() {
             />
           </label>
           <Floating anchor={cellField} role="listbox" label="Categories" className="cell-pop" autoFocus={false} onClose={() => setCell(null)}>
-            {matches.map((category, index) => (
-              <button type="button" role="option" aria-selected={index === 0} key={category.id} className="popover-row" onClick={() => saveCell(item, category.id)}>
-                <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
-                <span className="popover-row-text">{category.name}</span>
-                <span className="popover-side num">{leftFor(category.id)}</span>
-              </button>
-            ))}
+            {suggested.length > 0 ? (
+              <>
+                <div role="group" aria-label="Suggested" className="popover-group">
+                  <span className="caps popover-group-label">Suggested</span>
+                  {suggested.map((category) => option(category, 'suggested'))}
+                </div>
+                <div role="group" aria-label="All categories" className="popover-group">
+                  <span className="caps popover-group-label">All categories</span>
+                  {matches.map((category) => option(category, 'all'))}
+                </div>
+              </>
+            ) : (
+              matches.map((category) => option(category, 'all'))
+            )}
+            <button type="button" role="option" aria-selected={firstRow === 'new'} className="popover-row" onClick={newCategory}>
+              <Bubble icon="plus" color={null} dashed size={26} glyph={14} />
+              <span className="popover-row-text">New category</span>
+            </button>
             <div className="popover-foot">
               <span className="kbd">↵</span>Save<span className="kbd">Tab</span>Next cell<span className="kbd">Esc</span>Cancel
             </div>
@@ -845,6 +883,18 @@ export function ActivityScreen() {
           />
         ) : null}
       </SidePanel>
+      {creating && (
+        <NewCategoryDialog
+          ledger={ledger}
+          type={creating.item.kind === 'income' ? 'income' : 'expense'}
+          name={creating.name}
+          onClose={(made) => {
+            const { item } = creating;
+            setCreating(null);
+            if (made) saveCell(item, made.id, made.name);
+          }}
+        />
+      )}
       {confirming && (
         <ConfirmDelete
           items={confirming.ids.map((id) => items.find((item) => item.id === id)).filter((item): item is Shown => Boolean(item))}

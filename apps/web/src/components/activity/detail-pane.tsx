@@ -11,12 +11,14 @@ import {
 import { decimalToMinor, type UpdateTransaction } from '@repo/types';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { NewCategoryDialog, newCategoryAction } from '@/components/categories/new-category';
 import { DateField } from '@/components/controls/date-picker';
 import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { FromTo } from '@/components/ledger/from-to';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { ReceiptRow } from '@/components/receipt/receipt-row';
+import { categoryChoices, suggestedCategories } from '@/lib/category-pick';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
@@ -45,8 +47,10 @@ export function DetailPane({
   const { projection, walletNames, aliases, calendar, now, userId, wallets } = ledger;
   const [editing, setEditing] = useState<'merchant' | 'amount' | 'note' | null>(null);
   const [draft, setDraft] = useState('');
+  const [creating, setCreating] = useState(false);
   useEffect(() => {
     setEditing(null);
+    setCreating(false);
   }, [transaction.id]);
 
   const row = transactionRow({ ...transaction, merchant: merchantName(transaction.merchant, aliases) }, { categoriesById: projection.categoriesById, walletNames });
@@ -59,9 +63,11 @@ export function DetailPane({
     setEditing(null);
     commit(planTransactionEdit(transaction.id, data, projection, planContext(userId)), done);
   };
-  const categories = Object.values(projection.categoriesById)
-    .filter((category) => category.isActive && (category.userId === null || category.userId === userId) && (category.type === null || category.type === transaction.type))
-    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
+  const kind = transaction.type === 'income' ? 'income' : 'expense';
+  const categories = categoryChoices(ledger, kind);
+  const suggested = transaction.categoryId
+    ? []
+    : suggestedCategories(ledger, { type: transaction.type, merchant: transaction.merchant, text: transaction.description, sourceApp: null, categoryHint: null });
 
   const inPlace = (kind: 'merchant' | 'amount', initial: string) => {
     setDraft(initial);
@@ -163,8 +169,20 @@ export function DetailPane({
                   lead={<Bubble icon={row.icon} color={row.color} size={26} glyph={15} />}
                   listClassName="pane-pop"
                   options={categories.map((category) => ({ value: category.id, label: category.name, lead: <Bubble icon={category.icon} color={category.color} size={26} glyph={14} /> }))}
+                  suggested={{ values: suggested, allLabel: 'All categories' }}
+                  action={newCategoryAction(() => setCreating(true))}
                   onChange={(id) => save({ categoryId: id }, `Moved to ${projection.categoriesById[id]?.name ?? 'that category'}`)}
                 />
+                {creating && (
+                  <NewCategoryDialog
+                    ledger={ledger}
+                    type={kind}
+                    onClose={(made) => {
+                      setCreating(false);
+                      if (made) save({ categoryId: made.id }, `Moved to ${made.name}`);
+                    }}
+                  />
+                )}
               </dd>
             </div>
           )}

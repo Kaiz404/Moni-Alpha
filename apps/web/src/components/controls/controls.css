@@ -116,6 +116,19 @@
   color: var(--color-muted);
 }
 
+.popover-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.popover-group-label {
+  padding: 8px 10px 4px;
+}
+
+.popover-group + .popover-group {
+  margin-top: 4px;
+}
+
 .popover-rule {
   flex: none;
   height: 1.5px;

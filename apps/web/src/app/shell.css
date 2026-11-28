@@ -900,10 +900,6 @@ html[data-layout='phone'] .pane {
   justify-content: flex-end;
 }
 
-.add-anchor {
-  position: relative;
-}
-
 .add-pick {
   position: relative;
   max-width: 240px;
@@ -949,45 +945,6 @@ html[data-layout='phone'] .pane {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.add-menu {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 220px;
-  max-height: 300px;
-  overflow-y: auto;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  border-radius: 22px;
-  background: var(--color-card);
-  box-shadow:
-    var(--shadow-float),
-    0 0 0 1.5px var(--color-hairline);
-  transform-origin: top right;
-}
-
-.add-menu-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 10px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.add-menu-row:hover,
-.add-menu-row:focus-visible,
-.add-menu-row[aria-selected='true'] {
-  background: var(--color-sand-light);
-  outline: none;
 }
 
 .add-text {

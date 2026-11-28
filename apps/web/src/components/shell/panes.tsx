@@ -1,14 +1,17 @@
 'use client';
 
 import { aiUseAllowed, dateLabel, draftFromExtraction, extractDateContext, notNow, turnOnFor, type FinanceWallet } from '@repo/core';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
+import { NewCategoryDialog, newCategoryAction } from '@/components/categories/new-category';
 import { ConsentDialog } from '@/components/chat/consent-dialog';
+import { Select, type SelectOption } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { useOnline } from '@/components/states/connection';
 import { ADD_COPY, editForm, formFromDraft, planAdd, readAmount, type AddForm, type AddKind, type AddMode } from '@/lib/add-entry';
 import { changeAiConsent, currentAiConsent, webAiClient } from '@/lib/ai';
+import { categoryChoices, suggestedCategories } from '@/lib/category-pick';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
@@ -105,38 +108,20 @@ function mainWallets(ledger: Ledger): FinanceWallet[] {
   return ledger.wallets.filter((wallet) => wallet.currency === ledger.currency);
 }
 
-type Picker = 'wallet' | 'to' | 'category' | null;
-
 /** The phone's Type it (V2A-CaptureType): Expense, Income or Transfer, the amount, then the details. */
 function TypeIt({ ledger }: { ledger: Ledger }) {
   const { run } = useShellApi();
   const { addForm: form } = useShell();
-  const [open, setOpen] = useState<Picker>(null);
-  useEffect(() => {
-    if (!open) return;
-    const key = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.stopPropagation();
-      setOpen(null);
-    };
-    const away = (event: MouseEvent) => {
-      if (!(event.target instanceof Element) || !event.target.closest('.add-anchor')) setOpen(null);
-    };
-    window.addEventListener('keydown', key, true);
-    document.addEventListener('mousedown', away);
-    return () => {
-      window.removeEventListener('keydown', key, true);
-      document.removeEventListener('mousedown', away);
-    };
-  }, [open]);
+  const [creating, setCreating] = useState(false);
   const wallets = mainWallets(ledger);
   const walletId = form.walletId ?? (wallets.find((wallet) => wallet.id === ledger.defaultWalletId) ?? wallets[0])?.id ?? null;
   const wallet = wallets.find((each) => each.id === walletId) ?? null;
   const toWallet = wallets.find((each) => each.id === form.toWalletId && each.id !== walletId) ?? null;
-  const categories = Object.values(ledger.projection.categoriesById)
-    .filter((category) => category.isActive && (category.userId === null || category.userId === ledger.userId) && category.type === form.kind)
-    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
+  const categoryType = form.kind === 'income' ? 'income' : 'expense';
+  const categories = categoryChoices(ledger, categoryType);
   const category = categories.find((each) => each.id === form.categoryId) ?? null;
+  const suggested =
+    form.kind === 'transfer' || category ? [] : suggestedCategories(ledger, { type: form.kind, merchant: form.note.trim() || null, text: null, sourceApp: null, categoryHint: null });
   const today = ledger.calendar.dayKey(ledger.now);
   const day = form.day ?? today;
   const copy = ADD_COPY[form.kind];
@@ -149,27 +134,23 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
     run({ kind: 'closePane' });
   };
 
-  const pick = (which: Exclude<Picker, null>, lead: ReactNode, text: string, options: ReactNode) => (
-    <span className="add-anchor">
-      <button type="button" className="add-pick press" aria-haspopup="listbox" aria-expanded={open === which} onClick={() => setOpen(open === which ? null : which)}>
-        {lead}
-        <span>{text}</span>
-        <Icon name="chevron-down" size={18} />
-      </button>
-      {open === which && (
-        <ul role="listbox" aria-label={which === 'category' ? 'Category' : which === 'to' ? 'To' : copy.wallet} className="add-menu motion-pop">
-          {options}
-        </ul>
-      )}
-    </span>
+  const pick = <T extends string>(
+    label: string,
+    lead: ReactNode,
+    text: string,
+    value: T | null,
+    options: SelectOption<T>[],
+    onChange: (value: T) => void,
+    extra: Pick<ComponentProps<typeof Select<T>>, 'suggested' | 'action'> = {},
+  ) => (
+    <Select label={label} className="add-pick press" align="end" value={value} text={text} options={options} onChange={onChange} {...extra}>
+      {lead}
+      <span>{text}</span>
+      <Icon name="chevron-down" size={18} />
+    </Select>
   );
-  const walletRows = (list: FinanceWallet[], selected: string | null, onPick: (id: string) => void) =>
-    list.map((each) => (
-      <li key={each.id} role="option" aria-selected={each.id === selected} tabIndex={0} className="add-menu-row" onClick={() => (onPick(each.id), setOpen(null))} onKeyDown={(event) => event.key === 'Enter' && (onPick(each.id), setOpen(null))}>
-        <Bubble icon={each.icon} color={each.color} size={26} glyph={14} />
-        {ledger.walletNames[each.id] ?? each.name}
-      </li>
-    ));
+  const walletOptions = (list: FinanceWallet[]) =>
+    list.map((each) => ({ value: each.id, label: ledger.walletNames[each.id] ?? each.name, lead: <Bubble icon={each.icon} color={each.color} size={26} glyph={14} /> }));
 
   return (
     <div
@@ -213,10 +194,12 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
           <dt>{copy.wallet}</dt>
           <dd>
             {pick(
-              'wallet',
+              copy.wallet,
               <Bubble icon={wallet?.icon} color={wallet?.color} size={26} glyph={15} />,
               wallet ? (ledger.walletNames[wallet.id] ?? wallet.name) : 'Pick a wallet',
-              walletRows(wallets, walletId, (id) => setForm({ walletId: id })),
+              walletId,
+              walletOptions(wallets),
+              (id) => setForm({ walletId: id }),
             )}
           </dd>
         </div>
@@ -225,14 +208,12 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
             <dt>To</dt>
             <dd>
               {pick(
-                'to',
+                'To',
                 <Bubble icon={toWallet?.icon} color={toWallet?.color} size={26} glyph={15} />,
                 toWallet ? (ledger.walletNames[toWallet.id] ?? toWallet.name) : 'Pick a wallet',
-                walletRows(
-                  wallets.filter((each) => each.id !== walletId),
-                  form.toWalletId,
-                  (id) => setForm({ toWalletId: id }),
-                ),
+                toWallet?.id ?? null,
+                walletOptions(wallets.filter((each) => each.id !== walletId)),
+                (id) => setForm({ toWalletId: id }),
               )}
             </dd>
           </div>
@@ -241,23 +222,23 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
             <dt>Category</dt>
             <dd>
               {pick(
-                'category',
+                'Category',
                 <Bubble icon={category?.icon} color={category?.color} size={26} glyph={15} />,
                 category?.name ?? 'Pick a category',
-                categories.map((each) => (
-                  <li
-                    key={each.id}
-                    role="option"
-                    aria-selected={each.id === form.categoryId}
-                    tabIndex={0}
-                    className="add-menu-row"
-                    onClick={() => (setForm({ categoryId: each.id }), setOpen(null))}
-                    onKeyDown={(event) => event.key === 'Enter' && (setForm({ categoryId: each.id }), setOpen(null))}
-                  >
-                    <Bubble icon={each.icon} color={each.color} size={26} glyph={14} />
-                    {each.name}
-                  </li>
-                )),
+                category?.id ?? null,
+                categories.map((each) => ({ value: each.id, label: each.name, lead: <Bubble icon={each.icon} color={each.color} size={26} glyph={14} /> })),
+                (id) => setForm({ categoryId: id }),
+                { suggested: { values: suggested, allLabel: 'All categories' }, action: newCategoryAction(() => setCreating(true)) },
+              )}
+              {creating && (
+                <NewCategoryDialog
+                  ledger={ledger}
+                  type={categoryType}
+                  onClose={(made) => {
+                    setCreating(false);
+                    if (made) setForm({ categoryId: made.id });
+                  }}
+                />
               )}
             </dd>
           </div>
