@@ -3,7 +3,7 @@
 // payment's wallet and category to the dev project, and Ctrl Z takes it away again. Read over REST, so the oracle
 // shares no code with the app.
 
-export async function verifyMakeBill({ browser, base, storage, check, shot, settle, open, seed, rest }) {
+export async function verifyMakeBill({ browser, storage, check, shot, settle, open, seed, rest }) {
   const pinned = async (options) => {
     const ctx = await browser.newContext({ storageState: storage, timezoneId: seed.zone, ...options });
     await ctx.clock.setFixedTime(seed.pin);
