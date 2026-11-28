@@ -98,7 +98,7 @@ Turborepo orchestrates everything, including Go: `apps/backend/package.json` she
 
 Designed for a solo developer targeting ~1000 users at minimal cost:
 
-- Supabase free tier (Postgres, auth, storage, realtime)
+- Supabase free tier (Postgres, auth, storage, realtime), project `yucjcjquwpwkgowzthhn` in `ap-southeast-1` (Singapore)
 - OpenRouter pay-per-token credit (`deepseek-v4.1-flash-1017`; cost estimate in `docs/AI.md`)
-- Go backend on Cloud Run with scale-to-zero (free tier covers this traffic)
+- Go backend on Cloud Run in `asia-southeast3` (Bangkok) with scale-to-zero (free tier covers this traffic)
 - Web app on Vercel Pro, Singapore (`sin1`); it holds only the publishable key

@@ -3,10 +3,10 @@
 // the language switch; every [CONFIRM] placeholder still marked; and a signed-in visitor's way into the app.
 
 const LEGAL = [
-  { path: '/privacy', title: 'Privacy policy', lang: 'en', draft: 'Draft, not yet reviewed' },
-  { path: '/privacy/ms', title: 'Dasar Privasi', lang: 'ms', draft: 'Draf, belum disemak' },
-  { path: '/terms', title: 'Terms of service', lang: 'en', draft: 'Draft, not yet reviewed' },
-  { path: '/terms/ms', title: 'Terma Perkhidmatan', lang: 'ms', draft: 'Draf, belum disemak' },
+  { path: '/privacy', title: 'Privacy policy', lang: 'en', updated: 'Last updated' },
+  { path: '/privacy/ms', title: 'Dasar Privasi', lang: 'ms', updated: 'Kemas kini terakhir' },
+  { path: '/terms', title: 'Terms of service', lang: 'en', updated: 'Last updated' },
+  { path: '/terms/ms', title: 'Terma Perkhidmatan', lang: 'ms', updated: 'Kemas kini terakhir' },
 ];
 const HERO = 'Know what’s safe to spend, every day.';
 
@@ -67,17 +67,19 @@ export async function verifySite(t) {
         const r = await p.goto(`${base}${doc.path}`);
         const title = await p.locator('h1').first().textContent();
         const lang = await p.locator('article.legal').getAttribute('lang');
-        const draft = await p.getByRole('note').first().textContent().catch(() => '');
+        const updated = await p.locator('.legal-head time').first().getAttribute('datetime').catch(() => null);
+        const updatedLine = await p.locator('.legal-head .site-small').first().textContent().catch(() => '');
         check(
-          `${doc.path} ${where}: signed out, its title, ${doc.lang}, the draft notice, the ${theme} ground, no sideways scroll`,
+          `${doc.path} ${where}: signed out, its title, ${doc.lang}, its last-updated date, the ${theme} ground, no sideways scroll`,
           r?.status() === 200 &&
             new URL(p.url()).pathname === doc.path &&
             title === doc.title &&
             lang === doc.lang &&
-            (draft ?? '').startsWith(doc.draft) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(updated ?? '') &&
+            (updatedLine ?? '').startsWith(doc.updated) &&
             (await ground(p)) === background[theme] &&
             (await fitsWidth(p)),
-          { status: r?.status(), url: p.url(), title, lang, draft, ground: await ground(p), wide: await fitsWidth(p) },
+          { status: r?.status(), url: p.url(), title, lang, updated, updatedLine, ground: await ground(p), wide: await fitsWidth(p) },
         );
         if (size.width === 1440 || size.width === 390) await shot(p, `site${doc.path.replaceAll('/', '-')}-${size.width}-${theme}`);
       }

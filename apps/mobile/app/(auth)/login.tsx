@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useReducer, useRef, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Linking, ScrollView, TextInput, View } from 'react-native';
 
 import { AuthField } from '@/components/auth/auth-field';
 import {
@@ -20,6 +20,7 @@ import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '@/constants/links';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -277,6 +278,29 @@ export default function LoginScreen() {
             disabled={busy && status.via === 'google'}
             onPress={() => void submit()}
           />
+          {creating ? (
+            <Text className="text-center text-[13px] leading-[18px] text-ink-2">
+              By creating an account, you agree to Moni&apos;s{' '}
+              <Text
+                testID={tid('auth', 'terms')}
+                accessibilityRole="link"
+                className="text-foreground underline"
+                onPress={() => void Linking.openURL(TERMS_URL)}
+              >
+                Terms
+              </Text>{' '}
+              and{' '}
+              <Text
+                testID={tid('auth', 'privacy-policy')}
+                accessibilityRole="link"
+                className="text-foreground underline"
+                onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+              >
+                Privacy policy
+              </Text>
+              .
+            </Text>
+          ) : null}
         </View>
 
         <GoogleSignInButton

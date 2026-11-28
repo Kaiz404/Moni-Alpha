@@ -20,8 +20,8 @@ function confirm(label: string): SiteFact {
 }
 
 export const SITE_FACTS = {
-  /** The Supabase project's region, where the database and receipt photos live. */
-  dataRegion: confirm('data region'),
+  /** The Supabase project's region, where the database and receipt photos live: `ap-southeast-1` (`supabase projects list`, 28 Nov 2026). */
+  dataRegion: fact('Singapore', 'Singapura'),
   price: confirm('price'),
   launchCountries: confirm('launch countries'),
   /** The banking apps whose alerts Moni has been tested on. */
@@ -39,8 +39,12 @@ export const SITE_FACTS = {
   postalAddress: confirm('postal address'),
   /** The AI providers' retention terms, as OpenRouter's zero-data-retention routing promises them. */
   aiNoRetention: confirm('AI providers keep nothing and never train on it'),
-  /** The date the privacy policy and terms take effect. */
-  legalEffectiveDate: confirm('effective date'),
+  /** How long Google Cloud keeps the AI gateway's request logs (the Cloud Logging `_Default` bucket; Google's default is 30 days). */
+  requestLogRetention: confirm('request log retention'),
+  /** How long Supabase keeps backups after an account is deleted (7 days of daily backups on the Pro plan; check the project's plan). */
+  backupRetention: confirm('backup retention'),
+  /** How long Langfuse keeps the AI gateway's traces (set by the Langfuse plan or project retention setting). */
+  traceRetention: confirm('AI trace retention'),
   /** Whose courts and law the terms name. */
   governingLaw: confirm('governing law'),
 } as const satisfies Record<string, SiteFact>;
@@ -49,9 +53,6 @@ export type SiteFactName = keyof typeof SITE_FACTS;
 
 /** The footer's line. An open owner decision: it was flagged as a soft phrase (docs/WEB.md). */
 export const TAGLINE = 'Money, sorted kindly.';
-
-/** False until a lawyer has reviewed the privacy policy and terms; the pages say "Draft, not yet reviewed". */
-export const LEGAL_REVIEWED = false;
 
 /** The words a fact reads as, or its "[CONFIRM: …]" placeholder. */
 export function factText(name: SiteFactName, lang: Lang = 'en'): string {

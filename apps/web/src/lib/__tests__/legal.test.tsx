@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { LEGAL_DOCS } from '@/components/legal/docs';
-import { LegalPage } from '@/components/legal/legal-page';
+import { legalDoc } from '@/components/legal/docs';
+import { parseLegalMarkdown } from '@/components/legal/markdown';
+import { LegalPage, formatUpdated } from '@/components/legal/legal-page';
 import { factText, unconfirmedFacts } from '../site-facts';
 
 const PRIVACY_IDS = [
@@ -47,21 +48,72 @@ describe('legal documents', () => {
     ['terms', 'en', TERMS_IDS],
     ['terms', 'ms', TERMS_IDS],
   ] as const)('%s in %s has its sections in order', (kind, lang, ids) => {
-    expect(LEGAL_DOCS[kind][lang].sections.map((section) => section.id)).toEqual(ids);
+    expect(legalDoc(kind, lang).sections.map((section) => section.id)).toEqual(ids);
   });
 
-  it('the Malay privacy policy says it is a draft and links the English one', () => {
+  it('the Malay privacy policy shows its last-updated date and links the English one', () => {
     const html = renderToStaticMarkup(<LegalPage kind="privacy" lang="ms" />);
-    expect(html).toContain('Draf, belum disemak');
+    const updated = legalDoc('privacy', 'ms').updated;
+    expect(html).toContain(`Kemas kini terakhir: <time dateTime="${updated}">${formatUpdated(updated, 'ms')}</time>`);
+    expect(html).not.toContain('Draf');
     expect(html).toContain('<a hrefLang="en" lang="en" href="/privacy">English</a>');
     expect(html).toContain('<a hrefLang="ms" lang="ms" aria-current="page" href="/privacy/ms">Bahasa Melayu</a>');
-    expect(html).toContain('<mark class="confirm" data-confirm="legalEffectiveDate">[CONFIRM: effective date]</mark>');
+    expect(html).toContain('<mark class="confirm" data-confirm="legalEntity">[CONFIRM: legal entity]</mark>');
   });
 
   it('the English terms link the Malay terms', () => {
     const html = renderToStaticMarkup(<LegalPage kind="terms" lang="en" />);
-    expect(html).toContain('Draft, not yet reviewed');
+    expect(html).toContain('Last updated: <time');
+    expect(html).not.toContain('Draft');
     expect(html).toContain('<a hrefLang="ms" lang="ms" href="/terms/ms">Bahasa Melayu</a>');
+  });
+});
+
+describe('legal markdown', () => {
+  const doc = (body: string) => `---\nupdated: 2026-11-28\n---\n\n# Title\n\nSummary with {{legalEntity}}.\n\n${body}`;
+
+  it('reads sections, lists, tables, links and facts', () => {
+    const parsed = parseLegalMarkdown(
+      doc('## First {#first}\n\nA [link](/terms) and\nmore.\n\n- one\n- two\n  continued\n\n| A | B |\n| --- | --- |\n| x | {{dataRegion}} |'),
+    );
+    expect(parsed.title).toBe('Title');
+    expect(parsed.updated).toBe('2026-11-28');
+    expect(parsed.summary).toEqual([
+      { kind: 'text', text: 'Summary with ' },
+      { kind: 'fact', name: 'legalEntity' },
+      { kind: 'text', text: '.' },
+    ]);
+    expect(parsed.sections).toEqual([
+      {
+        id: 'first',
+        heading: 'First',
+        blocks: [
+          {
+            kind: 'p',
+            content: [
+              { kind: 'text', text: 'A ' },
+              { kind: 'link', text: 'link', href: '/terms' },
+              { kind: 'text', text: ' and more.' },
+            ],
+          },
+          { kind: 'ul', items: [[{ kind: 'text', text: 'one' }], [{ kind: 'text', text: 'two continued' }]] },
+          {
+            kind: 'table',
+            head: [[{ kind: 'text', text: 'A' }], [{ kind: 'text', text: 'B' }]],
+            rows: [[[{ kind: 'text', text: 'x' }], [{ kind: 'fact', name: 'dataRegion' }]]],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it.each([
+    ['an unknown fact', doc('## A {#a}\n\n{{nope}}'), '{{nope}} is not a site fact'],
+    ['a section without an id', doc('## A\n\nText'), 'has no {#id}'],
+    ['emphasis it cannot show', doc('## A {#a}\n\n**bold**'), 'unsupported markdown'],
+    ['a missing date', '---\n---\n\n# T\n\nS', 'front matter has no `updated`'],
+  ])('refuses %s', (_name, source, message) => {
+    expect(() => parseLegalMarkdown(source)).toThrow(message);
   });
 });
 
@@ -72,7 +124,6 @@ describe('site facts', () => {
 
   it('lists every fact the owner still has to confirm', () => {
     expect(unconfirmedFacts()).toEqual([
-      'dataRegion',
       'price',
       'launchCountries',
       'testedBankingApps',
@@ -83,7 +134,9 @@ describe('site facts', () => {
       'statusPage',
       'postalAddress',
       'aiNoRetention',
-      'legalEffectiveDate',
+      'requestLogRetention',
+      'backupRetention',
+      'traceRetention',
       'governingLaw',
     ]);
   });

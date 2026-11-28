@@ -48,18 +48,6 @@
   color: var(--color-background);
 }
 
-.legal-draft {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
-  border-radius: var(--radius-field);
-  background: var(--color-attention-fill);
-  color: var(--color-on-lemon);
-  font-size: 15px;
-  line-height: 21px;
-}
-
 .legal-columns {
   display: grid;
   grid-template-columns: 220px minmax(0, 680px);

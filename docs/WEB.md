@@ -84,7 +84,7 @@ Ignore everything on the Archive page, including the rejected web directions A, 
 
 ## Open owner decisions
 
-- The [CONFIRM] facts on the landing page and in the privacy policy and terms, all in `apps/web/src/lib/site-facts.ts`: data region, price, launch countries, tested banking apps, support email, domain, legal entity, the Google Play link, postal address, the AI providers' retention, the effective date and governing law. Then a lawyer's review of the drafts (`LEGAL_REVIEWED`).
+- The [CONFIRM] facts on the landing page and in the privacy policy and terms, all in `apps/web/src/lib/site-facts.ts`: price, launch countries, tested banking apps, support email, domain, legal entity, the Google Play link, postal address, the AI providers' retention, request log retention, backup retention, AI trace retention and governing law. Then a lawyer's review of the texts in `docs/legal/` (#58).
 - The landing page's tagline "Money, sorted kindly." was flagged as a soft phrase.
 - Whether deleting one transaction asks to confirm or only offers Undo (built as W2-Parts draws it: Delete asks first, with what it takes off the month, then the toast offers Undo); AI consent as one master switch plus per-use switches (drawn) or per-use only; loading skeletons still or pulsing (built still, as W2-States says: blocks never pulse); sync conflicts prompt or last write wins (W2-States draws a prompt, but the shared store is last write wins and has no conflict signal, so the web is last write wins until `@repo/data` reports a conflict).
 - W2-Empty's Home first run ("Three steps and Moni is ready", no wizard) and W2-Onboarding (a wizard, then Home's Get set up checklist) disagree. The web follows W2-Onboarding, with its checklist in W2-Empty's Review slot.

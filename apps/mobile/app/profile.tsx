@@ -2,7 +2,7 @@ import { useValue } from '@legendapp/state/react';
 import type { User } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { ExportDataRow } from '@/components/profile/export-data-row';
@@ -25,6 +25,7 @@ import { ListCard } from '@/components/ui/list-card';
 import { NavRow } from '@/components/ui/nav-row';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '@/constants/links';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAiConsent } from '@/lib/ai/consent/state';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -259,6 +260,22 @@ export default function ProfileScreen() {
           />
           <ExportDataRow userId={userId} />
           <ImportDataRow />
+          <ProfileRow
+            testID={tid('profile', 'row', 'privacy-policy')}
+            icon="file-document-outline"
+            tint="sand"
+            title="Privacy policy"
+            chevron="right"
+            onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'terms')}
+            icon="file-document-outline"
+            tint="sand"
+            title="Terms"
+            chevron="right"
+            onPress={() => void Linking.openURL(TERMS_URL)}
+          />
           <ProfileRow
             testID={tid('profile', 'row', 'delete-account')}
             icon="account-remove-outline"

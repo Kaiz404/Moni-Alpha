@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-The landing page `/` (W2-LandingFinal and W2-LandingFinalPhone): the hero with the web window and the phone, the bento of five moments, the map with pins lit from the list, "Your data stays yours." with the working AI switch, Questions, the closing and the footer. Every fact the owner hasn't confirmed shows as a marked "[CONFIRM: …]" (`data-confirm` names it). Signed out the header has Sign in and Open the web app; signed in it has Open Moni, and `/` no longer redirects. The privacy policy and the terms at `/privacy`, `/terms` (English) and `/privacy/ms`, `/terms/ms` (Malay), with the language switch, the contents list and "Draft, not yet reviewed" while `LEGAL_REVIEWED` is false. Sign in, the landing footer and Settings link both.
+The landing page `/` (W2-LandingFinal and W2-LandingFinalPhone): the hero with the web window and the phone, the bento of five moments, the map with pins lit from the list, "Your data stays yours." with the working AI switch, Questions, the closing and the footer. Every fact the owner hasn't confirmed shows as a marked "[CONFIRM: …]" (`data-confirm` names it). Signed out the header has Sign in and Open the web app; signed in it has Open Moni, and `/` no longer redirects. The privacy policy and the terms at `/privacy`, `/terms` (English) and `/privacy/ms`, `/terms/ms` (Malay), with the language switch, the contents list and the last-updated date (text from `docs/legal/`). Sign in, the landing footer and Settings link both.
 
 ## How to get to it (user POV)
 
