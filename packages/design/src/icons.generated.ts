@@ -97,6 +97,7 @@ export const iconNames = [
   'eye-off-outline',
   'eye-outline',
   'feather',
+  'file-document-outline',
   'file-outline',
   'file-upload-outline',
   'filter',
